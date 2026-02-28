@@ -57,8 +57,9 @@ class TextRenderer:
         q_map = {q["id"]: q["label"] for q in questions}
         for qid, label in q_map.items():
             val = submission.answers.get(qid)
-            if val is not None and val != "":
-                if isinstance(val, bool):
-                    val = "Sim" if val else "Não"
-                result.append((label, str(val)))
+            if val is None or val == "":
+                continue
+            if isinstance(val, bool):
+                val = "Sim" if val else "Não"
+            result.append((label, str(val)))
         return result

@@ -204,7 +204,7 @@ function discardSubmission(sessionId, subId) {
 }
 
 function refreshSubmissions() {
-  const sessionId = {{ session.id }};
+  const sessionId = {{ session.id | tojson }};
   fetch(`/api/sessions/${sessionId}/submissions`)
     .then(r => r.json())
     .then(subs => {
