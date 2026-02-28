@@ -8,7 +8,7 @@ from app.models import IntakeLink, DashboardSession
 from app.store import submission_store, Submission
 from app.schemas.crime_types import CRIME_SCHEMAS
 
-MAX_PHOTO_SIZE = 3 * 1024 * 1024  # 3MB
+_DEFAULT_MAX_PHOTO_SIZE_MB = 3
 
 def _strip_exif(image_bytes: bytes) -> bytes:
     try:
@@ -57,7 +57,7 @@ def submit(token):
     schema = link.form_schema
     limits = schema.get("limits", {})
     max_photos = limits.get("max_photos", 3)
-    max_photo_size = limits.get("max_photo_size_mb", 3) * 1024 * 1024
+    max_photo_size = limits.get("max_photo_size_mb", _DEFAULT_MAX_PHOTO_SIZE_MB) * 1024 * 1024
     
     crime_type = request.form.get("crime_type", "outros")
     guest_name = request.form.get("guest_name", "").strip()
@@ -78,8 +78,9 @@ def submit(token):
     for q in questions:
         val = request.form.get(f"q_{q['id']}", "").strip()
         if q["type"] == "boolean":
-            val = val.lower() in ("1", "true", "yes", "sim", "on")
-        answers[q["id"]] = val if val else None
+            answers[q["id"]] = val.lower() in ("1", "true", "yes", "sim", "on")
+        else:
+            answers[q["id"]] = val if val else None
     
     # process photos
     photos = []

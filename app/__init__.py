@@ -1,3 +1,4 @@
+import logging
 from flask import Flask
 from config import Config
 from app.extensions import db, login_manager, csrf, limiter
@@ -5,9 +6,19 @@ from app.models import PoliceUser
 from app.sessions.expiry import start_expiry_daemon
 from app.cli import register_cli
 
+logger = logging.getLogger(__name__)
+
+_DEFAULT_SECRET_KEY = "dev-secret-change-in-prod"
+
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
+
+    if app.config.get("SECRET_KEY") == _DEFAULT_SECRET_KEY:
+        logger.warning(
+            "Using default SECRET_KEY. Set the SECRET_KEY environment variable "
+            "before deploying to production."
+        )
     
     # Extensions
     db.init_app(app)

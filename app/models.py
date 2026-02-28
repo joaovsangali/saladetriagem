@@ -42,7 +42,10 @@ class DashboardSession(db.Model):
     
     @property
     def is_expired(self):
-        return datetime.now(timezone.utc) >= self.expires_at.replace(tzinfo=timezone.utc) if self.expires_at.tzinfo is None else datetime.now(timezone.utc) >= self.expires_at
+        expires = self.expires_at
+        if expires.tzinfo is None:
+            expires = expires.replace(tzinfo=timezone.utc)
+        return datetime.now(timezone.utc) >= expires
 
 
 class IntakeLink(db.Model):
