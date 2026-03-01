@@ -7,24 +7,22 @@ from flask import current_app
 logger = logging.getLogger(__name__)
 
 
-def send_confirmation_email(to_email: str, confirm_url: str) -> None:
+def send_confirmation_email(to_email: str, confirm_url: str) -> bool:
     """Send an email confirmation link to the new user.
 
-    If SMTP_HOST is not configured and the app is in debug mode, the link is
-    printed to the console instead of sent via email.
+    Returns True if the email was sent successfully, False otherwise.
+    If SMTP_HOST is not configured, the confirmation link is always printed to
+    the console/log so the user can complete registration without SMTP.
     """
     cfg = current_app.config
     smtp_host = cfg.get("SMTP_HOST", "")
 
     if not smtp_host:
-        if current_app.debug:
-            print(f"[DEV] Confirmation link for {to_email}: {confirm_url}")
-            logger.debug("Confirmation link printed to console (SMTP not configured).")
-        else:
-            logger.error(
-                "SMTP_HOST is not configured. Cannot send confirmation email."
-            )
-        return
+        print(f"[MAIL] Confirmation link for {to_email}: {confirm_url}")
+        logger.warning(
+            "SMTP_HOST is not configured. Confirmation link logged to console."
+        )
+        return False
 
     mail_from = cfg.get("MAIL_FROM") or cfg.get("SMTP_USER", "")
     subject = "Confirme seu cadastro — Sala de Triagem"
@@ -64,5 +62,7 @@ def send_confirmation_email(to_email: str, confirm_url: str) -> None:
         server.sendmail(mail_from, [to_email], msg.as_string())
         server.quit()
         logger.info("Confirmation email sent to %s", to_email)
+        return True
     except Exception:
         logger.exception("Failed to send confirmation email.")
+        return False

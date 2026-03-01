@@ -1,4 +1,5 @@
 from flask import render_template, redirect, url_for, flash, request, current_app
+from markupsafe import Markup
 from flask_login import login_user, logout_user, login_required, current_user
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 from app.auth import auth_bp
@@ -95,12 +96,21 @@ def register():
         s = _make_serializer()
         token = s.dumps(email, salt="email-confirm")
         confirm_url = url_for("auth.confirm_email", token=token, _external=True)
-        send_confirmation_email(email, confirm_url)
+        sent = send_confirmation_email(email, confirm_url)
 
-        flash(
-            "Cadastro realizado! Verifique seu e-mail para ativar a conta.",
-            "success",
-        )
+        if sent:
+            flash(
+                "Cadastro realizado! Verifique seu e-mail para ativar a conta.",
+                "success",
+            )
+        else:
+            flash(
+                Markup(
+                    "Cadastro realizado! O envio do e-mail falhou (SMTP não configurado). "
+                    f'Acesse o link para ativar sua conta: <a href="{confirm_url}">{confirm_url}</a>'
+                ),
+                "warning",
+            )
         return redirect(url_for("auth.login"))
 
     return render_template(
@@ -144,7 +154,21 @@ def resend_confirmation():
         s = _make_serializer()
         token = s.dumps(email, salt="email-confirm")
         confirm_url = url_for("auth.confirm_email", token=token, _external=True)
-        send_confirmation_email(email, confirm_url)
+        sent = send_confirmation_email(email, confirm_url)
+        if sent:
+            flash(
+                "Um novo link de confirmação foi enviado para o seu e-mail.",
+                "info",
+            )
+        else:
+            flash(
+                Markup(
+                    "SMTP não configurado. "
+                    f'Acesse o link para ativar sua conta: <a href="{confirm_url}">{confirm_url}</a>'
+                ),
+                "warning",
+            )
+        return redirect(url_for("auth.login"))
     flash(
         "Se o e-mail estiver pendente de confirmação, um novo link foi enviado.",
         "info",

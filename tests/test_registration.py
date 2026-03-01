@@ -140,3 +140,22 @@ def test_login_works_for_confirmed_user(client, app):
     )
     assert resp.status_code == 302
     assert "dashboard" in (resp.location or "")
+
+
+def test_register_no_smtp_flashes_confirm_link(client, app):
+    """When SMTP is not configured, the confirmation link should appear in the flash message."""
+    resp = client.post(
+        "/register",
+        data={
+            "display_name": "No SMTP User",
+            "phone": "11888888888",
+            "email": "nosmtp@example.com",
+            "password": "senha1234",
+            "password_confirm": "senha1234",
+            "terms": "on",
+        },
+        follow_redirects=True,
+    )
+    assert resp.status_code == 200
+    # The confirmation link should be rendered on the page
+    assert b"/confirm/" in resp.data
