@@ -23,7 +23,9 @@ def index():
         police_user_id=current_user.id
     ).order_by(MinimalLogEntry.received_at.desc()).limit(20).all()
     
-    return render_template("dashboard/index.html", sessions=sessions, recent_logs=recent_logs)
+    pending_counts = {s.id: submission_store.count_for_dashboard(s.id) for s in sessions}
+    
+    return render_template("dashboard/index.html", sessions=sessions, recent_logs=recent_logs, pending_counts=pending_counts)
 
 @dashboard_bp.route("/sessions/new", methods=["POST"])
 @login_required
@@ -76,6 +78,14 @@ def session_detail(session_id):
     submissions = submission_store.list_for_dashboard(session.id)
     logs = session.logs.order_by(MinimalLogEntry.received_at.desc()).all()
     
+    # Statistics: crime type breakdown
+    from collections import Counter
+    from app.schemas.crime_types import CRIME_SCHEMAS
+    crime_labels = {k: v["label"] for k, v in CRIME_SCHEMAS.items()}
+    stats_pending = Counter(s.crime_type for s in submissions)
+    stats_closed = Counter(log.crime_type for log in logs if log.status == "closed")
+    stats_discarded = Counter(log.crime_type for log in logs if log.status == "discarded")
+    
     return render_template(
         "dashboard/session_detail.html",
         session=session,
@@ -84,6 +94,10 @@ def session_detail(session_id):
         intake_url=intake_url,
         submissions=submissions,
         logs=logs,
+        crime_labels=crime_labels,
+        stats_pending=stats_pending,
+        stats_closed=stats_closed,
+        stats_discarded=stats_discarded,
     )
 
 @dashboard_bp.route("/sessions/<int:session_id>/close", methods=["POST"])
@@ -124,6 +138,51 @@ def purge_session(session_id):
     submission_store.purge_dashboard(session.id)
     flash("Dados sensíveis apagados.", "info")
     return redirect(url_for("dashboard.session_detail", session_id=session.id))
+
+@dashboard_bp.route("/account", methods=["GET", "POST"])
+@login_required
+def account():
+    if request.method == "POST":
+        action = request.form.get("action")
+        if action == "update_profile":
+            display_name = request.form.get("display_name", "").strip()
+            phone = request.form.get("phone", "").strip() or None
+            if not display_name:
+                flash("Nome não pode ser vazio.", "danger")
+            else:
+                current_user.display_name = display_name
+                current_user.phone = phone
+                db.session.commit()
+                flash("Perfil atualizado com sucesso.", "success")
+        elif action == "change_password":
+            current_pwd = request.form.get("current_password", "")
+            new_pwd = request.form.get("new_password", "")
+            confirm_pwd = request.form.get("confirm_new_password", "")
+            if not current_user.check_password(current_pwd):
+                flash("Senha atual incorreta.", "danger")
+            elif len(new_pwd) < 8:
+                flash("A nova senha deve ter no mínimo 8 caracteres.", "danger")
+            elif new_pwd != confirm_pwd:
+                flash("As novas senhas não coincidem.", "danger")
+            else:
+                current_user.set_password(new_pwd)
+                db.session.commit()
+                flash("Senha alterada com sucesso.", "success")
+        return redirect(url_for("dashboard.account"))
+    return render_template("dashboard/account.html")
+
+
+@dashboard_bp.route("/sessions/<int:session_id>/extend", methods=["POST"])
+@login_required
+def extend_session(session_id):
+    session = DashboardSession.query.filter_by(
+        id=session_id, user_id=current_user.id, is_active=True
+    ).first_or_404()
+    session.expires_at = DashboardSession.make_expires_at()
+    db.session.commit()
+    flash("Plantão estendido por mais 24 horas.", "success")
+    return redirect(url_for("dashboard.session_detail", session_id=session.id))
+
 
 def _generate_qr_svg(url: str) -> str:
     """Generate a clean inline SVG QR code string."""

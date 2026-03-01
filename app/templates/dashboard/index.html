@@ -20,6 +20,10 @@
           Status: 
           {% if s.is_active and not s.is_expired %}
             <span class="badge bg-success">Ativo</span>
+            {% set cnt = pending_counts.get(s.id, 0) %}
+            {% if cnt > 0 %}
+            <span class="badge bg-warning text-dark ms-1">{{ cnt }} pendente{{ 's' if cnt != 1 else '' }}</span>
+            {% endif %}
           {% else %}
             <span class="badge bg-secondary">Encerrado</span>
           {% endif %}

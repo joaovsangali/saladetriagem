@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Cadastro — Sala de Triagem{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <div class="card shadow-sm">
+      <div class="card-body p-4">
+        <h4 class="card-title mb-3 text-center">Cadastro de Policial</h4>
+        <p class="text-center text-muted small mb-4">Crie sua conta para acessar o sistema</p>
+        <form method="post" action="{{ url_for('auth.register') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="mb-3">
+            <label class="form-label">Nome completo *</label>
+            <input type="text" name="display_name" class="form-control" required maxlength="100">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">E-mail *</label>
+            <input type="email" name="email" class="form-control" required>
+          </div>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label">CPF <span class="text-muted small">(opcional)</span></label>
+              <input type="text" name="cpf" class="form-control" maxlength="20" placeholder="000.000.000-00">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Telefone <span class="text-muted small">(opcional)</span></label>
+              <input type="text" name="phone" class="form-control" maxlength="30" placeholder="(00) 00000-0000">
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Senha * <span class="text-muted small">(mínimo 8 caracteres)</span></label>
+            <input type="password" name="password" class="form-control" required minlength="8">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Confirmar senha *</label>
+            <input type="password" name="confirm_password" class="form-control" required minlength="8">
+          </div>
+          <div class="mb-3 form-check">
+            <input type="checkbox" name="terms_accepted" class="form-check-input" id="terms" required>
+            <label class="form-check-label small" for="terms">
+              Declaro que este é um uso auxiliar de triagem presencial e entendo que <strong>não é um sistema oficial</strong>.
+            </label>
+          </div>
+          <button type="submit" class="btn btn-primary w-100">Cadastrar</button>
+        </form>
+        <hr>
+        <p class="text-center small mb-0">
+          Já tem conta? <a href="{{ url_for('auth.login') }}">Faça login</a>
+        </p>
+      </div>
+    </div>
+    <p class="disclaimer text-center mt-3 small">
+      Este NÃO é um sistema oficial.<br>
+      Ferramenta auxiliar de triagem presencial.
+    </p>
+  </div>
+</div>
+{% endblock %}

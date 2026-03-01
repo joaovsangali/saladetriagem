@@ -19,6 +19,11 @@
           </div>
           <button type="submit" class="btn btn-primary w-100">Entrar</button>
         </form>
+        <hr>
+        <div class="d-flex justify-content-between small">
+          <a href="{{ url_for('auth.forgot_password') }}">Esqueci a senha</a>
+          <a href="{{ url_for('auth.register') }}">Cadastre-se</a>
+        </div>
       </div>
     </div>
   </div>

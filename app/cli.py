@@ -14,7 +14,7 @@ def register_cli(app):
         if PoliceUser.query.filter_by(email=email.lower()).first():
             click.echo(f"User {email} already exists.")
             return
-        u = PoliceUser(email=email.lower(), display_name=name)
+        u = PoliceUser(email=email.lower(), display_name=name, email_confirmed=True)
         u.set_password(password)
         db.session.add(u)
         db.session.commit()

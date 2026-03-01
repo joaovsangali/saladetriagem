@@ -19,6 +19,7 @@
     <span class="navbar-brand">Sala de Triagem</span>
     <div class="ms-auto d-flex align-items-center gap-3">
       <span class="text-light small">{{ current_user.display_name }}</span>
+      <a href="{{ url_for('dashboard.account') }}" class="btn btn-outline-light btn-sm"><i class="bi bi-person-circle"></i></a>
       <form action="{{ url_for('auth.logout') }}" method="post" class="d-inline">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button class="btn btn-outline-light btn-sm" type="submit">Sair</button>

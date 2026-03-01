@@ -16,6 +16,12 @@
   </div>
   <div class="d-flex gap-2">
     {% if session.is_active %}
+    <form action="{{ url_for('dashboard.extend_session', session_id=session.id) }}" method="post" class="d-inline">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn-outline-success btn-sm" title="Estender por mais 24h">
+        <i class="bi bi-clock-history"></i> Estender
+      </button>
+    </form>
     <form action="{{ url_for('dashboard.purge_session', session_id=session.id) }}" method="post" class="d-inline">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button class="btn btn-outline-warning btn-sm" onclick="return confirm('Apagar todos os dados sensíveis?')">
@@ -76,6 +82,29 @@
     </div>
   </div>
 </div>
+
+{% set all_crime_types = stats_pending.keys() | list + stats_closed.keys() | list + stats_discarded.keys() | list %}
+{% set all_types = all_crime_types | unique | list %}
+{% if all_types %}
+<div class="card mb-4">
+  <div class="card-header">Estatísticas por Tipo de Ocorrência</div>
+  <div class="card-body p-0">
+    <table class="table table-sm mb-0">
+      <thead><tr><th>Tipo</th><th class="text-center">Pendentes</th><th class="text-center">Fechados</th><th class="text-center">Descartados</th></tr></thead>
+      <tbody>
+        {% for ct in all_types %}
+        <tr>
+          <td>{{ crime_labels.get(ct, ct) }}</td>
+          <td class="text-center">{{ stats_pending.get(ct, 0) or '—' }}</td>
+          <td class="text-center">{{ stats_closed.get(ct, 0) or '—' }}</td>
+          <td class="text-center">{{ stats_discarded.get(ct, 0) or '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
 
 <!-- Submissions -->
 <h5>Triagens Pendentes</h5>

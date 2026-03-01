@@ -14,6 +14,9 @@ class PoliceUser(UserMixin, db.Model):
     is_active = db.Column(db.Boolean, default=True)
     plan = db.Column(db.String(50), default="free")
     max_dashboards = db.Column(db.Integer, default=3)
+    cpf = db.Column(db.String(20), nullable=True)
+    phone = db.Column(db.String(30), nullable=True)
+    email_confirmed = db.Column(db.Boolean, default=False)
     
     sessions = db.relationship("DashboardSession", backref="owner", lazy="dynamic")
     

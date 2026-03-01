@@ -14,3 +14,10 @@ class Config:
     DEFAULT_MAX_PHOTO_SIZE_MB = 3
     RATELIMIT_STORAGE_URI = "memory://"
     RATELIMIT_DEFAULT = "200 per day;50 per hour"
+    MAIL_SERVER = os.environ.get("MAIL_SERVER", "smtp.gmail.com")
+    MAIL_PORT = int(os.environ.get("MAIL_PORT", 587))
+    MAIL_USE_TLS = os.environ.get("MAIL_USE_TLS", "true").lower() == "true"
+    MAIL_USERNAME = os.environ.get("MAIL_USERNAME", "")
+    MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD", "")
+    MAIL_DEFAULT_SENDER = os.environ.get("MAIL_DEFAULT_SENDER", "noreply@saladetriagem.local")
+    REGISTRATION_ENABLED = os.environ.get("REGISTRATION_ENABLED", "true").lower() == "true"

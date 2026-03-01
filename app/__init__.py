@@ -1,7 +1,7 @@
 import logging
 from flask import Flask
 from config import Config
-from app.extensions import db, login_manager, csrf, limiter
+from app.extensions import db, login_manager, csrf, limiter, mail
 from app.models import PoliceUser
 from app.sessions.expiry import start_expiry_daemon
 from app.cli import register_cli
@@ -41,6 +41,7 @@ def create_app(config_class=Config):
     login_manager.init_app(app)
     csrf.init_app(app)
     limiter.init_app(app)
+    mail.init_app(app)
     
     login_manager.login_view = "auth.login"
     login_manager.login_message = "Faça login para continuar."

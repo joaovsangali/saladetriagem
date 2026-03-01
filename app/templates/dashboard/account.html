@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Minha Conta — Sala de Triagem{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0">Minha Conta</h4>
+  <a href="{{ url_for('dashboard.index') }}" class="btn btn-outline-secondary btn-sm">← Dashboard</a>
+</div>
+
+<div class="row">
+  <div class="col-md-6 mb-4">
+    <div class="card">
+      <div class="card-header">Dados do Perfil</div>
+      <div class="card-body">
+        <form method="post" action="{{ url_for('dashboard.account') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="action" value="update_profile">
+          <div class="mb-3">
+            <label class="form-label">Nome completo *</label>
+            <input type="text" name="display_name" class="form-control" value="{{ current_user.display_name }}" required maxlength="100">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">E-mail</label>
+            <input type="email" class="form-control" value="{{ current_user.email }}" disabled>
+            <div class="form-text">O e-mail não pode ser alterado.</div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Telefone</label>
+            <input type="text" name="phone" class="form-control" value="{{ current_user.phone or '' }}" maxlength="30" placeholder="(00) 00000-0000">
+          </div>
+          <button type="submit" class="btn btn-primary">Salvar alterações</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-md-6 mb-4">
+    <div class="card">
+      <div class="card-header">Alterar Senha</div>
+      <div class="card-body">
+        <form method="post" action="{{ url_for('dashboard.account') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="action" value="change_password">
+          <div class="mb-3">
+            <label class="form-label">Senha atual</label>
+            <input type="password" name="current_password" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Nova senha <span class="text-muted small">(mínimo 8 caracteres)</span></label>
+            <input type="password" name="new_password" class="form-control" required minlength="8">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Confirmar nova senha</label>
+            <input type="password" name="confirm_new_password" class="form-control" required minlength="8">
+          </div>
+          <button type="submit" class="btn btn-warning">Alterar senha</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Informações da Conta</div>
+  <div class="card-body">
+    <dl class="row mb-0">
+      <dt class="col-sm-3">Plano</dt>
+      <dd class="col-sm-9">{{ current_user.plan | capitalize }}</dd>
+      <dt class="col-sm-3">Limite de plantões</dt>
+      <dd class="col-sm-9">{{ current_user.max_dashboards }} dashboards simultâneos</dd>
+      <dt class="col-sm-3">Cadastro em</dt>
+      <dd class="col-sm-9">{{ current_user.created_at|datefmt }}</dd>
+    </dl>
+  </div>
+</div>
+{% endblock %}
