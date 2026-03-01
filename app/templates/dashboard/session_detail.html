@@ -6,7 +6,7 @@
     <a href="{{ url_for('dashboard.index') }}" class="text-decoration-none text-muted small">← Voltar</a>
     <h4 class="mb-0 mt-1">{{ session.label }}</h4>
     <span class="small text-muted">
-      Expira: {{ session.expires_at.strftime('%d/%m/%Y %H:%M') }} UTC |
+      Expira: {{ session.expires_at|datefmt }} UTC |
       {% if session.is_active and not session.is_expired %}
         <span class="badge bg-success">Ativo</span>
       {% else %}
@@ -81,23 +81,40 @@
 <h5>Triagens Pendentes</h5>
 <div id="submissions-container">
   {% for sub in submissions %}
-  <div class="card mb-3" id="sub-{{ sub.submission_id }}">
-    <div class="card-header d-flex justify-content-between align-items-center">
-      <span>
-        <strong>{{ sub.guest_name }}</strong> — {{ sub.crime_type }}
-        <span class="text-muted small ms-2">{{ sub.received_at.strftime('%d/%m %H:%M') }}</span>
-      </span>
-      <div class="d-flex gap-2">
-        <button class="btn btn-success btn-sm" onclick="closeSubmission('{{ session.id }}', '{{ sub.submission_id }}')">
-          <i class="bi bi-check-circle"></i> Concluir
-        </button>
-        <button class="btn btn-outline-danger btn-sm" onclick="discardSubmission('{{ session.id }}', '{{ sub.submission_id }}')">
-          <i class="bi bi-x-circle"></i> Descartar
-        </button>
+  <div class="card mb-2" id="sub-{{ sub.submission_id }}">
+    <div class="card-body py-2 px-3">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <strong>{{ sub.guest_name }}</strong>
+          <span class="badge bg-info text-dark ms-2">{{ sub.crime_type }}</span>
+          <span class="text-muted small ms-2">{{ sub.received_at|datefmt('dd/mm HH:MM') }}</span>
+        </div>
+        <div class="dropdown">
+          <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            Ações
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li>
+              <a class="dropdown-item" href="#" onclick="loadDetail('{{ session.id }}', '{{ sub.submission_id }}'); return false;">
+                <i class="bi bi-eye"></i> Ver detalhes
+              </a>
+            </li>
+            <li><hr class="dropdown-divider"></li>
+            <li>
+              <a class="dropdown-item text-success" href="#" onclick="closeSubmission('{{ session.id }}', '{{ sub.submission_id }}'); return false;">
+                <i class="bi bi-check-circle"></i> Concluir
+              </a>
+            </li>
+            <li>
+              <a class="dropdown-item text-danger" href="#" onclick="discardSubmission('{{ session.id }}', '{{ sub.submission_id }}'); return false;">
+                <i class="bi bi-x-circle"></i> Descartar
+              </a>
+            </li>
+          </ul>
+        </div>
       </div>
     </div>
-    <div class="card-body" id="sub-detail-{{ sub.submission_id }}">
-      <div class="text-center p-3"><button class="btn btn-outline-secondary btn-sm" onclick="loadDetail('{{ session.id }}', '{{ sub.submission_id }}')">Carregar detalhes</button></div>
+    <div class="card-footer bg-white p-0 d-none" id="sub-detail-{{ sub.submission_id }}">
     </div>
   </div>
   {% else %}
@@ -114,8 +131,8 @@
     <tr>
       <td>{{ log.guest_display_name or '—' }}</td>
       <td>{{ log.crime_type or '—' }}</td>
-      <td>{{ log.received_at.strftime('%d/%m %H:%M') if log.received_at else '—' }}</td>
-      <td>{{ log.closed_at.strftime('%d/%m %H:%M') if log.closed_at else '—' }}</td>
+      <td>{{ log.received_at|datefmt('dd/mm HH:MM') if log.received_at else '—' }}</td>
+      <td>{{ log.closed_at|datefmt('dd/mm HH:MM') if log.closed_at else '—' }}</td>
       <td>
         {% if log.status == 'closed' %}<span class="badge bg-success">Fechado</span>
         {% elif log.status == 'discarded' %}<span class="badge bg-warning text-dark">Descartado</span>
@@ -138,11 +155,13 @@ function copyUrl() {
 }
 
 function loadDetail(sessionId, subId) {
+  const container = document.getElementById(`sub-detail-${subId}`);
+  container.classList.remove('d-none');
+  container.innerHTML = '<div class="text-center p-3"><span class="spinner-border spinner-border-sm"></span> Carregando...</div>';
   fetch(`/api/sessions/${sessionId}/submissions/${subId}`)
     .then(r => r.json())
     .then(data => {
-      const container = document.getElementById(`sub-detail-${subId}`);
-      let html = '<div class="row">';
+      let html = '<div class="p-3"><div class="row">';
       html += '<div class="col-md-6">';
       html += '<h6>Dados Pessoais</h6>';
       html += '<table class="table table-sm">';
@@ -173,7 +192,7 @@ function loadDetail(sessionId, subId) {
         }
         html += '</div>';
       }
-      html += '</div></div>';
+      html += '</div></div></div>';
       container.innerHTML = html;
     });
 }

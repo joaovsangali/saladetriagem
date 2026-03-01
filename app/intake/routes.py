@@ -110,6 +110,16 @@ def submit(token):
         photos=photos,
         received_at=datetime.now(timezone.utc),
     )
+
+    # Duplicate check — same name or same RG within this dashboard
+    if submission_store.is_duplicate(sub):
+        flash(
+            "Já existe um registro com esse nome ou RG neste plantão. "
+            "Se necessário, informe o policial.",
+            "warning",
+        )
+        return redirect(url_for("intake.form", token=token))
+
     submission_store.add(sub)
     
     return redirect(url_for("intake.ok", token=token))
