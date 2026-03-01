@@ -125,6 +125,34 @@ def purge_session(session_id):
     flash("Dados sensíveis apagados.", "info")
     return redirect(url_for("dashboard.session_detail", session_id=session.id))
 
+@dashboard_bp.route("/sessions/delete-closed", methods=["POST"])
+@login_required
+def delete_closed_sessions():
+    closed = DashboardSession.query.filter_by(
+        user_id=current_user.id, is_active=False
+    ).all()
+    for s in closed:
+        MinimalLogEntry.query.filter_by(dashboard_id=s.id).delete()
+        IntakeLink.query.filter_by(dashboard_id=s.id).delete()
+        db.session.delete(s)
+    db.session.commit()
+    flash(f"{len(closed)} plantão(ões) encerrado(s) apagado(s).", "info")
+    return redirect(url_for("dashboard.index"))
+
+@dashboard_bp.route("/sessions/<int:session_id>/print-qr")
+@login_required
+def print_qr(session_id):
+    session = DashboardSession.query.filter_by(
+        id=session_id, user_id=current_user.id
+    ).first_or_404()
+    link = session.links.filter_by(is_active=True).first()
+    qr_svg = None
+    intake_url = None
+    if link:
+        intake_url = url_for("intake.form", token=link.token, _external=True)
+        qr_svg = _generate_qr_svg(intake_url)
+    return render_template("dashboard/print_qr.html", session=session, qr_svg=qr_svg, intake_url=intake_url)
+
 def _generate_qr_svg(url: str) -> str:
     """Generate a clean inline SVG QR code string."""
     try:

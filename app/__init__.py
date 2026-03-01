@@ -1,4 +1,5 @@
 import logging
+from zoneinfo import ZoneInfo
 from flask import Flask
 from config import Config
 from app.extensions import db, login_manager, csrf, limiter
@@ -9,12 +10,17 @@ from app.cli import register_cli
 logger = logging.getLogger(__name__)
 
 _DEFAULT_SECRET_KEY = "dev-secret-change-in-prod"
+_SP_TZ = ZoneInfo("America/Sao_Paulo")
+_UTC_TZ = ZoneInfo("UTC")
 
 
 def _datefmt(value, fmt="dd/mm/yyyy HH:MM"):
-    """Jinja2 filter: format a datetime in Brazilian style."""
+    """Jinja2 filter: format a datetime in Brazilian style (America/Sao_Paulo)."""
     if value is None:
         return "—"
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=_UTC_TZ)
+    value = value.astimezone(_SP_TZ)
     if fmt == "dd/mm/yyyy HH:MM":
         return value.strftime("%d/%m/%Y %H:%M")
     if fmt == "dd/mm/yyyy":

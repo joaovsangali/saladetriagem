@@ -111,7 +111,7 @@
           Os dados são apagados após o encerramento. Não constitui registro oficial de ocorrência.
         </div>
         
-        <button type="submit" class="btn btn-primary w-100">Enviar informações</button>
+        <button type="submit" id="submit-btn" class="btn btn-primary w-100" style="display:none;">Enviar informações</button>
       </form>
     </div>
   </div>
@@ -125,6 +125,9 @@ function updateQuestions() {
   if (ct) {
     const qs = document.getElementById('qs-' + ct);
     if (qs) qs.classList.add('active');
+    document.getElementById('submit-btn').style.display = '';
+  } else {
+    document.getElementById('submit-btn').style.display = 'none';
   }
 }
 </script>
