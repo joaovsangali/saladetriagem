@@ -24,7 +24,7 @@
       <h5 class="mb-0">Formulário de Triagem Presencial</h5>
     </div>
     <div class="card-body">
-      <form method="post" action="{{ url_for('intake.submit', token=token) }}" enctype="multipart/form-data">
+      <form method="post" action="{{ url_for('intake.submit', token=token) }}" enctype="multipart/form-data" novalidate>
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         
         <h6 class="mb-3">Tipo de Ocorrência</h6>
@@ -67,16 +67,16 @@
           {% set questions = questions_by_crime.get(ct, []) %}
           {% for q in questions %}
           <div class="mb-3">
-            <label class="form-label">{{ q.label }}{% if q.get('required') %} *{% endif %}</label>
+            <label class="form-label">{{ q.label }}</label>
             {% if q.type == 'select' %}
-              <select name="q_{{ q.id }}" class="form-select" {% if q.get('required') %}required{% endif %}>
+              <select name="q_{{ q.id }}" class="form-select">
                 <option value="">— Selecione —</option>
                 {% for opt in q.options %}
                 <option value="{{ opt }}">{{ opt }}</option>
                 {% endfor %}
               </select>
             {% elif q.type == 'date' %}
-              <input type="date" name="q_{{ q.id }}" class="form-control" {% if q.get('required') %}required{% endif %}>
+              <input type="date" name="q_{{ q.id }}" class="form-control">
             {% elif q.type == 'number' %}
               <input type="number" name="q_{{ q.id }}" class="form-control" min="0" step="0.01">
             {% elif q.type == 'boolean' %}
@@ -86,7 +86,7 @@
                 <option value="nao">Não</option>
               </select>
             {% else %}
-              <input type="text" name="q_{{ q.id }}" class="form-control" {% if q.get('required') %}required{% endif %} maxlength="500">
+              <input type="text" name="q_{{ q.id }}" class="form-control" maxlength="500">
             {% endif %}
           </div>
           {% endfor %}

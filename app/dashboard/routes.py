@@ -1,4 +1,5 @@
 import io
+import re
 import secrets
 from datetime import datetime, timezone
 import qrcode
@@ -125,10 +126,18 @@ def purge_session(session_id):
     return redirect(url_for("dashboard.session_detail", session_id=session.id))
 
 def _generate_qr_svg(url: str) -> str:
-    qr = qrcode.QRCode(version=1, box_size=4, border=2)
-    qr.add_data(url)
-    qr.make(fit=True)
-    img = qr.make_image(image_factory=qrcode.image.svg.SvgImage)
-    buf = io.BytesIO()
-    img.save(buf)
-    return buf.getvalue().decode("utf-8")
+    """Generate a clean inline SVG QR code string."""
+    try:
+        factory = qrcode.image.svg.SvgPathImage
+        qr = qrcode.QRCode(version=1, box_size=8, border=2)
+        qr.add_data(url)
+        qr.make(fit=True)
+        img = qr.make_image(image_factory=factory)
+        buf = io.BytesIO()
+        img.save(buf)
+        svg_str = buf.getvalue().decode("utf-8")
+        svg_str = re.sub(r'<\?xml[^?]*\?>\s*', '', svg_str)
+        svg_str = re.sub(r'<!DOCTYPE[^>]*>\s*', '', svg_str)
+        return svg_str.strip()
+    except Exception:
+        return ""
