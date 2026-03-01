@@ -15,8 +15,8 @@
       <div class="card-body">
         <h6 class="card-title">{{ s.label }}</h6>
         <p class="card-text small text-muted">
-          Criado: {{ s.created_at.strftime('%d/%m/%Y %H:%M') }}<br>
-          Expira: {{ s.expires_at.strftime('%d/%m/%Y %H:%M') }}<br>
+          Criado: {{ s.created_at|datefmt }}<br>
+          Expira: {{ s.expires_at|datefmt }}<br>
           Status: 
           {% if s.is_active and not s.is_expired %}
             <span class="badge bg-success">Ativo</span>
@@ -48,7 +48,7 @@
     <tr>
       <td>{{ log.guest_display_name or '—' }}</td>
       <td>{{ log.crime_type or '—' }}</td>
-      <td>{{ log.received_at.strftime('%d/%m %H:%M') if log.received_at else '—' }}</td>
+      <td>{{ log.received_at|datefmt('dd/mm HH:MM') if log.received_at else '—' }}</td>
       <td>
         {% if log.status == 'closed' %}<span class="badge bg-success">Fechado</span>
         {% elif log.status == 'discarded' %}<span class="badge bg-warning text-dark">Descartado</span>

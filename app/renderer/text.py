@@ -1,4 +1,16 @@
+import re
 from typing import Dict, Any, Optional
+
+_ISO_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+
+def _format_date_br(value: str) -> str:
+    """Convert ISO date 'yyyy-mm-dd' to 'dd/mm/yyyy'. Passthrough if not ISO."""
+    if value and _ISO_DATE_RE.match(value):
+        parts = value.split("-")
+        return f"{parts[2]}/{parts[1]}/{parts[0]}"
+    return value
+
 
 class TextRenderer:
     CRIME_LABELS = {
@@ -22,7 +34,7 @@ class TextRenderer:
         lines.append("DADOS INFORMADOS:")
         lines.append(f"  Nome: {submission.guest_name or '—'}")
         if submission.dob:
-            lines.append(f"  Data de Nascimento: {submission.dob}")
+            lines.append(f"  Data de Nascimento: {_format_date_br(submission.dob)}")
         if submission.rg:
             lines.append(f"  RG: {submission.rg}")
         if submission.cpf:
@@ -37,7 +49,8 @@ class TextRenderer:
             lines.append("DOS FATOS:")
             for key, val in submission.answers.items():
                 if val is not None and val != "":
-                    lines.append(f"  {key}: {val}")
+                    display_val = _format_date_br(str(val)) if isinstance(val, str) else val
+                    lines.append(f"  {key}: {display_val}")
             lines.append("")
         
         if submission.narrative:
@@ -61,5 +74,7 @@ class TextRenderer:
                 continue
             if isinstance(val, bool):
                 val = "Sim" if val else "Não"
+            else:
+                val = _format_date_br(str(val))
             result.append((label, str(val)))
         return result

@@ -10,6 +10,20 @@ logger = logging.getLogger(__name__)
 
 _DEFAULT_SECRET_KEY = "dev-secret-change-in-prod"
 
+
+def _datefmt(value, fmt="dd/mm/yyyy HH:MM"):
+    """Jinja2 filter: format a datetime in Brazilian style."""
+    if value is None:
+        return "—"
+    if fmt == "dd/mm/yyyy HH:MM":
+        return value.strftime("%d/%m/%Y %H:%M")
+    if fmt == "dd/mm/yyyy":
+        return value.strftime("%d/%m/%Y")
+    if fmt == "dd/mm HH:MM":
+        return value.strftime("%d/%m %H:%M")
+    return value.strftime(fmt)
+
+
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
@@ -19,7 +33,9 @@ def create_app(config_class=Config):
             "Using default SECRET_KEY. Set the SECRET_KEY environment variable "
             "before deploying to production."
         )
-    
+
+    app.jinja_env.filters["datefmt"] = _datefmt
+
     # Extensions
     db.init_app(app)
     login_manager.init_app(app)
