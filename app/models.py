@@ -12,6 +12,8 @@ class PoliceUser(UserMixin, db.Model):
     display_name = db.Column(db.String(100), nullable=False)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     is_active = db.Column(db.Boolean, default=True)
+    phone = db.Column(db.String(20), nullable=True)
+    cpf = db.Column(db.String(20), nullable=True)
     plan = db.Column(db.String(50), default="free")
     max_dashboards = db.Column(db.Integer, default=3)
     

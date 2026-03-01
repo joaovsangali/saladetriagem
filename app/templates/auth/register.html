@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Cadastrar — Sala de Triagem{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <div class="card shadow-sm">
+      <div class="card-body p-4">
+        <h4 class="card-title mb-3 text-center">Criar conta</h4>
+        <form method="post" action="{{ url_for('auth.register') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="mb-3">
+            <label class="form-label">Nome completo <span class="text-danger">*</span></label>
+            <input type="text" name="display_name" class="form-control" required
+                   value="{{ form_data.get('display_name', '') }}">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">CPF{% if require_cpf %} <span class="text-danger">*</span>{% endif %}</label>
+            <input type="text" name="cpf" class="form-control" {% if require_cpf %}required{% endif %}
+                   placeholder="000.000.000-00" value="{{ form_data.get('cpf', '') }}">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Telefone <span class="text-danger">*</span></label>
+            <input type="tel" name="phone" class="form-control" required
+                   placeholder="(00) 00000-0000" value="{{ form_data.get('phone', '') }}">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">E-mail <span class="text-danger">*</span></label>
+            <input type="email" name="email" class="form-control" required
+                   value="{{ form_data.get('email', '') }}">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Senha <span class="text-danger">*</span></label>
+            <input type="password" name="password" class="form-control" required minlength="8">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Confirmar senha <span class="text-danger">*</span></label>
+            <input type="password" name="password_confirm" class="form-control" required minlength="8">
+          </div>
+          <div class="mb-3 form-check">
+            <input type="checkbox" name="terms" id="terms" class="form-check-input" required>
+            <label class="form-check-label" for="terms">
+              Li e concordo com os Termos de Serviço e Política de Privacidade.
+            </label>
+          </div>
+          <button type="submit" class="btn btn-primary w-100">Cadastrar</button>
+        </form>
+        <p class="text-center mt-3 small">
+          Já tem conta? <a href="{{ url_for('auth.login') }}">Entrar</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

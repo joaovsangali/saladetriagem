@@ -14,3 +14,11 @@ class Config:
     DEFAULT_MAX_PHOTO_SIZE_MB = 3
     RATELIMIT_STORAGE_URI = "memory://"
     RATELIMIT_DEFAULT = "200 per day;50 per hour"
+    REQUIRE_CPF_FOR_SIGNUP = os.environ.get("REQUIRE_CPF_FOR_SIGNUP", "False").lower() in ("true", "1", "yes")
+    SMTP_HOST = os.environ.get("SMTP_HOST", "")
+    SMTP_PORT = int(os.environ.get("SMTP_PORT", "587"))
+    SMTP_USER = os.environ.get("SMTP_USER", "")
+    SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")
+    SMTP_USE_TLS = os.environ.get("SMTP_USE_TLS", "True").lower() in ("true", "1", "yes")
+    MAIL_FROM = os.environ.get("MAIL_FROM", "")
+    CONFIRMATION_TOKEN_MAX_AGE = 86400  # 24 hours in seconds
