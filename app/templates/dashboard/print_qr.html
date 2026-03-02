@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Imprimir QR — {{ session.label }}</title>
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      font-family: sans-serif;
+      background: #fff;
+    }
+    h1 { font-size: 2rem; margin-bottom: 1rem; text-align: center; }
+    h2 { font-size: 1.2rem; color: #555; margin-bottom: 1.5rem; text-align: center; }
+    .qr-container svg { width: 320px; height: 320px; }
+    .url { margin-top: 1rem; font-size: 0.85rem; color: #333; word-break: break-all; text-align: center; max-width: 360px; }
+  </style>
+</head>
+<body>
+  <h1>Sala de Triagem Online</h1>
+  <h2>{{ session.label }}</h2>
+  {% if qr_svg %}
+  <div class="qr-container">{{ qr_svg|safe }}</div>
+  {% endif %}
+  {% if intake_url %}
+  <p class="url">{{ intake_url }}</p>
+  {% endif %}
+  <script>window.print();</script>
+</body>
+</html>

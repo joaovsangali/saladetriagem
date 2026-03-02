@@ -3,9 +3,17 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h4 class="mb-0">Meus Plantões</h4>
-  <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#newSessionModal">
-    <i class="bi bi-plus-circle"></i> Novo Plantão
-  </button>
+  <div class="d-flex gap-2">
+    <form action="{{ url_for('dashboard.delete_closed_sessions') }}" method="post" class="d-inline">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn-outline-danger btn-sm" onclick="return confirm('Apagar todos os plantões encerrados e seus registros?')">
+        Apagar plantões encerrados
+      </button>
+    </form>
+    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#newSessionModal">
+      <i class="bi bi-plus-circle"></i> Novo Plantão
+    </button>
+  </div>
 </div>
 
 <div class="row">

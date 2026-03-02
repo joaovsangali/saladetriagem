@@ -6,7 +6,7 @@
     <a href="{{ url_for('dashboard.index') }}" class="text-decoration-none text-muted small">← Voltar</a>
     <h4 class="mb-0 mt-1">{{ session.label }}</h4>
     <span class="small text-muted">
-      Expira: {{ session.expires_at|datefmt }} UTC |
+      Expira: {{ session.expires_at|datefmt }} |
       {% if session.is_active and not session.is_expired %}
         <span class="badge bg-success">Ativo</span>
       {% else %}
@@ -42,10 +42,14 @@
           <div class="input-group mb-2">
             <input type="text" class="form-control form-control-sm" value="{{ intake_url }}" id="intakeUrl" readonly>
             <button class="btn btn-outline-secondary btn-sm" onclick="copyUrl()">Copiar</button>
+            <button class="btn btn-outline-success btn-sm" onclick="window.open('https://wa.me/?text=' + encodeURIComponent(document.getElementById('intakeUrl').value), '_blank')">Compartilhar</button>
           </div>
           {% if qr_svg %}
           <div class="text-center mt-2">
             {{ qr_svg|safe }}
+          </div>
+          <div class="text-center mt-2">
+            <a href="{{ url_for('dashboard.print_qr', session_id=session.id) }}" target="_blank" class="btn btn-outline-secondary btn-sm">Imprimir QR</a>
           </div>
           {% endif %}
         {% else %}
