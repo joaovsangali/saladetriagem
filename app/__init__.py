@@ -1,5 +1,5 @@
 import logging
-from zoneinfo import ZoneInfo
+from datetime import timezone, timedelta
 from flask import Flask
 from config import Config
 from app.extensions import db, login_manager, csrf, limiter
@@ -10,8 +10,19 @@ from app.cli import register_cli
 logger = logging.getLogger(__name__)
 
 _DEFAULT_SECRET_KEY = "dev-secret-change-in-prod"
-_SP_TZ = ZoneInfo("America/Sao_Paulo")
-_UTC_TZ = ZoneInfo("UTC")
+
+# Try to use proper IANA timezone (requires tzdata on Windows).
+# Fall back to a fixed UTC-3 offset — Brazil dropped DST in 2019, so
+# America/Sao_Paulo is permanently UTC-3.
+try:
+    from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+    _SP_TZ = ZoneInfo("America/Sao_Paulo")
+    _UTC_TZ = ZoneInfo("UTC")
+except (ImportError, KeyError):
+    # Windows has no system tz database; install tzdata to get proper IANA zones.
+    # Brazil dropped DST in 2019, so UTC-3 is permanently correct for São Paulo.
+    _SP_TZ = timezone(timedelta(hours=-3))
+    _UTC_TZ = timezone.utc
 
 
 def _datefmt(value, fmt="dd/mm/yyyy HH:MM"):
