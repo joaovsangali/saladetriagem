@@ -1,3 +1,5 @@
+# app/dashboard/routes.py
+
 import io
 import re
 import secrets
@@ -12,18 +14,53 @@ from app.models import DashboardSession, IntakeLink, MinimalLogEntry
 from app.store import submission_store
 from app.schemas.crime_types import DEFAULT_FORM_SCHEMA
 
+
+def _persist_pending_submissions(session: DashboardSession, *, status: str = "received") -> int:
+    """
+    Grava em MinimalLogEntry tudo que ainda estiver pendente em RAM para este plantão.
+    Não purge aqui — isso continua sendo responsabilidade do caller.
+    """
+    pending = submission_store.list_for_dashboard(session.id)
+    if not pending:
+        return 0
+
+    now = datetime.now(timezone.utc)
+    count = 0
+    for sub in pending:
+        db.session.add(
+            MinimalLogEntry(
+                dashboard_id=session.id,
+                police_user_id=session.user_id,
+                guest_display_name=sub.guest_name,
+                crime_type=sub.crime_type,
+                received_at=sub.received_at,
+                closed_at=now,      # momento do encerramento
+                status=status,      # mantém "received" para não quebrar UI
+            )
+        )
+        count += 1
+    return count
+
+
 @dashboard_bp.route("/")
 @login_required
 def index():
     sessions = DashboardSession.query.filter_by(
         user_id=current_user.id
     ).order_by(DashboardSession.created_at.desc()).all()
-    
+
+    # total = pendentes (RAM) + logs (DB)
+    for s in sessions:
+        pending = submission_store.count_for_dashboard(s.id)
+        closed = s.logs.count()
+        s.total_records = pending + closed  # atributo dinâmico pro template
+
     recent_logs = MinimalLogEntry.query.filter_by(
         police_user_id=current_user.id
     ).order_by(MinimalLogEntry.received_at.desc()).limit(20).all()
-    
+
     return render_template("dashboard/index.html", sessions=sessions, recent_logs=recent_logs)
+
 
 @dashboard_bp.route("/sessions/new", methods=["POST"])
 @login_required
@@ -32,14 +69,14 @@ def new_session():
     if not label:
         flash("Informe um nome para o plantão.", "warning")
         return redirect(url_for("dashboard.index"))
-    
+
     active_count = DashboardSession.query.filter_by(
         user_id=current_user.id, is_active=True
     ).count()
     if active_count >= current_user.max_dashboards:
         flash(f"Limite de {current_user.max_dashboards} dashboards ativos atingido.", "warning")
         return redirect(url_for("dashboard.index"))
-    
+
     session = DashboardSession(
         user_id=current_user.id,
         label=label,
@@ -47,7 +84,7 @@ def new_session():
     )
     db.session.add(session)
     db.session.commit()
-    
+
     # auto-create one intake link
     link = IntakeLink(
         dashboard_id=session.id,
@@ -55,9 +92,10 @@ def new_session():
     )
     db.session.add(link)
     db.session.commit()
-    
+
     flash(f"Plantão '{label}' criado com sucesso.", "success")
     return redirect(url_for("dashboard.session_detail", session_id=session.id))
+
 
 @dashboard_bp.route("/sessions/<int:session_id>")
 @login_required
@@ -65,17 +103,17 @@ def session_detail(session_id):
     session = DashboardSession.query.filter_by(
         id=session_id, user_id=current_user.id
     ).first_or_404()
-    
+
     link = session.links.filter_by(is_active=True).first()
     qr_svg = None
     intake_url = None
     if link:
         intake_url = url_for("intake.form", token=link.token, _external=True)
         qr_svg = _generate_qr_svg(intake_url)
-    
+
     submissions = submission_store.list_for_dashboard(session.id)
     logs = session.logs.order_by(MinimalLogEntry.received_at.desc()).all()
-    
+
     return render_template(
         "dashboard/session_detail.html",
         session=session,
@@ -86,19 +124,26 @@ def session_detail(session_id):
         logs=logs,
     )
 
+
 @dashboard_bp.route("/sessions/<int:session_id>/close", methods=["POST"])
 @login_required
 def close_session(session_id):
     session = DashboardSession.query.filter_by(
         id=session_id, user_id=current_user.id
     ).first_or_404()
+
+    # Persistir pendentes antes de apagar RAM
+    saved = _persist_pending_submissions(session, status="received")
+
     session.is_active = False
     submission_store.purge_dashboard(session.id)
     for link in session.links:
         link.is_active = False
+
     db.session.commit()
-    flash("Plantão encerrado e dados apagados.", "info")
+    flash(f"Plantão encerrado. {saved} registro(s) pendente(s) foram salvos no histórico.", "info")
     return redirect(url_for("dashboard.index"))
+
 
 @dashboard_bp.route("/sessions/<int:session_id>/links/new", methods=["POST"])
 @login_required
@@ -115,6 +160,7 @@ def new_link(session_id):
     flash("Novo link criado.", "success")
     return redirect(url_for("dashboard.session_detail", session_id=session.id))
 
+
 @dashboard_bp.route("/sessions/<int:session_id>/purge", methods=["POST"])
 @login_required
 def purge_session(session_id):
@@ -124,6 +170,7 @@ def purge_session(session_id):
     submission_store.purge_dashboard(session.id)
     flash("Dados sensíveis apagados.", "info")
     return redirect(url_for("dashboard.session_detail", session_id=session.id))
+
 
 @dashboard_bp.route("/sessions/delete-closed", methods=["POST"])
 @login_required
@@ -139,6 +186,7 @@ def delete_closed_sessions():
     flash(f"{len(closed)} plantão(ões) encerrado(s) apagado(s).", "info")
     return redirect(url_for("dashboard.index"))
 
+
 @dashboard_bp.route("/sessions/<int:session_id>/print-qr")
 @login_required
 def print_qr(session_id):
@@ -152,6 +200,7 @@ def print_qr(session_id):
         intake_url = url_for("intake.form", token=link.token, _external=True)
         qr_svg = _generate_qr_svg(intake_url)
     return render_template("dashboard/print_qr.html", session=session, qr_svg=qr_svg, intake_url=intake_url)
+
 
 def _generate_qr_svg(url: str) -> str:
     """Generate a clean inline SVG QR code string."""

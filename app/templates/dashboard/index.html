@@ -31,6 +31,8 @@
           {% else %}
             <span class="badge bg-secondary">Encerrado</span>
           {% endif %}
+          Registros: <strong>{{ s.total_records }}</strong>
+
         </p>
         <a href="{{ url_for('dashboard.session_detail', session_id=s.id) }}" class="btn btn-outline-primary btn-sm">Ver</a>
         {% if s.is_active %}
@@ -47,26 +49,6 @@
   {% endfor %}
 </div>
 
-{% if recent_logs %}
-<h5 class="mt-4">Registros Recentes</h5>
-<table class="table table-sm table-striped">
-  <thead><tr><th>Nome</th><th>Tipo</th><th>Recebido</th><th>Status</th></tr></thead>
-  <tbody>
-    {% for log in recent_logs %}
-    <tr>
-      <td>{{ log.guest_display_name or '—' }}</td>
-      <td>{{ log.crime_type or '—' }}</td>
-      <td>{{ log.received_at|datefmt('dd/mm HH:MM') if log.received_at else '—' }}</td>
-      <td>
-        {% if log.status == 'closed' %}<span class="badge bg-success">Fechado</span>
-        {% elif log.status == 'discarded' %}<span class="badge bg-warning text-dark">Descartado</span>
-        {% else %}<span class="badge bg-info">Recebido</span>{% endif %}
-      </td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
-{% endif %}
 
 <!-- New Session Modal -->
 <div class="modal fade" id="newSessionModal" tabindex="-1">
@@ -83,7 +65,7 @@
             <label class="form-label">Nome do Plantão</label>
             <input type="text" name="label" class="form-control" placeholder="Ex: Plantão Noturno 28/02" required>
           </div>
-          <p class="text-muted small">O plantão ficará ativo por até 24 horas e será encerrado automaticamente.</p>
+          <p class="text-muted small">O plantão ficará ativo por até 12 horas e será encerrado automaticamente.</p>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>

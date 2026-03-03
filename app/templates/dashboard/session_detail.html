@@ -73,8 +73,9 @@
     <div class="card">
       <div class="card-header">Resumo</div>
       <div class="card-body">
-        <p class="mb-1 small"><strong>Submissions pendentes:</strong> <span id="pending-count">{{ submissions|length }}</span></p>
-        <p class="mb-1 small"><strong>Registros fechados:</strong> {{ logs|length }}</p>
+        <p class="mb-1 small"><strong>Triagens pendentes:</strong> <span id="pending-count">{{ submissions|length }}</span></p>
+        <p class="mb-1 small"><strong>Registros finalizados:</strong> {{ logs|length }}</p>
+        <p class="mb-1 small"><strong>Total de registros:</strong> {{ (submissions|length) + (logs|length) }}</p>
         {% if session.is_active %}
         <button class="btn btn-outline-primary btn-sm mt-2" type="button" onclick="refreshSubmissions()">
           <i class="bi bi-arrow-clockwise"></i> Atualizar
@@ -253,13 +254,23 @@ function loadDetail(sessionId, subId) {
       html += '<h6>Texto para Cópia</h6>';
       html += `<textarea class="form-control font-monospace small" rows="12" id="text-${subId}" readonly>${data.text}</textarea>`;
       html += `<button class="btn btn-outline-primary btn-sm mt-2" type="button" onclick="copyText('${subId}', this)"><i class="bi bi-clipboard"></i> Copiar Texto</button>`;
-
+      html += `<button class="btn btn-outline-success btn-sm mt-2 ms-2" type="button" onclick="shareWhatsApp('${subId}')"><i class="bi bi-whatsapp"></i> WhatsApp</button>`;
       if (data.photo_count > 0) {
-        html += `<h6 class="mt-3">Fotos (${data.photo_count})</h6><div class="d-flex gap-2 flex-wrap">`;
+        html += `<h6 class="mt-3">Fotos (${data.photo_count})</h6><div class="d-flex gap-2 flex-wrap align-items-start">`;
         for (let i = 0; i < data.photo_count; i++) {
-          html += `<img src="/api/sessions/${sessionId}/submissions/${subId}/photo/${i}" class="img-thumbnail" style="max-height:120px;">`;
+          const imgUrl = `/api/sessions/${sessionId}/submissions/${subId}/photo/${i}`;
+          const dlUrl  = `/api/sessions/${sessionId}/submissions/${subId}/photo/${i}?download=1`;
+
+          html += `
+            <div class="d-flex flex-column gap-1">
+              <a href="${imgUrl}" target="_blank" class="text-decoration-none">
+                <img src="${imgUrl}" class="img-thumbnail" style="max-height:120px;">
+              </a>
+              <a class="btn btn-outline-secondary btn-sm" href="${dlUrl}">Baixar</a>
+            </div>
+          `;
         }
-        html += '</div>';
+        html += `</div>`;
       }
 
       html += '</div></div></div>';
@@ -296,6 +307,13 @@ async function copyText(subId, btnEl) {
     _setBtnState(btnEl, 'Falhou', 'btn-danger', 'btn-outline-primary');
     setTimeout(() => _setBtnState(btnEl, 'Copiar Texto', 'btn-outline-primary', 'btn-danger'), 1500);
   }
+}
+
+
+function shareWhatsApp(subId) {
+  const ta = document.getElementById(`text-${subId}`);
+  const text = ta?.value || '';
+  window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
 }
 
 function closeSubmission(sessionId, subId) {
