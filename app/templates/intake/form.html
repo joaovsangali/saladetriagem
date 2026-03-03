@@ -26,92 +26,135 @@
     <div class="card-body">
       <form method="post" action="{{ url_for('intake.submit', token=token) }}" enctype="multipart/form-data" novalidate>
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        
+
         <h6 class="mb-3">Tipo de Ocorrência</h6>
         <div class="mb-3">
           <select name="crime_type" id="crime_type" class="form-select" required onchange="updateQuestions()">
             <option value="">— Selecione o tipo —</option>
             {% for ct in crime_types %}
-            <option value="{{ ct }}">{{ crime_labels[ct] }}</option>
+              <option value="{{ ct }}">{{ crime_labels[ct] }}</option>
             {% endfor %}
           </select>
         </div>
-        
-        <h6 class="mb-3">Dados Pessoais</h6>
-        <div class="row">
-          <div class="col-md-6 mb-3">
-            <label class="form-label">Nome completo *</label>
-            <input type="text" name="guest_name" class="form-control" required maxlength="200">
+
+        {# 
+          BLOCO PRINCIPAL (fica oculto até selecionar o tipo)
+          Regra: "quando ainda não selecionou, não aparece nenhum campo para ele preencher"
+        #}
+        <div id="form-fields" class="d-none">
+
+          {% if schema.enabled_fields.get('nome', True)
+             or schema.enabled_fields.get('nascimento', True)
+             or schema.enabled_fields.get('rg', True)
+             or schema.enabled_fields.get('cpf', True)
+             or schema.enabled_fields.get('endereco', True) %}
+          <h6 class="mb-3">Dados Pessoais</h6>
+          <div class="row">
+            {% if schema.enabled_fields.get('nome', True) %}
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Nome completo *</label>
+              <input type="text" name="guest_name" class="form-control" required maxlength="200">
+            </div>
+            {% endif %}
+
+            {% if schema.enabled_fields.get('nascimento', True) %}
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Data de Nascimento</label>
+              <input type="date" name="dob" class="form-control">
+            </div>
+            {% endif %}
+
+            {% if schema.enabled_fields.get('rg', True) %}
+            <div class="col-md-6 mb-3">
+              <label class="form-label">RG</label>
+              <input type="text" name="rg" class="form-control" maxlength="20">
+            </div>
+            {% endif %}
+
+            {% if schema.enabled_fields.get('cpf', True) %}
+            <div class="col-md-6 mb-3">
+              <label class="form-label">CPF</label>
+              <input type="text" name="cpf" class="form-control" maxlength="20">
+            </div>
+            {% endif %}
+
+            {% if schema.enabled_fields.get('endereco', True) %}
+            <div class="col-12 mb-3">
+              <label class="form-label">Endereço completo</label>
+              <input type="text" name="address" class="form-control" maxlength="400">
+            </div>
+            {% endif %}
           </div>
-          <div class="col-md-6 mb-3">
-            <label class="form-label">Data de Nascimento</label>
-            <input type="date" name="dob" class="form-control">
-          </div>
-          <div class="col-md-6 mb-3">
-            <label class="form-label">RG</label>
-            <input type="text" name="rg" class="form-control" maxlength="20">
-          </div>
-          <div class="col-md-6 mb-3">
-            <label class="form-label">CPF</label>
-            <input type="text" name="cpf" class="form-control" maxlength="20">
-          </div>
-          <div class="col-12 mb-3">
-            <label class="form-label">Endereço completo</label>
-            <input type="text" name="address" class="form-control" maxlength="400">
-          </div>
-        </div>
-        
-        {% for ct in crime_types %}
-        <div class="question-section" id="qs-{{ ct }}">
-          <h6 class="mb-3">Perguntas — {{ crime_labels[ct] }}</h6>
-          {% set questions = questions_by_crime.get(ct, []) %}
-          {% for q in questions %}
-          <div class="mb-3">
-            <label class="form-label">{{ q.label }}</label>
-            {% if q.type == 'select' %}
-              <select name="q_{{ q.id }}" class="form-select">
-                <option value="">— Selecione —</option>
-                {% for opt in q.options %}
-                <option value="{{ opt }}">{{ opt }}</option>
-                {% endfor %}
-              </select>
-            {% elif q.type == 'date' %}
-              <input type="date" name="q_{{ q.id }}" class="form-control">
-            {% elif q.type == 'number' %}
-              <input type="number" name="q_{{ q.id }}" class="form-control" min="0" step="0.01">
-            {% elif q.type == 'boolean' %}
-              <select name="q_{{ q.id }}" class="form-select">
-                <option value="">— Selecione —</option>
-                <option value="sim">Sim</option>
-                <option value="nao">Não</option>
-              </select>
+          {% endif %}
+
+          {# Perguntas por tipo (se existirem) #}
+          {% for ct in crime_types %}
+          <div class="question-section" id="qs-{{ ct }}">
+            <h6 class="mb-3">Perguntas — {{ crime_labels[ct] }}</h6>
+            {% set questions = questions_by_crime.get(ct, []) %}
+            {% if questions and questions|length > 0 %}
+              {% for q in questions %}
+              <div class="mb-3">
+                <label class="form-label">
+                  {{ q.label }}{% if q.required %} *{% endif %}
+                </label>
+
+                {% if q.type == 'select' %}
+                  <select name="q_{{ q.id }}" class="form-select" {% if q.required %}required{% endif %}>
+                    <option value="">— Selecione —</option>
+                    {% for opt in q.options %}
+                    <option value="{{ opt }}">{{ opt }}</option>
+                    {% endfor %}
+                  </select>
+
+                {% elif q.type == 'date' %}
+                  <input type="date" name="q_{{ q.id }}" class="form-control" {% if q.required %}required{% endif %}>
+
+                {% elif q.type == 'number' %}
+                  <input type="number" name="q_{{ q.id }}" class="form-control" min="0" step="0.01" {% if q.required %}required{% endif %}>
+
+                {% elif q.type == 'boolean' %}
+                  <select name="q_{{ q.id }}" class="form-select" {% if q.required %}required{% endif %}>
+                    <option value="">— Selecione —</option>
+                    <option value="sim">Sim</option>
+                    <option value="nao">Não</option>
+                  </select>
+
+                {% else %}
+                  <input type="text" name="q_{{ q.id }}" class="form-control" maxlength="500" {% if q.required %}required{% endif %}>
+                {% endif %}
+              </div>
+              {% endfor %}
             {% else %}
-              <input type="text" name="q_{{ q.id }}" class="form-control" maxlength="500">
+              <p class="text-muted small mb-0">
+                Não há perguntas específicas para este tipo no momento. Preencha os dados pessoais e, se necessário, o relato livre.
+              </p>
             {% endif %}
           </div>
           {% endfor %}
+
+          {% if schema.enabled_fields.get('relato', True) %}
+          <div class="mb-3 mt-3">
+            <label class="form-label">Relato livre</label>
+            <textarea name="narrative" class="form-control" rows="5" maxlength="3000" placeholder="Descreva os fatos com suas palavras..."></textarea>
+          </div>
+          {% endif %}
+
+          {% if schema.enabled_fields.get('fotos', True) %}
+          <div class="mb-3">
+            <label class="form-label">Fotos (opcional, máx. {{ schema.limits.max_photos }})</label>
+            <input type="file" name="photos" class="form-control" multiple accept="image/jpeg,image/png">
+            <div class="form-text">Formatos aceitos: JPEG, PNG. Máx. {{ schema.limits.max_photo_size_mb }}MB por foto.</div>
+          </div>
+          {% endif %}
+
+          <div class="alert alert-info small">
+            <strong>Atenção:</strong> Ao enviar, seus dados ficarão disponíveis apenas durante este plantão ativo.
+            Os dados são apagados após o encerramento. Não constitui registro oficial de ocorrência.
+          </div>
+
+          <button type="submit" id="submit-btn" class="btn btn-primary w-100">Enviar informações</button>
         </div>
-        {% endfor %}
-        
-        <div class="mb-3">
-          <label class="form-label">Relato livre</label>
-          <textarea name="narrative" class="form-control" rows="5" maxlength="3000" placeholder="Descreva os fatos com suas palavras..."></textarea>
-        </div>
-        
-        {% if schema.enabled_fields.get('fotos', True) %}
-        <div class="mb-3">
-          <label class="form-label">Fotos (opcional, máx. {{ schema.limits.max_photos }})</label>
-          <input type="file" name="photos" class="form-control" multiple accept="image/jpeg,image/png">
-          <div class="form-text">Formatos aceitos: JPEG, PNG. Máx. {{ schema.limits.max_photo_size_mb }}MB por foto.</div>
-        </div>
-        {% endif %}
-        
-        <div class="alert alert-info small">
-          <strong>Atenção:</strong> Ao enviar, seus dados ficarão disponíveis apenas durante este plantão ativo.
-          Os dados são apagados após o encerramento. Não constitui registro oficial de ocorrência.
-        </div>
-        
-        <button type="submit" id="submit-btn" class="btn btn-primary w-100" style="display:none;">Enviar informações</button>
       </form>
     </div>
   </div>
@@ -121,15 +164,28 @@
 <script>
 function updateQuestions() {
   const ct = document.getElementById('crime_type').value;
+  const fields = document.getElementById('form-fields');
+
+  // sempre zera seções
   document.querySelectorAll('.question-section').forEach(el => el.classList.remove('active'));
-  if (ct) {
-    const qs = document.getElementById('qs-' + ct);
-    if (qs) qs.classList.add('active');
-    document.getElementById('submit-btn').style.display = '';
-  } else {
-    document.getElementById('submit-btn').style.display = 'none';
+
+  if (!ct) {
+    // nada selecionado: esconder TUDO (exceto seletor)
+    fields.classList.add('d-none');
+    return;
   }
+
+  // selecionado: mostra campos padrão + (se houver) perguntas do tipo
+  fields.classList.remove('d-none');
+
+  const qs = document.getElementById('qs-' + ct);
+  if (qs) qs.classList.add('active');
 }
+
+// garante estado correto ao carregar
+document.addEventListener('DOMContentLoaded', () => {
+  updateQuestions();
+});
 </script>
 </body>
 </html>
