@@ -146,7 +146,7 @@ CRIME_SCHEMAS = {
         ],
     },
     "maria_da_penha": {
-        "label": "Maria da Penha / Violência Doméstica",
+        "label": "Violência Doméstica (Maria da Penha)",
         "questions": [
             {"id": "data_fato", "label": "Data do último episódio", "type": "date", "required": False},
             {"id": "tipo_violencia", "label": "Tipo de violência sofrida", "type": "select", "options": ["Física", "Psicológica", "Moral", "Sexual", "Patrimonial", "Múltiplos tipos"], "required": False},
