@@ -1,7 +1,13 @@
+# app/intake/routes.py
+# Alterações mínimas para preparar o motor para “nichos futuros”:
+# - Usa SEMPRE o schema do link (form_schema) como fonte de crime_types/labels/questions
+# - Não depende mais de CRIME_SCHEMAS para coletar perguntas no submit
+# - Garante defaults úteis no schema (domain/schema_version) sem quebrar nada
+
 import io
 import uuid
 from datetime import datetime, timezone
-from flask import render_template, redirect, url_for, flash, request, abort
+from flask import render_template, redirect, url_for, flash, request
 from app.intake import intake_bp
 from app.extensions import limiter
 from app.models import IntakeLink, DashboardSession
@@ -9,6 +15,7 @@ from app.store import submission_store, Submission
 from app.schemas.crime_types import CRIME_SCHEMAS
 
 _DEFAULT_MAX_PHOTO_SIZE_MB = 3
+
 
 def _strip_exif(image_bytes: bytes) -> bytes:
     try:
@@ -22,20 +29,42 @@ def _strip_exif(image_bytes: bytes) -> bytes:
     except Exception:
         return image_bytes
 
+
 @intake_bp.route("/t/<token>")
 @limiter.limit("20 per minute")
 def form(token):
     link = IntakeLink.query.filter_by(token=token, is_active=True).first_or_404()
     session = DashboardSession.query.get(link.dashboard_id)
-    
+
     if not session or not session.is_active or session.is_expired:
         return render_template("intake/expired.html")
-    
-    schema = link.form_schema
-    crime_types = schema.get("crime_types", list(CRIME_SCHEMAS.keys()))
-    crime_labels = {k: CRIME_SCHEMAS.get(k, {}).get("label", k) for k in crime_types}
-    questions_by_crime = schema.get("questions_by_crime", {k: CRIME_SCHEMAS[k]["questions"] for k in crime_types if k in CRIME_SCHEMAS})
-    
+
+    schema = link.form_schema or {}
+
+    # Defaults "future-proof" (não quebra nada hoje)
+    schema.setdefault("domain", "police")
+    schema.setdefault("schema_version", 1)
+
+    # Tipos/labels/questions preferencialmente vêm do schema do link
+    crime_types = schema.get("crime_types")
+    if not crime_types:
+        crime_types = list(CRIME_SCHEMAS.keys())
+
+    # Labels: primeiro tenta do schema, senão cai no CRIME_SCHEMAS (fallback)
+    schema_labels = schema.get("crime_labels") or {}
+    crime_labels = {}
+    for k in crime_types:
+        crime_labels[k] = schema_labels.get(k) or CRIME_SCHEMAS.get(k, {}).get("label", k)
+
+    # Questions: primeiro tenta do schema, senão cai no CRIME_SCHEMAS (fallback)
+    questions_by_crime = schema.get("questions_by_crime")
+    if not isinstance(questions_by_crime, dict) or not questions_by_crime:
+        questions_by_crime = {
+            k: CRIME_SCHEMAS[k]["questions"]
+            for k in crime_types
+            if k in CRIME_SCHEMAS and "questions" in CRIME_SCHEMAS[k]
+        }
+
     return render_template(
         "intake/form.html",
         token=token,
@@ -45,43 +74,51 @@ def form(token):
         questions_by_crime=questions_by_crime,
     )
 
+
 @intake_bp.route("/t/<token>/submit", methods=["POST"])
 @limiter.limit("5 per minute")
 def submit(token):
     link = IntakeLink.query.filter_by(token=token, is_active=True).first_or_404()
     session = DashboardSession.query.get(link.dashboard_id)
-    
+
     if not session or not session.is_active or session.is_expired:
         return render_template("intake/expired.html")
-    
-    schema = link.form_schema
+
+    schema = link.form_schema or {}
+
+    # Defaults "future-proof"
+    schema.setdefault("domain", "police")
+    schema.setdefault("schema_version", 1)
+
     limits = schema.get("limits", {})
     max_photos = limits.get("max_photos", 3)
     max_photo_size = limits.get("max_photo_size_mb", _DEFAULT_MAX_PHOTO_SIZE_MB) * 1024 * 1024
-    
+
     crime_type = request.form.get("crime_type", "outros")
     guest_name = request.form.get("guest_name", "").strip()
-    
+
     if not guest_name:
         flash("Nome é obrigatório.", "danger")
         return redirect(url_for("intake.form", token=token))
-    
+
     dob = request.form.get("dob", "").strip() or None
     rg = request.form.get("rg", "").strip() or None
     cpf = request.form.get("cpf", "").strip() or None
     address = request.form.get("address", "").strip() or None
     narrative = request.form.get("narrative", "").strip() or None
-    
-    # collect answers
-    questions = CRIME_SCHEMAS.get(crime_type, {}).get("questions", [])
+
+    # Collect answers: usa o schema do link (não CRIME_SCHEMAS global)
+    questions_by_crime = schema.get("questions_by_crime", {})
+    questions = questions_by_crime.get(crime_type, [])
+
     answers = {}
     for q in questions:
         val = request.form.get(f"q_{q['id']}", "").strip()
-        if q["type"] == "boolean":
+        if q.get("type") == "boolean":
             answers[q["id"]] = val.lower() in ("1", "true", "yes", "sim", "on")
         else:
             answers[q["id"]] = val if val else None
-    
+
     # process photos
     photos = []
     files = request.files.getlist("photos")
@@ -95,7 +132,7 @@ def submit(token):
         if len(data) > max_photo_size:
             continue
         photos.append(_strip_exif(data))
-    
+
     sub = Submission(
         submission_id=str(uuid.uuid4()),
         dashboard_id=session.id,
@@ -121,8 +158,9 @@ def submit(token):
         return redirect(url_for("intake.form", token=token))
 
     submission_store.add(sub)
-    
+
     return redirect(url_for("intake.ok", token=token))
+
 
 @intake_bp.route("/t/<token>/ok")
 def ok(token):
