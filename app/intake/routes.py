@@ -146,6 +146,7 @@ def submit(token):
         crime_type=crime_type,
         photos=photos,
         received_at=datetime.now(timezone.utc),
+        phone = request.form.get("phone", "").strip() or None
     )
 
     # Duplicate check — same name or same RG within this dashboard

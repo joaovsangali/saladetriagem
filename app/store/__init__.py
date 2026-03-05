@@ -29,12 +29,14 @@ class Submission:
     dob: Optional[str]
     rg: Optional[str]
     cpf: Optional[str]
+    phone: Optional[str]
     address: Optional[str]
     answers: Dict
     narrative: Optional[str]
     crime_type: str
     photos: List[bytes]
     received_at: datetime
+    
 
 class SubmissionStore:
     def __init__(self):

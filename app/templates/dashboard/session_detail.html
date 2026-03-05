@@ -233,6 +233,7 @@ function loadDetail(sessionId, subId) {
       if (data.dob) html += `<tr><td>Nascimento</td><td>${data.dob}</td></tr>`;
       if (data.rg) html += `<tr><td>RG</td><td>${data.rg}</td></tr>`;
       if (data.cpf) html += `<tr><td>CPF</td><td>${data.cpf}</td></tr>`;
+      if (data.phone) html += `<tr><td>Telefone</td><td>${data.phone}</td></tr>`;  // <-- ADICIONE ESTA LINHA
       if (data.address) html += `<tr><td>Endereço</td><td>${data.address}</td></tr>`;
       html += '</table>';
 

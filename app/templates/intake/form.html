@@ -77,6 +77,11 @@
               <input type="text" name="cpf" class="form-control" maxlength="20">
             </div>
             {% endif %}
+            
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Telefone para contato</label>
+              <input type="text" name="phone" class="form-control" maxlength="20">
+            </div>
 
             {% if schema.enabled_fields.get('endereco', True) %}
             <div class="col-12 mb-3">

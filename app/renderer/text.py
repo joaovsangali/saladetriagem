@@ -39,6 +39,8 @@ class TextRenderer:
             lines.append(f"  RG: {submission.rg}")
         if submission.cpf:
             lines.append(f"  CPF: {submission.cpf}")
+        if submission.phone:
+            lines.append(f"  Telefone: {submission.phone}")    
         lines.append("")
         
         if submission.address:
