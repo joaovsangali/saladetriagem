@@ -133,15 +133,24 @@ def submit(token):
 
                 for f in fields:
                     fid = f.get("id")
+                    ftype = f.get("type", "text")
                     if not fid:
                         continue
 
                     raw = request.form.get(f"q_{qid}__{i}__{fid}", "").strip()
-                    if raw != "":
-                        obj[fid] = raw
-                        has_any = True
+
+                    if ftype == "boolean":
+                        if raw == "":
+                            obj[fid] = None
+                        else:
+                            obj[fid] = raw.lower() in ("1", "true", "yes", "sim", "on")
+                            has_any = True
                     else:
-                        obj[fid] = None
+                        if raw != "":
+                            obj[fid] = raw
+                            has_any = True
+                        else:
+                            obj[fid] = None
 
                 if has_any:
                     items.append(obj)

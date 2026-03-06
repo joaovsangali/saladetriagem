@@ -6,7 +6,7 @@
     <div class="card shadow-sm">
       <div class="card-body p-4">
         <h4 class="card-title mb-3 text-center">Sala de Triagem</h4>
-        <p class="text-center text-muted small mb-4">Acesso restrito a policiais cadastrados</p>
+        <p class="text-center text-muted small mb-4">Acesso restrito a usuários cadastrados</p>
         <form method="post" action="{{ url_for('auth.login') }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <div class="mb-3">
