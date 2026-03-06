@@ -240,7 +240,7 @@ function loadDetail(sessionId, subId) {
       if (data.structured && data.structured.length > 0) {
         html += '<h6>Respostas</h6><table class="table table-sm">';
         data.structured.forEach(([label, val]) => {
-          html += `<tr><td>${label}</td><td>${val}</td></tr>`;
+          html += `<tr><td>${label}</td><td style="white-space: pre-wrap;">${val}</td></tr>`;
         });
         html += '</table>';
       }

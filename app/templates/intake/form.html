@@ -118,6 +118,54 @@
                 {% elif q.type == 'number' %}
                   <input type="number" name="q_{{ q.id }}" class="form-control" min="0" step="0.01" {% if q.required %}required{% endif %}>
 
+                {% elif q.type == 'group' %}
+                  {# grupo repetível: q_<groupId>__<index>__<fieldId> #}
+                  {% set gid = q.id %}
+                  {% set max_items = q.max_items or 5 %}
+                  {% set add_label = q.add_label or 'Adicionar' %}
+
+                  <div class="border rounded p-2" data-group-id="{{ gid }}" data-max-items="{{ max_items }}">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                      <div class="small text-muted">Você pode adicionar até {{ max_items }} item(ns).</div>
+                      <button type="button"
+                              class="btn btn-outline-secondary btn-sm"
+                              onclick="addGroupItem('{{ gid }}')">
+                        + {{ add_label }}
+                      </button>
+                    </div>
+
+                    <div id="group-{{ gid }}-items"></div>
+
+                    {# template oculto do item (clonado via JS) #}
+                    <template id="group-{{ gid }}-tpl">
+                      <div class="card mb-2 group-item" data-index="__INDEX__">
+                        <div class="card-body py-2">
+                          <div class="d-flex justify-content-between align-items-center mb-2">
+                            <strong class="small">{{ q.label }}</strong>
+                            <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeGroupItem(this)">
+                              Remover
+                            </button>
+                          </div>
+
+                          <div class="row">
+                            {% for f in q.fields %}
+                              <div class="col-md-6 mb-2">
+                                <label class="form-label small mb-1">{{ f.label }}{% if f.required %} *{% endif %}</label>
+                                <input
+                                  type="text"
+                                  class="form-control form-control-sm"
+                                  name="q_{{ gid }}__@@INDEX@@__{{ f.id }}"
+                                  {% if f.maxlength %}maxlength="{{ f.maxlength }}"{% endif %}
+                                  {% if f.required %}required{% endif %}
+                                >
+                              </div>
+                            {% endfor %}
+                          </div>
+                        </div>
+                      </div>
+                    </template>
+                  </div>
+                  
                 {% elif q.type == 'boolean' %}
                   <select name="q_{{ q.id }}" class="form-select" {% if q.required %}required{% endif %}>
                     <option value="">— Selecione —</option>
@@ -191,6 +239,40 @@ function updateQuestions() {
 document.addEventListener('DOMContentLoaded', () => {
   updateQuestions();
 });
+
+
+const GROUP_STATE = {}; // gid -> nextIndex
+
+function addGroupItem(gid) {
+  const wrap = document.querySelector(`[data-group-id="${gid}"]`);
+  if (!wrap) return;
+
+  const maxItems = parseInt(wrap.dataset.maxItems || "5", 10);
+  const items = document.getElementById(`group-${gid}-items`);
+  const tpl = document.getElementById(`group-${gid}-tpl`);
+  if (!items || !tpl) return;
+
+  const currentCount = items.querySelectorAll(".group-item").length;
+  if (currentCount >= maxItems) return;
+
+  const idx = (GROUP_STATE[gid] ?? 0);
+  GROUP_STATE[gid] = idx + 1;
+
+  const html = tpl.innerHTML.replaceAll("@@INDEX@@", String(idx));
+  const temp = document.createElement("div");
+  temp.innerHTML = html.trim();
+  items.appendChild(temp.firstChild);
+}
+
+function removeGroupItem(btn) {
+  const card = btn.closest(".group-item");
+  if (card) card.remove();
+}
 </script>
+
+
+
+
+
 </body>
 </html>
