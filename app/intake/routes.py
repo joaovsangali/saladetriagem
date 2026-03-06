@@ -106,18 +106,56 @@ def submit(token):
     cpf = request.form.get("cpf", "").strip() or None
     address = request.form.get("address", "").strip() or None
     narrative = request.form.get("narrative", "").strip() or None
+    phone = request.form.get("phone", "").strip() or None
 
     # Collect answers: usa o schema do link (não CRIME_SCHEMAS global)
     questions_by_crime = schema.get("questions_by_crime", {})
     questions = questions_by_crime.get(crime_type, [])
 
     answers = {}
+
     for q in questions:
-        val = request.form.get(f"q_{q['id']}", "").strip()
-        if q.get("type") == "boolean":
-            answers[q["id"]] = val.lower() in ("1", "true", "yes", "sim", "on")
+        qid = q.get("id")
+        qtype = q.get("type", "text")
+
+        if not qid:
+            continue
+
+        # ✅ NOVO: group (lista de objetos repetíveis)
+        if qtype == "group":
+            items = []
+            fields = q.get("fields", [])
+            max_items = int(q.get("max_items", 5))
+
+            for i in range(max_items):
+                obj = {}
+                has_any = False
+
+                for f in fields:
+                    fid = f.get("id")
+                    if not fid:
+                        continue
+
+                    raw = request.form.get(f"q_{qid}__{i}__{fid}", "").strip()
+                    if raw != "":
+                        obj[fid] = raw
+                        has_any = True
+                    else:
+                        obj[fid] = None
+
+                if has_any:
+                    items.append(obj)
+
+            answers[qid] = items
+            continue
+
+        # boolean padrão
+        val = request.form.get(f"q_{qid}", "").strip()
+
+        if qtype == "boolean":
+            answers[qid] = val.lower() in ("1", "true", "yes", "sim", "on")
         else:
-            answers[q["id"]] = val if val else None
+            answers[qid] = val if val else None
 
     # process photos
     photos = []
@@ -140,13 +178,13 @@ def submit(token):
         dob=dob,
         rg=rg,
         cpf=cpf,
+        phone=phone,
         address=address,
         answers=answers,
         narrative=narrative,
         crime_type=crime_type,
         photos=photos,
         received_at=datetime.now(timezone.utc),
-        phone = request.form.get("phone", "").strip() or None
     )
 
     # Duplicate check — same name or same RG within this dashboard
