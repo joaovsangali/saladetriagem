@@ -45,6 +45,7 @@ def get_submission(session_id, submission_id):
         "dob": sub.dob,
         "rg": sub.rg,
         "cpf": sub.cpf,
+        "phone": sub.phone,
         "address": sub.address,
         "crime_type": sub.crime_type,
         "narrative": sub.narrative,
