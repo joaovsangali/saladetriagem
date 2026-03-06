@@ -63,7 +63,19 @@ CRIME_SCHEMAS = {
             {"id": "contexto", "label": "Contexto/motivo da ameaça", "type": "text", "required": False},
             {"id": "provas", "label": "Há provas (prints, gravações)?", "type": "boolean", "required": False},
             {"id": "medida_protetiva", "label": "Já possui medida protetiva?", "type": "boolean", "required": False},
-            {"id": "testemunhas", "label": "Há testemunhas?", "type": "text", "required": False},
+            {
+            "id": "testemunhas",
+            "label": "testemunhas da ameaça",
+            "type": "group",
+            "max_items": 5,
+            "add_label": "Adicionar testemunha",
+            "fields": [
+                {"id": "nome", "label": "Nome", "type": "text", "required": False, "maxlength": 200},
+                {"id": "rg", "label": "RG/Documento", "type": "text", "required": False, "maxlength": 30},
+                {"id": "contato", "label": "Contato (telefone)", "type": "text", "required": False, "maxlength": 30},
+                {"id": "endereco", "label": "Endereço", "type": "text", "required": False, "maxlength": 400},
+            ],
+            },
         ],
     },
     "calunia_difamacao_injuria": {
