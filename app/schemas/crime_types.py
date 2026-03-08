@@ -36,6 +36,13 @@ CRIME_SCHEMAS = {
                         "required": False,
                         "maxlength": 20
                     },
+                                        {
+                        "id": "cor",
+                        "label": "Cor",
+                        "type": "text",
+                        "required": False,
+                        "maxlength": 20
+                    },
                     {
                         "id": "condutor_nome",
                         "label": "Nome do condutor",
@@ -237,53 +244,323 @@ CRIME_SCHEMAS = {
         "label": "Dano ao Patrimônio",
         "questions": [
             {"id": "data_fato", "label": "Data do fato", "type": "date", "required": False},
-            {"id": "bem_danificado", "label": "Bem danificado (descreva)", "type": "text", "required": False},
+            {
+                "id": "tipo_patrimonio",
+                "label": "Tipo de patrimônio",
+                "type": "select",
+                "options": ["Patrimônio Público", "Patrimônio Privado"],
+                "required": False
+            },
+            {
+                "id": "bens_danificados",
+                "label": "Bens danificados",
+                "type": "group",
+                "max_items": 5,
+                "add_label": "Adicionar bem",
+                "fields": [
+                    {
+                        "id": "descricao",
+                        "label": "Qual bem foi danificado?",
+                        "type": "text",
+                        "required": False,
+                        "maxlength": 300
+                    }
+                ],
+            },
             {"id": "local_fato", "label": "Local onde estava o bem", "type": "text", "required": False},
             {"id": "forma_dano", "label": "Como o dano foi causado?", "type": "text", "required": False},
             {"id": "valor_prejuizo", "label": "Valor estimado do prejuízo (R$)", "type": "number", "required": False},
-            {"id": "suspeitos", "label": "Há suspeitos? Descreva", "type": "text", "required": False},
+            {
+                "id": "suspeitos",
+                "label": "Suspeitos",
+                "type": "group",
+                "max_items": 5,
+                "add_label": "Adicionar suspeito",
+                "fields": [
+                    {"id": "nome", "label": "Nome", "type": "text", "required": False, "maxlength": 200},
+                    {"id": "rg", "label": "RG/Documento", "type": "text", "required": False, "maxlength": 30},
+                    {"id": "contato", "label": "Contato (telefone)", "type": "text", "required": False, "maxlength": 30},
+                    {"id": "endereco", "label": "Endereço", "type": "text", "required": False, "maxlength": 400},
+                ],
+            },
             {"id": "motivacao", "label": "Motivação provável", "type": "text", "required": False},
-            {"id": "cameras", "label": "Há câmeras de segurança?", "type": "boolean", "required": False},
+            {
+                "id": "cameras",
+                "label": "Há câmeras de segurança?",
+                "type": "select",
+                "options": ["Sim", "Não", "Não sei"],
+                "required": False
+            },
+            {
+                "id": "testemunhas",
+                "label": "Testemunhas",
+                "type": "group",
+                "max_items": 5,
+                "add_label": "Adicionar testemunha",
+                "fields": [
+                    {"id": "nome", "label": "Nome", "type": "text", "required": False, "maxlength": 200},
+                    {"id": "rg", "label": "RG/Documento", "type": "text", "required": False, "maxlength": 30},
+                    {"id": "contato", "label": "Contato (telefone)", "type": "text", "required": False, "maxlength": 30},
+                    {"id": "endereco", "label": "Endereço", "type": "text", "required": False, "maxlength": 400},
+                ],
+            },
         ],
     },
     "desaparecimento_encontro_pessoas": {
         "label": "Desaparecimento/Encontro de pessoas",
         "questions": [
-            {"id": "tipo", "label": "Tipo", "type": "select", "options": ["Desaparecimento", "Encontro/Localização"], "required": False},
-            {"id": "data", "label": "Data do desaparecimento/encontro", "type": "date", "required": False},
-            {"id": "hora", "label": "Hora aproximada", "type": "text", "required": False},
-            {"id": "local", "label": "Local (última vez visto / local do encontro)", "type": "text", "required": False},
-            {"id": "pessoa", "label": "Pessoa (nome, idade, características)", "type": "text", "required": False},
-            {"id": "roupas", "label": "Roupas/itens quando visto pela última vez", "type": "text", "required": False},
-            {"id": "contato_familia", "label": "Contato de familiar/responsável", "type": "text", "required": False},
-            {"id": "observacoes", "label": "Observações relevantes", "type": "text", "required": False},
+            {
+                "id": "tipo",
+                "label": "Tipo",
+                "type": "select",
+                "options": ["Desaparecimento", "Encontro/Localização"],
+                "required": False
+            },
+            {
+                "id": "data_desaparecimento",
+                "label": "Data do desaparecimento",
+                "type": "date",
+                "required": False,
+                "show_if": {"field": "tipo", "value": "Desaparecimento"}
+            },
+            {
+                "id": "hora_desaparecimento",
+                "label": "Hora aproximada",
+                "type": "text",
+                "required": False,
+                "show_if": {"field": "tipo", "value": "Desaparecimento"}
+            },
+            {
+                "id": "local_desaparecimento",
+                "label": "Local (última vez visto(a))",
+                "type": "text",
+                "required": False,
+                "show_if": {"field": "tipo", "value": "Desaparecimento"}
+            },
+            {
+                "id": "data_encontro",
+                "label": "Data do encontro",
+                "type": "date",
+                "required": False,
+                "show_if": {"field": "tipo", "value": "Encontro/Localização"}
+            },
+            {
+                "id": "local_encontro",
+                "label": "Local do encontro",
+                "type": "text",
+                "required": False,
+                "show_if": {"field": "tipo", "value": "Encontro/Localização"}
+            },
+            {
+                "id": "pessoa",
+                "label": "Pessoa",
+                "type": "group",
+                "max_items": 1,
+                "add_label": "Adicionar pessoa",
+                "fields": [
+                    {"id": "nome", "label": "Nome", "type": "text", "required": False, "maxlength": 200},
+                    {"id": "rg", "label": "RG/Documento", "type": "text", "required": False, "maxlength": 30},
+                    {"id": "contato", "label": "Contato", "type": "text", "required": False, "maxlength": 30},
+                    {"id": "endereco", "label": "Endereço", "type": "text", "required": False, "maxlength": 400},
+                ],
+            },
+            {
+                "id": "roupas",
+                "label": "Foi visto por último usando quais roupas:",
+                "type": "text",
+                "required": False,
+                "show_if": {"field": "tipo", "value": "Desaparecimento"}
+            },
+            {
+                "id": "contato_familia",
+                "label": "Contato de familiar/responsável",
+                "type": "group",
+                "max_items": 5,
+                "add_label": "Adicionar familiar/responsável",
+                "fields": [
+                    {"id": "nome", "label": "Nome", "type": "text", "required": False, "maxlength": 200},
+                    {"id": "rg", "label": "RG/Documento", "type": "text", "required": False, "maxlength": 30},
+                    {"id": "contato", "label": "Contato", "type": "text", "required": False, "maxlength": 30},
+                    {"id": "endereco", "label": "Endereço", "type": "text", "required": False, "maxlength": 400},
+                ],
+                "show_if": {"field": "tipo", "value": "Desaparecimento"}
+            },
         ],
     },
-    "embriaguez_volante": {
+        "embriaguez_volante": {
         "label": "Embriaguez no Volante",
         "questions": [
             {"id": "data_fato", "label": "Data do fato/abordagem", "type": "date", "required": False},
             {"id": "hora_fato", "label": "Hora aproximada", "type": "text", "required": False},
             {"id": "local_fato", "label": "Local", "type": "text", "required": False},
-            {"id": "veiculo", "label": "Veículo (marca/modelo/cor/placa)", "type": "text", "required": False},
-            {"id": "condutor", "label": "Condutor (nome/documento, se souber)", "type": "text", "required": False},
-            {"id": "sinais", "label": "Sinais de embriaguez observados", "type": "text", "required": False},
+            {
+                "id": "veiculos",
+                "label": "Veículos",
+                "type": "group",
+                "max_items": 5,
+                "add_label": "Adicionar veículo",
+                "fields": [
+                    {"id": "marca", "label": "Marca", "type": "text", "required": False, "maxlength": 100},
+                    {"id": "modelo", "label": "Modelo", "type": "text", "required": False, "maxlength": 100},
+                    {"id": "cor", "label": "Cor", "type": "text", "required": False, "maxlength": 50},
+                    {"id": "placa", "label": "Placa", "type": "text", "required": False, "maxlength": 20},
+                ],
+            },
+            {
+                "id": "autores",
+                "label": "Autor(es)",
+                "type": "group",
+                "max_items": 5,
+                "add_label": "Adicionar autor",
+                "fields": [
+                    {"id": "nome", "label": "Nome", "type": "text", "required": False, "maxlength": 200},
+                    {"id": "rg", "label": "RG/Documento", "type": "text", "required": False, "maxlength": 30},
+                    {"id": "contato", "label": "Contato (telefone)", "type": "text", "required": False, "maxlength": 30},
+                    {"id": "endereco", "label": "Endereço", "type": "text", "required": False, "maxlength": 400},
+                ],
+            },
+            {
+                "id": "sinais",
+                "label": "Sinais de embriaguez observados",
+                "type": "checkbox_group",
+                "options": [
+                    "Hálito Etílico",
+                    "Olhos Vermelhos",
+                    "Dificuldades de Movimentação",
+                    "Fala Alterada",
+                    "Vestes Desordenadas",
+                    "Agressividade",
+                    "Exaltação ou Arrogância",
+                    "Sonolência",
+                    "Dispersão",
+                    "Desorientação"
+                ],
+                "required": False
+            },            
             {"id": "teste_etilometro", "label": "Realizou teste do etilômetro?", "type": "boolean", "required": False},
-            {"id": "resultado", "label": "Resultado (se houver)", "type": "text", "required": False},
-            {"id": "testemunhas", "label": "Testemunhas/contatos", "type": "text", "required": False},
+            {
+                "id": "resultado",
+                "label": "Resultado do etilômetro (mg/L)",
+                "type": "text",
+                "required": False,
+                "show_if": {
+                    "field": "teste_etilometro",
+                    "value": "sim"
+                }
+            },            
+            {
+                "id": "testemunhas",
+                "label": "Testemunhas",
+                "type": "group",
+                "max_items": 5,
+                "add_label": "Adicionar testemunha",
+                "fields": [
+                    {"id": "nome", "label": "Nome", "type": "text", "required": False, "maxlength": 200},
+                    {"id": "rg", "label": "RG/Documento", "type": "text", "required": False, "maxlength": 30},
+                    {"id": "contato", "label": "Contato (telefone)", "type": "text", "required": False, "maxlength": 30},
+                    {"id": "endereco", "label": "Endereço", "type": "text", "required": False, "maxlength": 400},
+                ],
+            },
         ],
     },
     "estelionato_golpe": {
         "label": "Estelionato (Golpe)",
         "questions": [
             {"id": "data_fato", "label": "Data do fato", "type": "date", "required": False},
-            {"id": "modalidade", "label": "Modalidade do golpe", "type": "select", "options": ["Falso vendedor/produto", "Falso funcionário público", "Golpe do PIX/transferência", "Empréstimo não devolvido", "Cheque sem fundo", "Romance/namoro virtual", "Outro"], "required": False},
-            {"id": "descricao_golpe", "label": "Descreva como ocorreu o golpe", "type": "text", "required": False},
-            {"id": "valor_prejuizo", "label": "Valor do prejuízo (R$)", "type": "number", "required": False},
-            {"id": "meio_contato", "label": "Como o autor entrou em contato?", "type": "text", "required": False},
-            {"id": "identificacao_autor", "label": "Como o autor se identificou?", "type": "text", "required": False},
-            {"id": "docs_provas", "label": "Possui documentos/prints como prova?", "type": "boolean", "required": False},
-            {"id": "conta_bancaria", "label": "Transação bancária (banco e tipo PIX/TED/outro)", "type": "text", "required": False},
+
+            {
+                "id": "modalidade",
+                "label": "Modalidade do golpe",
+                "type": "select",
+                "options": [
+                    "Falso vendedor/produto",
+                    "Falso funcionário",
+                    "Golpe do PIX/transferência",
+                    "Empréstimo não devolvido",
+                    "Cheque sem fundo",
+                    "Romance/namoro virtual",
+                    "Outro"
+                ],
+                "required": False
+            },
+            {
+                "id": "modalidade_outro",
+                "label": "Descreva:",
+                "type": "text",
+                "required": False,
+                "show_if": {
+                    "field": "modalidade",
+                    "value": "Outro"
+                }
+            },
+
+            {
+                "id": "meio_contato",
+                "label": "Como o autor entrou em contato?",
+                "type": "text",
+                "required": False
+            },
+
+            {
+                "id": "autores",
+                "label": "Autor(es) (como o autor se identificou)",
+                "type": "group",
+                "max_items": 5,
+                "add_label": "Adicionar autor",
+                "fields": [
+                    {"id": "nome", "label": "Nome", "type": "text", "required": False, "maxlength": 200},
+                    {"id": "rg", "label": "RG/Documento", "type": "text", "required": False, "maxlength": 30},
+                    {"id": "contato", "label": "Contato (telefone)", "type": "text", "required": False, "maxlength": 30},
+                    {"id": "endereco", "label": "Endereço", "type": "text", "required": False, "maxlength": 400},
+                ],
+            },
+
+            {
+                "id": "testemunhas",
+                "label": "Testemunha(s)",
+                "type": "group",
+                "max_items": 5,
+                "add_label": "Adicionar testemunha",
+                "fields": [
+                    {"id": "nome", "label": "Nome", "type": "text", "required": False, "maxlength": 200},
+                    {"id": "rg", "label": "RG/Documento", "type": "text", "required": False, "maxlength": 30},
+                    {"id": "contato", "label": "Contato (telefone)", "type": "text", "required": False, "maxlength": 30},
+                    {"id": "endereco", "label": "Endereço", "type": "text", "required": False, "maxlength": 400},
+                ],
+            },
+
+            {
+                "id": "houve_transferencia",
+                "label": "Houve transferência bancária, PIX ou pagamento?",
+                "type": "boolean",
+                "required": False
+            },
+
+            {
+                "id": "transferencias",
+                "label": "Transferências/Pagamentos",
+                "type": "group",
+                "max_items": 5,
+                "add_label": "Adicionar transferência",
+                "show_if": {
+                    "field": "houve_transferencia",
+                    "value": "sim"
+                },
+                "fields": [
+                    {"id": "banco", "label": "Nome do Banco", "type": "text", "required": False, "maxlength": 100},
+                    {"id": "conta", "label": "Conta", "type": "text", "required": False, "maxlength": 50},
+                    {"id": "agencia", "label": "Agência", "type": "text", "required": False, "maxlength": 50},
+                    {"id": "pix", "label": "PIX", "type": "text", "required": False, "maxlength": 150},
+                    {"id": "beneficiario", "label": "Nome do Beneficiário", "type": "text", "required": False, "maxlength": 200},
+                ],
+            },
+
+            {
+                "id": "valor_prejuizo",
+                "label": "Valor do prejuízo total (R$)",
+                "type": "number",
+                "required": False
+            },
         ],
     },
     "lesao_corporal": {
@@ -292,13 +569,99 @@ CRIME_SCHEMAS = {
             {"id": "data_fato", "label": "Data do fato", "type": "date", "required": False},
             {"id": "hora_fato", "label": "Hora aproximada", "type": "text", "required": False},
             {"id": "local_fato", "label": "Local do fato", "type": "text", "required": False},
-            {"id": "relacao_autor", "label": "Qual a relação com o autor? (desconhecido, familiar, colega)", "type": "text", "required": False},
-            {"id": "desc_autor", "label": "Descrição do autor (nome, se conhecido)", "type": "text", "required": False},
-            {"id": "tipo_lesao", "label": "Tipo de lesão sofrida", "type": "select", "options": ["Socos/tapas", "Chutes", "Objeto contundente", "Arma branca", "Arma de fogo", "Outro"], "required": False},
+            {
+                "id": "relacao_autor",
+                "label": "Qual a relação com o autor?",
+                "type": "select",
+                "options": [
+                    "Amigo(a)",
+                    "Desconhecido",
+                    "Familiar",
+                    "Marido/Esposa",
+                    "Namorado(a)",
+                    "Ex-relacionamento",
+                    "Outros"
+                ],
+                "required": False
+            },
+            {
+                "id": "relacao_autor_outros",
+                "label": "Descreva:",
+                "type": "text",
+                "required": False,
+                "show_if": {
+                    "field": "relacao_autor",
+                    "value": "Outros"
+                }
+            },
+            {
+                "id": "autores",
+                "label": "Descrição do autor",
+                "type": "group",
+                "max_items": 5,
+                "add_label": "Adicionar autor",
+                "fields": [
+                    {"id": "nome", "label": "Nome", "type": "text", "required": False, "maxlength": 200},
+                    {"id": "rg", "label": "RG/Documento", "type": "text", "required": False, "maxlength": 30},
+                    {"id": "contato", "label": "Contato (telefone)", "type": "text", "required": False, "maxlength": 30},
+                    {"id": "endereco", "label": "Endereço", "type": "text", "required": False, "maxlength": 400},
+                ],
+            },
+            {
+                "id": "tipo_lesao",
+                "label": "Tipo de lesão sofrida",
+                "type": "checkbox_group",
+                "options": [
+                    "Arma branca",
+                    "Arma de fogo",
+                    "Chutes",
+                    "Objeto contundente",
+                    "Socos",
+                    "Tapas"
+                ],
+                "required": False
+            },
             {"id": "regiao_corpo", "label": "Região do corpo afetada", "type": "text", "required": False},
-            {"id": "atendimento_medico", "label": "Houve atendimento médico?", "type": "boolean", "required": False},
-            {"id": "testemunhas", "label": "Há testemunhas?", "type": "text", "required": False},
-            {"id": "historico_violencia", "label": "É a primeira ocorrência ou há histórico?", "type": "select", "options": ["Primeira vez", "Episódio repetido", "Há medida protetiva anterior"], "required": False},
+            {
+                "id": "atendimento_medico",
+                "label": "Houve atendimento médico?",
+                "type": "boolean",
+                "required": False
+            },
+            {
+                "id": "local_atendimento_medico",
+                "label": "Informe o nome da UBS, PS, UPA, Hospital, Clínica etc.",
+                "type": "text",
+                "required": False,
+                "show_if": {
+                    "field": "atendimento_medico",
+                    "value": "sim"
+                }
+            },
+            {
+                "id": "testemunhas",
+                "label": "Testemunhas",
+                "type": "group",
+                "max_items": 5,
+                "add_label": "Adicionar testemunha",
+                "fields": [
+                    {"id": "nome", "label": "Nome", "type": "text", "required": False, "maxlength": 200},
+                    {"id": "rg", "label": "RG/Documento", "type": "text", "required": False, "maxlength": 30},
+                    {"id": "contato", "label": "Contato (telefone)", "type": "text", "required": False, "maxlength": 30},
+                    {"id": "endereco", "label": "Endereço", "type": "text", "required": False, "maxlength": 400},
+                ],
+            },
+            {
+                "id": "historico_violencia",
+                "label": "É a primeira ocorrência ou há histórico?",
+                "type": "select",
+                "options": [
+                    "Primeira vez",
+                    "Episódio repetido",
+                    "Há medida protetiva anterior"
+                ],
+                "required": False
+            },
         ],
     },
     "maria_da_penha": {

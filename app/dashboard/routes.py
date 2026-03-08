@@ -42,16 +42,71 @@ def _persist_pending_submissions(session: DashboardSession, *, status: str = "re
     return count
 
 
+
+def _expire_stale_sessions_for_user(user_id: int) -> int:
+    """
+    Expira plantões ativos já vencidos para o usuário informado.
+    Persiste pendências em log, apaga dados sensíveis em RAM e inativa links.
+    Retorna a quantidade de plantões expirados.
+    """
+    active_sessions = DashboardSession.query.filter_by(
+        user_id=user_id,
+        is_active=True,
+    ).all()
+
+    expired_count = 0
+
+    for session in active_sessions:
+        if not session.is_expired:
+            continue
+
+        _persist_pending_submissions(session, status="received")
+        submission_store.purge_dashboard(session.id)
+
+        for link in session.links.filter_by(is_active=True).all():
+            link.is_active = False
+
+        session.is_active = False
+        expired_count += 1
+
+    if expired_count:
+        db.session.commit()
+
+    return expired_count
+
+
+def _expire_session_if_needed(session: DashboardSession) -> bool:
+    """
+    Expira uma sessão específica caso ela ainda esteja ativa e já tenha vencido.
+    Persiste pendências em log, apaga dados sensíveis em RAM e inativa links.
+    Retorna True se a sessão foi expirada agora.
+    """
+    if not session or not session.is_active or not session.is_expired:
+        return False
+
+    _persist_pending_submissions(session, status="received")
+    submission_store.purge_dashboard(session.id)
+
+    for link in session.links.filter_by(is_active=True).all():
+        link.is_active = False
+
+    session.is_active = False
+    db.session.commit()
+    return True
+
+
 @dashboard_bp.route("/")
 @login_required
 def index():
+    _expire_stale_sessions_for_user(current_user.id)
+
     sessions = DashboardSession.query.filter_by(
         user_id=current_user.id
     ).order_by(DashboardSession.created_at.desc()).all()
 
     # total = pendentes (RAM) + logs (DB)
     for s in sessions:
-        pending = submission_store.count_for_dashboard(s.id)
+        pending = submission_store.count_for_dashboard(s.id) if s.is_active else 0
         closed = s.logs.count()
         s.total_records = pending + closed  # atributo dinâmico pro template
 
@@ -104,14 +159,16 @@ def session_detail(session_id):
         id=session_id, user_id=current_user.id
     ).first_or_404()
 
+    _expire_session_if_needed(session)
+
     link = session.links.filter_by(is_active=True).first()
     qr_svg = None
     intake_url = None
-    if link:
+    if session.is_active and link:
         intake_url = url_for("intake.form", token=link.token, _external=True)
         qr_svg = _generate_qr_svg(intake_url)
 
-    submissions = submission_store.list_for_dashboard(session.id)
+    submissions = submission_store.list_for_dashboard(session.id) if session.is_active else []
     logs = session.logs.order_by(MinimalLogEntry.received_at.desc()).all()
 
     return render_template(
@@ -124,7 +181,6 @@ def session_detail(session_id):
         logs=logs,
     )
 
-
 @dashboard_bp.route("/sessions/<int:session_id>/close", methods=["POST"])
 @login_required
 def close_session(session_id):
@@ -132,11 +188,18 @@ def close_session(session_id):
         id=session_id, user_id=current_user.id
     ).first_or_404()
 
+    _expire_session_if_needed(session)
+
+    if not session.is_active:
+        flash("Este plantão já estava encerrado ou expirado.", "info")
+        return redirect(url_for("dashboard.index"))
+
     # Persistir pendentes antes de apagar RAM
     saved = _persist_pending_submissions(session, status="received")
 
     session.is_active = False
     submission_store.purge_dashboard(session.id)
+
     for link in session.links:
         link.is_active = False
 
@@ -144,22 +207,28 @@ def close_session(session_id):
     flash(f"Plantão encerrado. {saved} registro(s) pendente(s) foram salvos no histórico.", "info")
     return redirect(url_for("dashboard.index"))
 
-
 @dashboard_bp.route("/sessions/<int:session_id>/links/new", methods=["POST"])
 @login_required
 def new_link(session_id):
     session = DashboardSession.query.filter_by(
-        id=session_id, user_id=current_user.id, is_active=True
+        id=session_id, user_id=current_user.id
     ).first_or_404()
+
+    _expire_session_if_needed(session)
+
+    if not session.is_active:
+        flash("Este plantão já expirou e não pode receber novos links.", "warning")
+        return redirect(url_for("dashboard.session_detail", session_id=session.id))
+
     link = IntakeLink(
         dashboard_id=session.id,
         form_schema=DEFAULT_FORM_SCHEMA,
     )
     db.session.add(link)
     db.session.commit()
+
     flash("Novo link criado.", "success")
     return redirect(url_for("dashboard.session_detail", session_id=session.id))
-
 
 @dashboard_bp.route("/sessions/<int:session_id>/purge", methods=["POST"])
 @login_required
@@ -193,14 +262,22 @@ def print_qr(session_id):
     session = DashboardSession.query.filter_by(
         id=session_id, user_id=current_user.id
     ).first_or_404()
+
+    _expire_session_if_needed(session)
+
     link = session.links.filter_by(is_active=True).first()
     qr_svg = None
     intake_url = None
-    if link:
+    if session.is_active and link:
         intake_url = url_for("intake.form", token=link.token, _external=True)
         qr_svg = _generate_qr_svg(intake_url)
-    return render_template("dashboard/print_qr.html", session=session, qr_svg=qr_svg, intake_url=intake_url)
 
+    return render_template(
+        "dashboard/print_qr.html",
+        session=session,
+        qr_svg=qr_svg,
+        intake_url=intake_url,
+    )
 
 def _generate_qr_svg(url: str) -> str:
     """Generate a clean inline SVG QR code string."""
