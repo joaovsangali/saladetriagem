@@ -20,7 +20,7 @@ CRIME_SCHEMAS = {
                 "label": "Veículos envolvidos",
                 "type": "group",
                 "max_items": 5,
-                "add_label": "Adicionar veículo",
+                "add_label": "Adicionar",
                 "fields": [
                     {
                         "id": "descricao",
@@ -244,6 +244,7 @@ CRIME_SCHEMAS = {
         "label": "Dano ao Patrimônio",
         "questions": [
             {"id": "data_fato", "label": "Data do fato", "type": "date", "required": False},
+            {"id": "local_fato", "label": "Local do fato", "type": "text", "required": False},
             {
                 "id": "tipo_patrimonio",
                 "label": "Tipo de patrimônio",
@@ -256,7 +257,7 @@ CRIME_SCHEMAS = {
                 "label": "Bens danificados",
                 "type": "group",
                 "max_items": 5,
-                "add_label": "Adicionar bem",
+                "add_label": "Adicionar",
                 "fields": [
                     {
                         "id": "descricao",
@@ -267,15 +268,14 @@ CRIME_SCHEMAS = {
                     }
                 ],
             },
-            {"id": "local_fato", "label": "Local onde estava o bem", "type": "text", "required": False},
             {"id": "forma_dano", "label": "Como o dano foi causado?", "type": "text", "required": False},
             {"id": "valor_prejuizo", "label": "Valor estimado do prejuízo (R$)", "type": "number", "required": False},
             {
-                "id": "suspeitos",
-                "label": "Suspeitos",
+                "id": "autor",
+                "label": "Autor(es)",
                 "type": "group",
                 "max_items": 5,
-                "add_label": "Adicionar suspeito",
+                "add_label": "Adicionar",
                 "fields": [
                     {"id": "nome", "label": "Nome", "type": "text", "required": False, "maxlength": 200},
                     {"id": "rg", "label": "RG/Documento", "type": "text", "required": False, "maxlength": 30},
@@ -296,7 +296,7 @@ CRIME_SCHEMAS = {
                 "label": "Testemunhas",
                 "type": "group",
                 "max_items": 5,
-                "add_label": "Adicionar testemunha",
+                "add_label": "Adicionar",
                 "fields": [
                     {"id": "nome", "label": "Nome", "type": "text", "required": False, "maxlength": 200},
                     {"id": "rg", "label": "RG/Documento", "type": "text", "required": False, "maxlength": 30},
@@ -356,7 +356,7 @@ CRIME_SCHEMAS = {
                 "label": "Pessoa",
                 "type": "group",
                 "max_items": 1,
-                "add_label": "Adicionar pessoa",
+                "add_label": "Adicionar",
                 "fields": [
                     {"id": "nome", "label": "Nome", "type": "text", "required": False, "maxlength": 200},
                     {"id": "rg", "label": "RG/Documento", "type": "text", "required": False, "maxlength": 30},
@@ -376,7 +376,7 @@ CRIME_SCHEMAS = {
                 "label": "Contato de familiar/responsável",
                 "type": "group",
                 "max_items": 5,
-                "add_label": "Adicionar familiar/responsável",
+                "add_label": "Adicionar",
                 "fields": [
                     {"id": "nome", "label": "Nome", "type": "text", "required": False, "maxlength": 200},
                     {"id": "rg", "label": "RG/Documento", "type": "text", "required": False, "maxlength": 30},
@@ -398,7 +398,7 @@ CRIME_SCHEMAS = {
                 "label": "Veículos",
                 "type": "group",
                 "max_items": 5,
-                "add_label": "Adicionar veículo",
+                "add_label": "Adicionar",
                 "fields": [
                     {"id": "marca", "label": "Marca", "type": "text", "required": False, "maxlength": 100},
                     {"id": "modelo", "label": "Modelo", "type": "text", "required": False, "maxlength": 100},
@@ -411,7 +411,7 @@ CRIME_SCHEMAS = {
                 "label": "Autor(es)",
                 "type": "group",
                 "max_items": 5,
-                "add_label": "Adicionar autor",
+                "add_label": "Adicionar",
                 "fields": [
                     {"id": "nome", "label": "Nome", "type": "text", "required": False, "maxlength": 200},
                     {"id": "rg", "label": "RG/Documento", "type": "text", "required": False, "maxlength": 30},
@@ -453,7 +453,7 @@ CRIME_SCHEMAS = {
                 "label": "Testemunhas",
                 "type": "group",
                 "max_items": 5,
-                "add_label": "Adicionar testemunha",
+                "add_label": "Adicionar",
                 "fields": [
                     {"id": "nome", "label": "Nome", "type": "text", "required": False, "maxlength": 200},
                     {"id": "rg", "label": "RG/Documento", "type": "text", "required": False, "maxlength": 30},
@@ -467,7 +467,7 @@ CRIME_SCHEMAS = {
         "label": "Estelionato (Golpe)",
         "questions": [
             {"id": "data_fato", "label": "Data do fato", "type": "date", "required": False},
-
+            {"id": "local_fato", "label": "Local do fato", "type": "text", "required": False},
             {
                 "id": "modalidade",
                 "label": "Modalidade do golpe",
@@ -475,9 +475,8 @@ CRIME_SCHEMAS = {
                 "options": [
                     "Falso vendedor/produto",
                     "Falso funcionário",
-                    "Golpe do PIX/transferência",
-                    "Empréstimo não devolvido",
-                    "Cheque sem fundo",
+                    "Falso profissional",
+                    "Falso familiar/amigo",
                     "Romance/namoro virtual",
                     "Outro"
                 ],
@@ -493,20 +492,119 @@ CRIME_SCHEMAS = {
                     "value": "Outro"
                 }
             },
-
             {
                 "id": "meio_contato",
                 "label": "Como o autor entrou em contato?",
-                "type": "text",
+                "type": "select",
+                "options": [
+                    "E-mail",
+                    "Facebook",
+                    "Instagram",
+                    "Outros",
+                    "Presencialmente",
+                    "Telegram",
+                    "Telefone",
+                    "Website",
+                    "WhatsApp"
+                ],
                 "required": False
             },
-
+            {
+                "id": "meio_contato_email",
+                "label": "Informe o endereço de e-mail:",
+                "type": "text",
+                "required": False,
+                "show_if": {
+                    "field": "meio_contato",
+                    "value": "E-mail"
+                }
+            },
+            {
+                "id": "meio_contato_facebook",
+                "label": "Informe o link, usuário ou perfil do Facebook:",
+                "type": "text",
+                "required": False,
+                "show_if": {
+                    "field": "meio_contato",
+                    "value": "Facebook"
+                }
+            },
+            {
+                "id": "meio_contato_instagram",
+                "label": "Informe o link, usuário ou perfil do Instagram:",
+                "type": "text",
+                "required": False,
+                "show_if": {
+                    "field": "meio_contato",
+                    "value": "Instagram"
+                }
+            },
+            {
+                "id": "meio_contato_outros",
+                "label": "Descreva o meio de contato e informe o dado pertinente:",
+                "type": "text",
+                "required": False,
+                "show_if": {
+                    "field": "meio_contato",
+                    "value": "Outros"
+                }
+            },
+            {
+                "id": "meio_contato_presencialmente",
+                "label": "Informe onde ocorreu o contato presencial:",
+                "type": "text",
+                "required": False,
+                "show_if": {
+                    "field": "meio_contato",
+                    "value": "Presencialmente"
+                }
+            },
+            {
+                "id": "meio_contato_telegram",
+                "label": "Informe o link, usuário ou número do Telegram:",
+                "type": "text",
+                "required": False,
+                "show_if": {
+                    "field": "meio_contato",
+                    "value": "Telegram"
+                }
+            },
+            {
+                "id": "meio_contato_telefone",
+                "label": "Informe o número de telefone:",
+                "type": "text",
+                "required": False,
+                "show_if": {
+                    "field": "meio_contato",
+                    "value": "Telefone"
+                }
+            },
+            {
+                "id": "meio_contato_website",
+                "label": "Informe o link do website:",
+                "type": "text",
+                "required": False,
+                "show_if": {
+                    "field": "meio_contato",
+                    "value": "Website"
+                }
+            },
+            {
+                "id": "meio_contato_whatsapp",
+                "label": "Informe o número ou link do WhatsApp:",
+                "type": "text",
+                "required": False,
+                "show_if": {
+                    "field": "meio_contato",
+                    "value": "WhatsApp"
+                }
+            },
             {
                 "id": "autores",
                 "label": "Autor(es) (como o autor se identificou)",
                 "type": "group",
                 "max_items": 5,
-                "add_label": "Adicionar autor",
+                "add_label": "Adicionar",
                 "fields": [
                     {"id": "nome", "label": "Nome", "type": "text", "required": False, "maxlength": 200},
                     {"id": "rg", "label": "RG/Documento", "type": "text", "required": False, "maxlength": 30},
@@ -514,13 +612,12 @@ CRIME_SCHEMAS = {
                     {"id": "endereco", "label": "Endereço", "type": "text", "required": False, "maxlength": 400},
                 ],
             },
-
             {
                 "id": "testemunhas",
                 "label": "Testemunha(s)",
                 "type": "group",
                 "max_items": 5,
-                "add_label": "Adicionar testemunha",
+                "add_label": "Adicionar",
                 "fields": [
                     {"id": "nome", "label": "Nome", "type": "text", "required": False, "maxlength": 200},
                     {"id": "rg", "label": "RG/Documento", "type": "text", "required": False, "maxlength": 30},
@@ -528,14 +625,12 @@ CRIME_SCHEMAS = {
                     {"id": "endereco", "label": "Endereço", "type": "text", "required": False, "maxlength": 400},
                 ],
             },
-
             {
                 "id": "houve_transferencia",
                 "label": "Houve transferência bancária, PIX ou pagamento?",
                 "type": "boolean",
                 "required": False
             },
-
             {
                 "id": "transferencias",
                 "label": "Transferências/Pagamentos",
@@ -550,11 +645,10 @@ CRIME_SCHEMAS = {
                     {"id": "banco", "label": "Nome do Banco", "type": "text", "required": False, "maxlength": 100},
                     {"id": "conta", "label": "Conta", "type": "text", "required": False, "maxlength": 50},
                     {"id": "agencia", "label": "Agência", "type": "text", "required": False, "maxlength": 50},
-                    {"id": "pix", "label": "PIX", "type": "text", "required": False, "maxlength": 150},
+                    {"id": "número pix", "label": "PIX", "type": "text", "required": False, "maxlength": 150},
                     {"id": "beneficiario", "label": "Nome do Beneficiário", "type": "text", "required": False, "maxlength": 200},
                 ],
             },
-
             {
                 "id": "valor_prejuizo",
                 "label": "Valor do prejuízo total (R$)",
@@ -576,10 +670,11 @@ CRIME_SCHEMAS = {
                 "options": [
                     "Amigo(a)",
                     "Desconhecido",
+                    "Ex-relacionamento",
                     "Familiar",
                     "Marido/Esposa",
                     "Namorado(a)",
-                    "Ex-relacionamento",
+                    "Vizinho(a)",
                     "Outros"
                 ],
                 "required": False
@@ -599,7 +694,7 @@ CRIME_SCHEMAS = {
                 "label": "Descrição do autor",
                 "type": "group",
                 "max_items": 5,
-                "add_label": "Adicionar autor",
+                "add_label": "Adicionar",
                 "fields": [
                     {"id": "nome", "label": "Nome", "type": "text", "required": False, "maxlength": 200},
                     {"id": "rg", "label": "RG/Documento", "type": "text", "required": False, "maxlength": 30},
@@ -617,7 +712,8 @@ CRIME_SCHEMAS = {
                     "Chutes",
                     "Objeto contundente",
                     "Socos",
-                    "Tapas"
+                    "Tapas",
+                    "outros"
                 ],
                 "required": False
             },
@@ -642,8 +738,8 @@ CRIME_SCHEMAS = {
                 "id": "testemunhas",
                 "label": "Testemunhas",
                 "type": "group",
-                "max_items": 5,
-                "add_label": "Adicionar testemunha",
+                "max_items": 2,
+                "add_label": "Adicionar",
                 "fields": [
                     {"id": "nome", "label": "Nome", "type": "text", "required": False, "maxlength": 200},
                     {"id": "rg", "label": "RG/Documento", "type": "text", "required": False, "maxlength": 30},
@@ -664,19 +760,103 @@ CRIME_SCHEMAS = {
             },
         ],
     },
-    "maria_da_penha": {
+        "maria_da_penha": {
         "label": "Violência Doméstica (Maria da Penha)",
         "questions": [
-            {"id": "data_fato", "label": "Data do último episódio", "type": "date", "required": False},
-            {"id": "tipo_violencia", "label": "Tipo de violência sofrida", "type": "select", "options": ["Física", "Psicológica", "Moral", "Sexual", "Patrimonial", "Múltiplos tipos"], "required": False},
-            {"id": "relacao_agressor", "label": "Relação com o agressor", "type": "select", "options": ["Cônjuge/companheiro(a)", "Ex-cônjuge/ex-companheiro(a)", "Namorado(a)/ex-namorado(a)", "Familiar (pai, irmão, filho)", "Outro"], "required": False},
-            {"id": "filhos_envolvidos", "label": "Há filhos menores envolvidos?", "type": "boolean", "required": False},
-            {"id": "medida_protetiva", "label": "Já possui medida protetiva?", "type": "boolean", "required": False},
-            {"id": "descricao_episodio", "label": "Descreva o último episódio", "type": "text", "required": False},
-            {"id": "historico", "label": "Há quanto tempo sofre violência? Descreva histórico", "type": "text", "required": False},
+            {"id": "local_fato", "label": "Local dos fatos", "type": "text", "required": False},
+            {"id": "data_fato", "label": "Data dos fatos", "type": "date", "required": False},
+            {
+                "id": "autores",
+                "label": "Autor (agressor)",
+                "type": "group",
+                "max_items": 1,
+                "add_label": "Adicionar",
+                "fields": [
+                    {"id": "nome", "label": "Nome", "type": "text", "required": False, "maxlength": 200},
+                    {"id": "rg", "label": "RG/Documento", "type": "text", "required": False, "maxlength": 30},
+                    {"id": "contato", "label": "Contato (telefone)", "type": "text", "required": False, "maxlength": 30},
+                    {"id": "endereco", "label": "Endereço", "type": "text", "required": False, "maxlength": 400},
+                ],
+            },
+            {
+                "id": "relacao_agressor",
+                "label": "Relação com o agressor",
+                "type": "select",
+                "options": [
+                    "Cônjuge/companheiro(a)",
+                    "Ex-cônjuge/ex-companheiro(a)",
+                    "Namorado(a)/ex-namorado(a)",
+                    "Familiar (pai, irmão, filho)",
+                    "Outro"
+                ],
+                "required": False
+            },
+            {
+                "id": "relacao_agressor_outro",
+                "label": "Descreva:",
+                "type": "text",
+                "required": False,
+                "show_if": {
+                    "field": "relacao_agressor",
+                    "value": "Outro"
+                }
+            },
+            {
+                "id": "tipo_violencia",
+                "label": "Tipo de violência sofrida",
+                "type": "select",
+                "options": [
+                    "Física",
+                    "Psicológica",
+                    "Moral",
+                    "Sexual",
+                    "Patrimonial",
+                    "Múltiplos tipos"
+                ],
+                "required": False
+            },
             {"id": "reside_agressor", "label": "Reside com o agressor?", "type": "boolean", "required": False},
-            {"id": "atendimento_medico", "label": "Houve necessidade de atendimento médico?", "type": "boolean", "required": False},
-            {"id": "testemunhas", "label": "Há testemunhas dos episódios?", "type": "text", "required": False},
+            {"id": "filhos_envolvidos", "label": "Há filhos menores envolvidos?", "type": "boolean", "required": False},
+            {
+                "id": "atendimento_medico",
+                "label": "Houve necessidade de atendimento médico?",
+                "type": "boolean",
+                "required": False
+            },
+            {
+                "id": "local_atendimento_medico",
+                "label": "Informe o nome da UBS, PS, UPA, Hospital, Clínica etc.",
+                "type": "text",
+                "required": False,
+                "show_if": {
+                    "field": "atendimento_medico",
+                    "value": "sim"
+                }
+            },
+            {
+                "id": "testemunhas",
+                "label": "Testemunhas",
+                "type": "group",
+                "max_items": 2,
+                "add_label": "Adicionar",
+                "fields": [
+                    {"id": "nome", "label": "Nome", "type": "text", "required": False, "maxlength": 200},
+                    {"id": "rg", "label": "RG/Documento", "type": "text", "required": False, "maxlength": 30},
+                    {"id": "contato", "label": "Contato (telefone)", "type": "text", "required": False, "maxlength": 30},
+                    {"id": "endereco", "label": "Endereço", "type": "text", "required": False, "maxlength": 400},
+                ],
+            },
+            {"id": "medida_protetiva", "label": "Já possui medida protetiva?", "type": "boolean", "required": False},
+            {
+                "id": "deseja_medida_protetiva",
+                "label": "Deseja pedir medidas protetivas?",
+                "type": "boolean",
+                "required": False,
+                "show_if": {
+                    "field": "medida_protetiva",
+                    "value": "nao"
+                }
+            },
         ],
     },
     "perda_documentos": {
@@ -684,22 +864,89 @@ CRIME_SCHEMAS = {
         "questions": [
             {"id": "data", "label": "Data/período aproximado", "type": "date", "required": False},
             {"id": "local", "label": "Local provável da perda", "type": "text", "required": False},
-            {"id": "documentos", "label": "Quais documentos foram perdidos? (descreva)", "type": "text", "required": False},
+            {
+                "id": "documentos",
+                "label": "Documentos perdidos",
+                "type": "group",
+                "max_items": 5,
+                "add_label": "Adicionar documento",
+                "fields": [
+                    {
+                        "id": "tipo_documento",
+                        "label": "Tipo de documento",
+                        "type": "text",
+                        "required": False,
+                        "maxlength": 100
+                    },
+                    {
+                        "id": "numero_documento",
+                        "label": "Número do documento",
+                        "type": "text",
+                        "required": False,
+                        "maxlength": 50
+                    },
+                ],
+            },
             {"id": "suspeita_furto", "label": "Há suspeita de furto/roubo?", "type": "boolean", "required": False},
             {"id": "observacoes", "label": "Observações relevantes", "type": "text", "required": False},
         ],
-    },
     "porte_ilegal_arma_fogo": {
         "label": "Porte Ilegal de Arma de Fogo",
         "questions": [
             {"id": "data_fato", "label": "Data do fato/abordagem", "type": "date", "required": False},
-            {"id": "hora_fato", "label": "Hora aproximada", "type": "text", "required": False},
+            {"id": "hora_fato", "label": "Hora do fato/abordagem", "type": "text", "required": False},
             {"id": "local_fato", "label": "Local", "type": "text", "required": False},
-            {"id": "arma", "label": "Arma (tipo, marca, calibre, numeração, se souber)", "type": "text", "required": False},
-            {"id": "municao", "label": "Munição (quantidade, calibre, se souber)", "type": "text", "required": False},
-            {"id": "posse", "label": "Quem portava/possuía (nome/descrição)", "type": "text", "required": False},
+            {
+                "id": "armas",
+                "label": "Armas",
+                "type": "group",
+                "max_items": 10,
+                "add_label": "Adicionar arma",
+                "fields": [
+                    {"id": "tipo", "label": "Tipo", "type": "text", "required": False, "maxlength": 100},
+                    {"id": "marca", "label": "Marca", "type": "text", "required": False, "maxlength": 100},
+                    {"id": "calibre", "label": "Calibre", "type": "text", "required": False, "maxlength": 50},
+                    {"id": "numeracao", "label": "Numeração (se souber)", "type": "text", "required": False, "maxlength": 100},
+                ],
+            },
+            {
+                "id": "municoes",
+                "label": "Munições",
+                "type": "group",
+                "max_items": 10,
+                "add_label": "Adicionar munição",
+                "fields": [
+                    {"id": "calibre", "label": "Calibre", "type": "text", "required": False, "maxlength": 50},
+                    {"id": "quantidade", "label": "Quantidade", "type": "number", "required": False},
+                ],
+            },
+            {
+                "id": "autores",
+                "label": "Autor(es)",
+                "type": "group",
+                "max_items": 5,
+                "add_label": "Adicionar",
+                "fields": [
+                    {"id": "nome", "label": "Nome", "type": "text", "required": False, "maxlength": 200},
+                    {"id": "rg", "label": "RG/Documento", "type": "text", "required": False, "maxlength": 30},
+                    {"id": "contato", "label": "Contato (telefone)", "type": "text", "required": False, "maxlength": 30},
+                    {"id": "endereco", "label": "Endereço", "type": "text", "required": False, "maxlength": 400},
+                ],
+            },
             {"id": "documentacao", "label": "Havia documentação/registro da arma?", "type": "boolean", "required": False},
-            {"id": "testemunhas", "label": "Testemunhas/contatos", "type": "text", "required": False},
+            {
+                "id": "testemunhas",
+                "label": "Testemunhas",
+                "type": "group",
+                "max_items": 2,
+                "add_label": "Adicionar",
+                "fields": [
+                    {"id": "nome", "label": "Nome", "type": "text", "required": False, "maxlength": 200},
+                    {"id": "rg", "label": "RG/Documento", "type": "text", "required": False, "maxlength": 30},
+                    {"id": "contato", "label": "Contato (telefone)", "type": "text", "required": False, "maxlength": 30},
+                    {"id": "endereco", "label": "Endereço", "type": "text", "required": False, "maxlength": 400},
+                ],
+            },
         ],
     },
     "roubo_furto": {
@@ -743,6 +990,7 @@ CRIME_SCHEMAS = {
             {"id": "testemunhas", "label": "Há testemunhas?", "type": "text", "required": False},
         ],
     },
+}
 }
 
 DEFAULT_FORM_SCHEMA = {
