@@ -134,7 +134,7 @@ CRIME_SCHEMAS = {
             "id": "testemunhas",
             "label": "Testemunhas",
             "type": "group",
-            "max_items": 5,
+            "max_items": 2,
             "add_label": "Adicionar",
             "fields": [
                 {"id": "nome", "label": "Nome", "type": "text", "required": False, "maxlength": 200},
@@ -205,7 +205,7 @@ CRIME_SCHEMAS = {
             "id": "testemunhas",
             "label": "Testemunhas",
             "type": "group",
-            "max_items": 5,
+            "max_items": 2,
             "add_label": "Adicionar",
             "fields": [
                 {"id": "nome", "label": "Nome", "type": "text", "required": False, "maxlength": 200},
@@ -295,7 +295,7 @@ CRIME_SCHEMAS = {
                 "id": "testemunhas",
                 "label": "Testemunhas",
                 "type": "group",
-                "max_items": 5,
+                "max_items": 2,
                 "add_label": "Adicionar",
                 "fields": [
                     {"id": "nome", "label": "Nome", "type": "text", "required": False, "maxlength": 200},
@@ -452,7 +452,7 @@ CRIME_SCHEMAS = {
                 "id": "testemunhas",
                 "label": "Testemunhas",
                 "type": "group",
-                "max_items": 5,
+                "max_items": 2,
                 "add_label": "Adicionar",
                 "fields": [
                     {"id": "nome", "label": "Nome", "type": "text", "required": False, "maxlength": 200},
@@ -636,7 +636,7 @@ CRIME_SCHEMAS = {
                 "label": "Transferências/Pagamentos",
                 "type": "group",
                 "max_items": 5,
-                "add_label": "Adicionar transferência",
+                "add_label": "Adicionar",
                 "show_if": {
                     "field": "houve_transferencia",
                     "value": "sim"
@@ -691,7 +691,7 @@ CRIME_SCHEMAS = {
             },
             {
                 "id": "autores",
-                "label": "Descrição do autor",
+                "label": "Autor(es)",
                 "type": "group",
                 "max_items": 5,
                 "add_label": "Adicionar",
@@ -869,7 +869,7 @@ CRIME_SCHEMAS = {
                 "label": "Documentos perdidos",
                 "type": "group",
                 "max_items": 5,
-                "add_label": "Adicionar documento",
+                "add_label": "Adicionar",
                 "fields": [
                     {
                         "id": "tipo_documento",
@@ -890,6 +890,7 @@ CRIME_SCHEMAS = {
             {"id": "suspeita_furto", "label": "Há suspeita de furto/roubo?", "type": "boolean", "required": False},
             {"id": "observacoes", "label": "Observações relevantes", "type": "text", "required": False},
         ],
+    },
     "porte_ilegal_arma_fogo": {
         "label": "Porte Ilegal de Arma de Fogo",
         "questions": [
@@ -901,7 +902,7 @@ CRIME_SCHEMAS = {
                 "label": "Armas",
                 "type": "group",
                 "max_items": 10,
-                "add_label": "Adicionar arma",
+                "add_label": "Adicionar",
                 "fields": [
                     {"id": "tipo", "label": "Tipo", "type": "text", "required": False, "maxlength": 100},
                     {"id": "marca", "label": "Marca", "type": "text", "required": False, "maxlength": 100},
@@ -914,7 +915,7 @@ CRIME_SCHEMAS = {
                 "label": "Munições",
                 "type": "group",
                 "max_items": 10,
-                "add_label": "Adicionar munição",
+                "add_label": "Adicionar",
                 "fields": [
                     {"id": "calibre", "label": "Calibre", "type": "text", "required": False, "maxlength": 50},
                     {"id": "quantidade", "label": "Quantidade", "type": "number", "required": False},
@@ -952,18 +953,438 @@ CRIME_SCHEMAS = {
     "roubo_furto": {
         "label": "Roubo/Furto",
         "questions": [
-            {"id": "modalidade", "label": "Foi roubo ou furto?", "type": "select", "options": ["Roubo", "Furto", "Não sei"], "required": False},
-            {"id": "data_fato", "label": "Data do fato (ou período estimado)", "type": "date", "required": False},
-            {"id": "hora_fato", "label": "Hora aproximada do fato", "type": "text", "required": False},
-            {"id": "local_fato", "label": "Local onde ocorreu o fato", "type": "text", "required": False},
-            {"id": "autores_desc", "label": "Descrição dos autores (quantidade, aparência, vestimentas)", "type": "text", "required": False},
-            {"id": "meio_utilizado", "label": "Meio utilizado (arma, força, etc.)", "type": "select", "options": ["Arma de fogo", "Arma branca", "Sem arma (força física)", "Arrombamento", "Outro"], "required": False},
-            {"id": "bens_subtraidos", "label": "Bens subtraídos (descreva)", "type": "text", "required": False},
-            {"id": "valor_estimado", "label": "Valor estimado dos bens (R$)", "type": "number", "required": False},
-            {"id": "veiculo_fuga", "label": "Houve veículo de fuga? (cor, modelo, placa)", "type": "text", "required": False},
-            {"id": "testemunhas", "label": "Testemunhas (nomes/contatos)", "type": "text", "required": False},
-            {"id": "cameras", "label": "Há câmeras de segurança no local?", "type": "boolean", "required": False},
-            {"id": "observacoes", "label": "Outras informações relevantes", "type": "text", "required": False},
+            {
+                "id": "modalidade",
+                "label": "Foi roubo ou furto? (Escolha roubo se houve violência ou ameaça)",
+                "type": "select",
+                "options": ["Roubo", "Furto"],
+                "required": False
+            },
+
+            # ---------------- ROUBO ----------------
+            {
+                "id": "roubo_data_fato",
+                "label": "Data do fato",
+                "type": "date",
+                "required": False,
+                "show_if": {"field": "modalidade", "value": "Roubo"}
+            },
+            {
+                "id": "roubo_hora_fato",
+                "label": "Hora aproximada do fato",
+                "type": "text",
+                "required": False,
+                "show_if": {"field": "modalidade", "value": "Roubo"}
+            },
+            {
+                "id": "roubo_local_fato",
+                "label": "Local onde ocorreu o fato",
+                "type": "text",
+                "required": False,
+                "show_if": {"field": "modalidade", "value": "Roubo"}
+            },
+            {
+                "id": "roubo_autores",
+                "label": "Autores",
+                "type": "group",
+                "max_items": 5,
+                "add_label": "Adicionar",
+                "show_if": {"field": "modalidade", "value": "Roubo"},
+                "fields": [
+                    {"id": "nome", "label": "Nome", "type": "text", "required": False, "maxlength": 200},
+                    {"id": "rg", "label": "RG/Documento", "type": "text", "required": False, "maxlength": 30},
+                    {"id": "contato", "label": "Contato", "type": "text", "required": False, "maxlength": 30},
+                    {"id": "endereco", "label": "Endereço", "type": "text", "required": False, "maxlength": 400},
+                    {"id": "altura_aproximada", "label": "Altura aproximada", "type": "text", "required": False, "maxlength": 50},
+                    {"id": "peso_aproximado", "label": "Peso aproximado", "type": "text", "required": False, "maxlength": 50},
+                    {"id": "cor_pele", "label": "Cor da pele", "type": "text", "required": False, "maxlength": 100},
+                    {"id": "roupas", "label": "Roupas", "type": "text", "required": False, "maxlength": 300},
+                    {"id": "outras_caracteristicas", "label": "Outras características", "type": "text", "required": False, "maxlength": 400},
+                ],
+            },
+            {
+                "id": "roubo_meio_utilizado",
+                "label": "Meio utilizado",
+                "type": "select",
+                "options": ["Arma branca", "Arma de fogo", "Sem arma (força física)", "Outros"],
+                "required": False,
+                "show_if": {"field": "modalidade", "value": "Roubo"}
+            },
+            {
+                "id": "roubo_meio_utilizado_outro",
+                "label": "Descreva o meio utilizado:",
+                "type": "text",
+                "required": False,
+                "show_if": {"field": "roubo_meio_utilizado", "value": "Outro"}
+            },
+
+            {
+                "id": "roubo_houve_cartoes",
+                "label": "Foram subtraídos cartões bancários?",
+                "type": "boolean",
+                "required": False,
+                "show_if": {"field": "modalidade", "value": "Roubo"}
+            },
+            {
+                "id": "roubo_cartoes",
+                "label": "Cartões",
+                "type": "group",
+                "max_items": 5,
+                "add_label": "Adicionar",
+                "show_if": {"field": "roubo_houve_cartoes", "value": "sim"},
+                "fields": [
+                    {"id": "banco", "label": "Nome do banco", "type": "text", "required": False, "maxlength": 100},
+                    {"id": "tipo_cartao", "label": "Tipo de cartão", "type": "text", "required": False, "maxlength": 100},
+                    {"id": "numero_cartao", "label": "Número do cartão", "type": "text", "required": False, "maxlength": 50},
+                ],
+            },
+
+            {
+                "id": "roubo_houve_celular",
+                "label": "Foi subtraído celular?",
+                "type": "boolean",
+                "required": False,
+                "show_if": {"field": "modalidade", "value": "Roubo"}
+            },
+            {
+                "id": "roubo_celulares",
+                "label": "Celulares",
+                "type": "group",
+                "max_items": 5,
+                "add_label": "Adicionar",
+                "show_if": {"field": "roubo_houve_celular", "value": "sim"},
+                "fields": [
+                    {"id": "marca", "label": "Marca", "type": "text", "required": False, "maxlength": 100},
+                    {"id": "modelo", "label": "Modelo", "type": "text", "required": False, "maxlength": 100},
+                    {"id": "numero_telefone", "label": "Número do telefone", "type": "text", "required": False, "maxlength": 30},
+                    {"id": "imei", "label": "Número de IMEI", "type": "text", "required": False, "maxlength": 50},
+                ],
+            },
+
+            {
+                "id": "roubo_houve_dinheiro",
+                "label": "Foi subtraído dinheiro?",
+                "type": "boolean",
+                "required": False,
+                "show_if": {"field": "modalidade", "value": "Roubo"}
+            },
+
+            {
+                "id": "roubo_houve_joias",
+                "label": "Foram subtraídas jóias?",
+                "type": "boolean",
+                "required": False,
+                "show_if": {"field": "modalidade", "value": "Roubo"}
+            },
+            {
+                "id": "roubo_joias",
+                "label": "Jóias",
+                "type": "group",
+                "max_items": 10,
+                "add_label": "Adicionar",
+                "show_if": {"field": "roubo_houve_joias", "value": "sim"},
+                "fields": [
+                    {"id": "marca", "label": "Marca", "type": "text", "required": False, "maxlength": 100},
+                    {"id": "metal_pedra", "label": "Metal/pedra preciosa", "type": "text", "required": False, "maxlength": 150},
+                ],
+            },
+
+            {
+                "id": "roubo_houve_veiculo",
+                "label": "Foi subtraído veículo?",
+                "type": "boolean",
+                "required": False,
+                "show_if": {"field": "modalidade", "value": "Roubo"}
+            },
+            {
+                "id": "roubo_veiculos_subtraidos",
+                "label": "Veículos subtraídos",
+                "type": "group",
+                "max_items": 5,
+                "add_label": "Adicionar",
+                "show_if": {"field": "roubo_houve_veiculo", "value": "sim"},
+                "fields": [
+                    {"id": "marca", "label": "Marca", "type": "text", "required": False, "maxlength": 100},
+                    {"id": "tipo", "label": "Tipo (carro, moto e outros)", "type": "text", "required": False, "maxlength": 100},
+                    {"id": "cor", "label": "Cor", "type": "text", "required": False, "maxlength": 50},
+                    {"id": "modelo", "label": "Modelo", "type": "text", "required": False, "maxlength": 100},
+                    {"id": "placa", "label": "Placa", "type": "text", "required": False, "maxlength": 20},
+                ],
+            },
+
+            {
+                "id": "roubo_houve_outros_bens",
+                "label": "Foram subtraídos outros bens?",
+                "type": "boolean",
+                "required": False,
+                "show_if": {"field": "modalidade", "value": "Roubo"}
+            },
+            {
+                "id": "roubo_outros_bens",
+                "label": "Descreva outros bens",
+                "type": "text",
+                "required": False,
+                "show_if": {"field": "roubo_houve_outros_bens", "value": "sim"}
+            },
+
+            {
+                "id": "roubo_valor_estimado",
+                "label": "Valor estimado dos bens (R$)",
+                "type": "number",
+                "required": False,
+                "show_if": {"field": "modalidade", "value": "Roubo"}
+            },
+            {
+                "id": "roubo_veiculo_fuga",
+                "label": "Houve veículo de fuga?",
+                "type": "group",
+                "max_items": 5,
+                "add_label": "Adicionar",
+                "show_if": {"field": "modalidade", "value": "Roubo"},
+                "fields": [
+                    {"id": "marca", "label": "Marca", "type": "text", "required": False, "maxlength": 100},
+                    {"id": "tipo", "label": "Tipo", "type": "text", "required": False, "maxlength": 100},
+                    {"id": "cor", "label": "Cor", "type": "text", "required": False, "maxlength": 50},
+                    {"id": "modelo", "label": "Modelo", "type": "text", "required": False, "maxlength": 100},
+                    {"id": "placa", "label": "Placa", "type": "text", "required": False, "maxlength": 20},
+                ],
+            },
+            {
+                "id": "roubo_testemunhas",
+                "label": "Testemunhas",
+                "type": "group",
+                "max_items": 2,
+                "add_label": "Adicionar",
+                "show_if": {"field": "modalidade", "value": "Roubo"},
+                "fields": [
+                    {"id": "nome", "label": "Nome", "type": "text", "required": False, "maxlength": 200},
+                    {"id": "rg", "label": "RG/Documento", "type": "text", "required": False, "maxlength": 30},
+                    {"id": "contato", "label": "Contato", "type": "text", "required": False, "maxlength": 30},
+                    {"id": "endereco", "label": "Endereço", "type": "text", "required": False, "maxlength": 400},
+                ],
+            },
+            {
+                "id": "roubo_cameras",
+                "label": "Há câmeras de segurança no local?",
+                "type": "select",
+                "options": ["Sim", "Não", "Não sei"],
+                "required": False,
+                "show_if": {"field": "modalidade", "value": "Roubo"}
+            },
+
+            # ---------------- FURTO ----------------
+            {
+                "id": "furto_data_fato",
+                "label": "Data do fato",
+                "type": "date",
+                "required": False,
+                "show_if": {"field": "modalidade", "value": "Furto"}
+            },
+            {
+                "id": "furto_hora_fato",
+                "label": "Hora aproximada do fato",
+                "type": "text",
+                "required": False,
+                "show_if": {"field": "modalidade", "value": "Furto"}
+            },
+            {
+                "id": "furto_local_fato",
+                "label": "Local onde ocorreu o fato",
+                "type": "text",
+                "required": False,
+                "show_if": {"field": "modalidade", "value": "Furto"}
+            },
+            {
+                "id": "furto_autores",
+                "label": "Autores",
+                "type": "group",
+                "max_items": 5,
+                "add_label": "Adicionar",
+                "show_if": {"field": "modalidade", "value": "Furto"},
+                "fields": [
+                    {"id": "nome", "label": "Nome", "type": "text", "required": False, "maxlength": 200},
+                    {"id": "rg", "label": "RG/Documento", "type": "text", "required": False, "maxlength": 30},
+                    {"id": "contato", "label": "Contato", "type": "text", "required": False, "maxlength": 30},
+                    {"id": "endereco", "label": "Endereço", "type": "text", "required": False, "maxlength": 400},
+                    {"id": "altura_aproximada", "label": "Altura aproximada", "type": "text", "required": False, "maxlength": 50},
+                    {"id": "peso_aproximado", "label": "Peso aproximado", "type": "text", "required": False, "maxlength": 50},
+                    {"id": "cor_pele", "label": "Cor da pele", "type": "text", "required": False, "maxlength": 100},
+                    {"id": "roupas", "label": "Roupas", "type": "text", "required": False, "maxlength": 300},
+                    {"id": "outras_caracteristicas", "label": "Outras características", "type": "text", "required": False, "maxlength": 400},
+                ],
+            },
+            {
+                "id": "furto_meio_utilizado",
+                "label": "Meio utilizado",
+                "type": "checkbox_group",
+                "options": [
+                    "Abuso de confiança",
+                    "Chave falsa",
+                    "Destruição ou rompimento de obstáculo",
+                    "Destreza",
+                    "Durante repouso noturno",
+                    "Escalada",
+                    "Fraude",
+                    "Uso de chave falsa",
+                    "Uso de explosivos"
+                ],
+                "required": False,
+                "show_if": {"field": "modalidade", "value": "Furto"}
+            },
+
+            {
+                "id": "furto_houve_cartoes",
+                "label": "Foram subtraídos cartões?",
+                "type": "boolean",
+                "required": False,
+                "show_if": {"field": "modalidade", "value": "Furto"}
+            },
+            {
+                "id": "furto_cartoes",
+                "label": "Cartões",
+                "type": "group",
+                "max_items": 5,
+                "add_label": "Adicionar",
+                "show_if": {"field": "furto_houve_cartoes", "value": "sim"},
+                "fields": [
+                    {"id": "banco", "label": "Nome do banco", "type": "text", "required": False, "maxlength": 100},
+                    {"id": "tipo_cartao", "label": "Tipo de cartão", "type": "text", "required": False, "maxlength": 100},
+                    {"id": "numero_cartao", "label": "Número do cartão", "type": "text", "required": False, "maxlength": 50},
+                ],
+            },
+
+            {
+                "id": "furto_houve_celular",
+                "label": "Foi subtraído celular?",
+                "type": "boolean",
+                "required": False,
+                "show_if": {"field": "modalidade", "value": "Furto"}
+            },
+            {
+                "id": "furto_celulares",
+                "label": "Celulares",
+                "type": "group",
+                "max_items": 5,
+                "add_label": "Adicionar",
+                "show_if": {"field": "furto_houve_celular", "value": "sim"},
+                "fields": [
+                    {"id": "marca", "label": "Marca", "type": "text", "required": False, "maxlength": 100},
+                    {"id": "modelo", "label": "Modelo", "type": "text", "required": False, "maxlength": 100},
+                    {"id": "numero_telefone", "label": "Número do telefone", "type": "text", "required": False, "maxlength": 30},
+                    {"id": "imei", "label": "Número de IMEI", "type": "text", "required": False, "maxlength": 50},
+                ],
+            },
+
+            {
+                "id": "furto_houve_dinheiro",
+                "label": "Foi subtraído dinheiro?",
+                "type": "boolean",
+                "required": False,
+                "show_if": {"field": "modalidade", "value": "Furto"}
+            },
+
+            {
+                "id": "furto_houve_joias",
+                "label": "Foram subtraídas jóias?",
+                "type": "boolean",
+                "required": False,
+                "show_if": {"field": "modalidade", "value": "Furto"}
+            },
+            {
+                "id": "furto_joias",
+                "label": "Jóias",
+                "type": "group",
+                "max_items": 10,
+                "add_label": "Adicionar",
+                "show_if": {"field": "furto_houve_joias", "value": "sim"},
+                "fields": [
+                    {"id": "marca", "label": "Marca", "type": "text", "required": False, "maxlength": 100},
+                    {"id": "metal_pedra", "label": "Metal/pedra preciosa", "type": "text", "required": False, "maxlength": 150},
+                ],
+            },
+
+            {
+                "id": "furto_houve_veiculo",
+                "label": "Foi subtraído veículo?",
+                "type": "boolean",
+                "required": False,
+                "show_if": {"field": "modalidade", "value": "Furto"}
+            },
+            {
+                "id": "furto_veiculos_subtraidos",
+                "label": "Veículos subtraídos",
+                "type": "group",
+                "max_items": 5,
+                "add_label": "Adicionar",
+                "show_if": {"field": "furto_houve_veiculo", "value": "sim"},
+                "fields": [
+                    {"id": "marca", "label": "Marca", "type": "text", "required": False, "maxlength": 100},
+                    {"id": "tipo", "label": "Tipo (carro, moto e outros)", "type": "text", "required": False, "maxlength": 100},
+                    {"id": "cor", "label": "Cor", "type": "text", "required": False, "maxlength": 50},
+                    {"id": "modelo", "label": "Modelo", "type": "text", "required": False, "maxlength": 100},
+                    {"id": "placa", "label": "Placa", "type": "text", "required": False, "maxlength": 20},
+                ],
+            },
+
+            {
+                "id": "furto_houve_outros_bens",
+                "label": "Foram subtraídos outros bens?",
+                "type": "boolean",
+                "required": False,
+                "show_if": {"field": "modalidade", "value": "Furto"}
+            },
+            {
+                "id": "furto_outros_bens",
+                "label": "Descreva outros bens",
+                "type": "text",
+                "required": False,
+                "show_if": {"field": "furto_houve_outros_bens", "value": "sim"}
+            },
+
+            {
+                "id": "furto_valor_estimado",
+                "label": "Valor estimado dos bens (R$)",
+                "type": "number",
+                "required": False,
+                "show_if": {"field": "modalidade", "value": "Furto"}
+            },
+            {
+                "id": "furto_veiculo_fuga",
+                "label": "Houve veículo de fuga?",
+                "type": "group",
+                "max_items": 5,
+                "add_label": "Adicionar",
+                "show_if": {"field": "modalidade", "value": "Furto"},
+                "fields": [
+                    {"id": "marca", "label": "Marca", "type": "text", "required": False, "maxlength": 100},
+                    {"id": "tipo", "label": "Tipo", "type": "text", "required": False, "maxlength": 100},
+                    {"id": "cor", "label": "Cor", "type": "text", "required": False, "maxlength": 50},
+                    {"id": "modelo", "label": "Modelo", "type": "text", "required": False, "maxlength": 100},
+                    {"id": "placa", "label": "Placa", "type": "text", "required": False, "maxlength": 20},
+                ],
+            },
+            {
+                "id": "furto_testemunhas",
+                "label": "Testemunhas",
+                "type": "group",
+                "max_items": 2,
+                "add_label": "Adicionar",
+                "show_if": {"field": "modalidade", "value": "Furto"},
+                "fields": [
+                    {"id": "nome", "label": "Nome", "type": "text", "required": False, "maxlength": 200},
+                    {"id": "rg", "label": "RG/Documento", "type": "text", "required": False, "maxlength": 30},
+                    {"id": "contato", "label": "Contato", "type": "text", "required": False, "maxlength": 30},
+                    {"id": "endereco", "label": "Endereço", "type": "text", "required": False, "maxlength": 400},
+                ],
+            },
+            {
+                "id": "furto_cameras",
+                "label": "Há câmeras de segurança no local?",
+                "type": "select",
+                "options": ["Sim", "Não", "Não sei"],
+                "required": False,
+                "show_if": {"field": "modalidade", "value": "Furto"}
+            },
         ],
     },
     "trafico_drogas": {
@@ -972,10 +1393,44 @@ CRIME_SCHEMAS = {
             {"id": "data_fato", "label": "Data do fato/denúncia/abordagem", "type": "date", "required": False},
             {"id": "hora_fato", "label": "Hora aproximada", "type": "text", "required": False},
             {"id": "local_fato", "label": "Local", "type": "text", "required": False},
-            {"id": "descricao", "label": "Descrição do fato (o que foi visto/ocorreu)", "type": "text", "required": False},
-            {"id": "suspeitos", "label": "Suspeitos (descrição/nomes, se souber)", "type": "text", "required": False},
-            {"id": "drogas", "label": "Substâncias/quantidades (se souber)", "type": "text", "required": False},
-            {"id": "testemunhas", "label": "Testemunhas/contatos", "type": "text", "required": False},
+            {
+                "id": "autores",
+                "label": "Autor(es)",
+                "type": "group",
+                "max_items": 5,
+                "add_label": "Adicionar",
+                "fields": [
+                    {"id": "nome", "label": "Nome", "type": "text", "required": False, "maxlength": 200},
+                    {"id": "rg", "label": "RG/Documento", "type": "text", "required": False, "maxlength": 30},
+                    {"id": "contato", "label": "Contato (telefone)", "type": "text", "required": False, "maxlength": 30},
+                    {"id": "endereco", "label": "Endereço", "type": "text", "required": False, "maxlength": 400},
+                ],
+            },
+            {
+                "id": "drogas",
+                "label": "Substâncias/quantidades",
+                "type": "group",
+                "max_items": 10,
+                "add_label": "Adicionar",
+                "fields": [
+                    {"id": "tipo_droga", "label": "Tipo de droga", "type": "text", "required": False, "maxlength": 100},
+                    {"id": "quantidade_unidades", "label": "Quantidade (unidades)", "type": "number", "required": False},
+                    {"id": "peso", "label": "Peso", "type": "text", "required": False, "maxlength": 50},
+                ],
+            },
+            {
+                "id": "testemunhas",
+                "label": "Testemunhas",
+                "type": "group",
+                "max_items": 2,
+                "add_label": "Adicionar",
+                "fields": [
+                    {"id": "nome", "label": "Nome", "type": "text", "required": False, "maxlength": 200},
+                    {"id": "rg", "label": "RG/Documento", "type": "text", "required": False, "maxlength": 30},
+                    {"id": "contato", "label": "Contato (telefone)", "type": "text", "required": False, "maxlength": 30},
+                    {"id": "endereco", "label": "Endereço", "type": "text", "required": False, "maxlength": 400},
+                ],
+            },
             {"id": "cameras", "label": "Há câmeras de segurança?", "type": "boolean", "required": False},
         ],
     },
@@ -985,13 +1440,36 @@ CRIME_SCHEMAS = {
             {"id": "data_fato", "label": "Data do fato", "type": "date", "required": False},
             {"id": "local_fato", "label": "Local do fato", "type": "text", "required": False},
             {"id": "descricao", "label": "Descreva o fato ocorrido", "type": "text", "required": False},
-            {"id": "partes_envolvidas", "label": "Partes envolvidas", "type": "text", "required": False},
-            {"id": "prejuizo", "label": "Houve prejuízo material? Valor estimado (R$)", "type": "number", "required": False},
-            {"id": "testemunhas", "label": "Há testemunhas?", "type": "text", "required": False},
+            {
+                "id": "partes_envolvidas",
+                "label": "Partes envolvidas",
+                "type": "group",
+                "max_items": 5,
+                "add_label": "Adicionar",
+                "fields": [
+                    {"id": "nome", "label": "Nome", "type": "text", "required": False, "maxlength": 200},
+                    {"id": "rg", "label": "RG/Documento", "type": "text", "required": False, "maxlength": 30},
+                    {"id": "contato", "label": "Contato (telefone)", "type": "text", "required": False, "maxlength": 30},
+                    {"id": "endereco", "label": "Endereço", "type": "text", "required": False, "maxlength": 400},
+                ],
+            },
+            {
+                "id": "testemunhas",
+                "label": "Testemunhas",
+                "type": "group",
+                "max_items": 2,
+                "add_label": "Adicionar",
+                "fields": [
+                    {"id": "nome", "label": "Nome", "type": "text", "required": False, "maxlength": 200},
+                    {"id": "rg", "label": "RG/Documento", "type": "text", "required": False, "maxlength": 30},
+                    {"id": "contato", "label": "Contato (telefone)", "type": "text", "required": False, "maxlength": 30},
+                    {"id": "endereco", "label": "Endereço", "type": "text", "required": False, "maxlength": 400},
+                ],
+            },
         ],
     },
 }
-}
+
 
 DEFAULT_FORM_SCHEMA = {
     # Campos opcionais "future-proof"
