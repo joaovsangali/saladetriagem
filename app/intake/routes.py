@@ -121,7 +121,7 @@ def submit(token):
         if not qid:
             continue
 
-        # ✅ NOVO: group (lista de objetos repetíveis)
+        # group (lista de objetos repetíveis)
         if qtype == "group":
             items = []
             fields = q.get("fields", [])
@@ -156,6 +156,12 @@ def submit(token):
                     items.append(obj)
 
             answers[qid] = items
+            continue
+
+        # ✅ NOVO: checkbox_group
+        if qtype == "checkbox_group":
+            values = [v.strip() for v in request.form.getlist(f"q_{qid}") if v.strip()]
+            answers[qid] = values if values else []
             continue
 
         # boolean padrão
