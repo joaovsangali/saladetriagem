@@ -1,136 +1,69 @@
-import re
-
-_ISO_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
-
-
-def _format_date_br(value: str) -> str:
-    """Convert ISO date 'yyyy-mm-dd' to 'dd/mm/yyyy'. Passthrough if not ISO."""
-    if value and _ISO_DATE_RE.match(value):
-        parts = value.split("-")
-        return f"{parts[2]}/{parts[1]}/{parts[0]}"
-    return value
-
-
-def _pretty_field_name(field_id: str) -> str:
-    mapping = {
-        "nome": "Nome",
-        "rg": "RG",
-        "cpf": "CPF",
-        "contato": "Contato",
-        "endereco": "Endereço",
-        "telefone": "Telefone",
-    }
-    return mapping.get(field_id, field_id.replace("_", " ").capitalize())
-
-
-def _format_group_items_for_text(items: list) -> list:
-    """
-    Formata lista de dicts para o texto de cópia.
-    Ex:
-      1) Nome: Jujuba | RG: 123 | Contato: 119...
-    """
-    lines = []
-    for i, item in enumerate(items, start=1):
-        if not isinstance(item, dict):
-            continue
-
-        parts = []
-        for k, v in item.items():
-            if v is None or str(v).strip() == "":
-                continue
-            parts.append(f"{_pretty_field_name(k)}: {v}")
-
-        if parts:
-            lines.append(f"  {i}) " + " | ".join(parts))
-
-    return lines
-
-
-def _format_group_items_for_structured(items: list) -> str:
-    """
-    Formata lista de dicts para aparecer bem em 'Respostas' no dashboard.
-    """
-    lines = []
-    for i, item in enumerate(items, start=1):
-        if not isinstance(item, dict):
-            continue
-
-        parts = []
-        for k, v in item.items():
-            if v is None or str(v).strip() == "":
-                continue
-            parts.append(f"{_pretty_field_name(k)}: {v}")
-
-        if parts:
-            lines.append(f"{i}) " + " | ".join(parts))
-
-    return "\n".join(lines)
+from app.renderer.common import format_date_br, format_group_generic
+from app.renderer.crimes.acidente_transito import render_acidente_transito
+from app.renderer.crimes.adulteracao_sinal_identificador import render_adulteracao_sinal_identificador
+from app.renderer.crimes.ameaca import render_ameaca
+from app.renderer.crimes.calunia_difamacao_injuria import render_calunia_difamacao_injuria
+from app.renderer.crimes.comunicacao_obito import render_comunicacao_obito
+from app.renderer.crimes.dano import render_dano
+from app.renderer.crimes.desaparecimento_encontro_pessoas import render_desaparecimento_encontro_pessoas
+from app.renderer.crimes.embriaguez_volante import render_embriaguez_volante
+from app.renderer.crimes.estelionato_golpe import render_estelionato_golpe
+from app.renderer.crimes.lesao_corporal import render_lesao_corporal
+from app.renderer.crimes.maria_da_penha import render_maria_da_penha
+from app.renderer.crimes.perda_documentos import render_perda_documentos
+from app.renderer.crimes.porte_ilegal_arma_fogo import render_porte_ilegal_arma_fogo
+from app.renderer.crimes.roubo_furto import render_roubo_furto
+from app.renderer.crimes.trafico_drogas import render_trafico_drogas
+from app.renderer.crimes.outros import render_outros
 
 
 class TextRenderer:
     CRIME_LABELS = {
-        "roubo": "Roubo",
-        "furto": "Furto",
-        "estelionato": "Estelionato",
-        "lesao_corporal": "Lesão Corporal",
-        "maria_da_penha": "Violência Doméstica / Lei Maria da Penha",
+        "acidente_transito": "Acidente de Trânsito",
+        "adulteracao_sinal_identificador": "Adulteração de Sinal Identificador de Veículo",
         "ameaca": "Ameaça",
+        "calunia_difamacao_injuria": "Calúnia/Difamação/Injúria",
+        "comunicacao_obito": "Comunicação de Óbito",
         "dano": "Dano ao Patrimônio",
+        "desaparecimento_encontro_pessoas": "Desaparecimento/Encontro de pessoas",
+        "embriaguez_volante": "Embriaguez no Volante",
+        "estelionato_golpe": "Estelionato (Golpe)",
+        "lesao_corporal": "Lesão Corporal",
+        "maria_da_penha": "Violência Doméstica (Maria da Penha)",
+        "perda_documentos": "Perda de Documentos",
+        "porte_ilegal_arma_fogo": "Porte Ilegal de Arma de Fogo",
+        "roubo_furto": "Roubo/Furto",
+        "trafico_drogas": "Tráfico de Drogas",
         "outros": "Outros",
+    }
+
+    RENDERERS = {
+        "acidente_transito": render_acidente_transito,
+        "adulteracao_sinal_identificador": render_adulteracao_sinal_identificador,
+        "ameaca": render_ameaca,
+        "calunia_difamacao_injuria": render_calunia_difamacao_injuria,
+        "comunicacao_obito": render_comunicacao_obito,
+        "dano": render_dano,
+        "desaparecimento_encontro_pessoas": render_desaparecimento_encontro_pessoas,
+        "embriaguez_volante": render_embriaguez_volante,
+        "estelionato_golpe": render_estelionato_golpe,
+        "lesao_corporal": render_lesao_corporal,
+        "maria_da_penha": render_maria_da_penha,
+        "perda_documentos": render_perda_documentos,
+        "porte_ilegal_arma_fogo": render_porte_ilegal_arma_fogo,
+        "roubo_furto": render_roubo_furto,
+        "trafico_drogas": render_trafico_drogas,
+        "outros": render_outros,
     }
 
     @classmethod
     def render(cls, submission) -> str:
-        lines = []
         crime_label = cls.CRIME_LABELS.get(submission.crime_type, submission.crime_type)
-
-        lines.append(f"TIPO DE OCORRÊNCIA: {crime_label}")
-        lines.append("")
-        lines.append("DADOS INFORMADOS:")
-        lines.append(f"  Nome: {submission.guest_name or '—'}")
-        if submission.dob:
-            lines.append(f"  Data de Nascimento: {_format_date_br(submission.dob)}")
-        if submission.rg:
-            lines.append(f"  RG: {submission.rg}")
-        if submission.cpf:
-            lines.append(f"  CPF: {submission.cpf}")
-        if submission.phone:
-            lines.append(f"  Telefone: {submission.phone}")
-        lines.append("")
-
-        if submission.address:
-            lines.append(f"ENDEREÇO: {submission.address}")
-            lines.append("")
-
-        if submission.answers:
-            lines.append("DOS FATOS:")
-            for key, val in submission.answers.items():
-                if val is None or val == "" or val == []:
-                    continue
-
-                # grupos repetíveis
-                if isinstance(val, list):
-                    lines.append(f"  {key}:")
-                    lines.extend(_format_group_items_for_text(val))
-                    continue
-
-                display_val = _format_date_br(str(val)) if isinstance(val, str) else val
-                lines.append(f"  {key}: {display_val}")
-            lines.append("")
-
-        if submission.narrative:
-            lines.append("A PARTE RELATA QUE:")
-            lines.append(f"  {submission.narrative}")
-            lines.append("")
-
-        n_photos = len(submission.photos) if submission.photos else 0
-        lines.append(f"ANEXOS: {n_photos} foto(s)")
-
-        return "\n".join(lines)
+        renderer = cls.RENDERERS.get(submission.crime_type, render_outros)
+        return renderer(submission, crime_label)
 
     @classmethod
     def render_structured(cls, submission, questions: list) -> list:
-        """Return list of (label, value) tuples for the structured view."""
         result = []
         q_map = {q["id"]: q["label"] for q in questions}
 
@@ -139,9 +72,12 @@ class TextRenderer:
             if val is None or val == "" or val == []:
                 continue
 
-            # grupos repetíveis
             if isinstance(val, list):
-                pretty = _format_group_items_for_structured(val)
+                if val and all(isinstance(item, dict) for item in val):
+                    pretty = format_group_generic(val)
+                else:
+                    pretty = ", ".join(str(item) for item in val if item)
+
                 if pretty:
                     result.append((label, pretty))
                 continue
@@ -149,7 +85,7 @@ class TextRenderer:
             if isinstance(val, bool):
                 val = "Sim" if val else "Não"
             else:
-                val = _format_date_br(str(val))
+                val = format_date_br(str(val))
 
             result.append((label, str(val)))
 
