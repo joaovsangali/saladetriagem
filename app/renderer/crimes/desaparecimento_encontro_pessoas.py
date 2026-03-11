@@ -21,15 +21,12 @@ def render_desaparecimento_encontro_pessoas(submission, crime_label: str) -> str
 
         item = items[0] if isinstance(items[0], dict) else {}
         nome_pessoa = clean(item.get("nome"))
-        rg_pessoa = clean(item.get("rg"))
         contato_pessoa = clean(item.get("contato"))
         endereco_pessoa = clean(item.get("endereco"))
 
         dados = []
         if nome_pessoa:
             dados.append(nome_pessoa)
-        if rg_pessoa:
-            dados.append(f"RG/documento {rg_pessoa}")
         if contato_pessoa:
             dados.append(f"contato {contato_pessoa}")
         if endereco_pessoa:
@@ -46,19 +43,13 @@ def render_desaparecimento_encontro_pessoas(submission, crime_label: str) -> str
 
             nome_contato = clean(item.get("nome"))
             contato = clean(item.get("contato"))
-            rg = clean(item.get("rg"))
-            endereco = clean(item.get("endereco"))
+
 
             dados = []
             if nome_contato:
                 dados.append(nome_contato)
             if contato:
                 dados.append(f"telefone/contato {contato}")
-            if rg:
-                dados.append(f"RG/documento {rg}")
-            if endereco:
-                dados.append(f"endereço {endereco}")
-
             if dados:
                 partes.append(", ".join(dados))
 

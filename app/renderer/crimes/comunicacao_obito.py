@@ -25,10 +25,6 @@ def render_comunicacao_obito(submission, crime_label: str) -> str:
         dados = []
         if nome_falecido:
             dados.append(nome_falecido)
-        if rg_falecido:
-            dados.append(f"RG/documento {rg_falecido}")
-        if cpf_falecido:
-            dados.append(f"CPF {cpf_falecido}")
         if endereco_falecido:
             dados.append(f"endereço {endereco_falecido}")
 

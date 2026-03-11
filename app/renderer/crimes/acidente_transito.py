@@ -24,9 +24,7 @@ def render_acidente_transito(submission, crime_label: str) -> str:
             placa = clean(item.get("placa"))
             cor = clean(item.get("cor"))
             condutor_nome = clean(item.get("condutor_nome"))
-            condutor_rg = clean(item.get("condutor_rg"))
             condutor_contato = clean(item.get("condutor_contato"))
-            condutor_endereco = clean(item.get("condutor_endereco"))
             seguro = item.get("seguro")
             seguro_nome = clean(item.get("seguro_nome"))
 
@@ -39,12 +37,8 @@ def render_acidente_transito(submission, crime_label: str) -> str:
                 dados.append(f"cor {cor}")
             if condutor_nome:
                 dados.append(f"conduzido por {condutor_nome}")
-            if condutor_rg:
-                dados.append(f"RG/documento do condutor {condutor_rg}")
             if condutor_contato:
                 dados.append(f"contato do condutor {condutor_contato}")
-            if condutor_endereco:
-                dados.append(f"endereço do condutor {condutor_endereco}")
             if seguro is True:
                 if seguro_nome:
                     dados.append(f"com seguro {seguro_nome}")

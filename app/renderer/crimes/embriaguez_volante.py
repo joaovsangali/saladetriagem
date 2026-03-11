@@ -51,19 +51,12 @@ def render_embriaguez_volante(submission, crime_label: str) -> str:
 
             nome_autor = clean(item.get("nome"))
             contato_autor = clean(item.get("contato"))
-            rg_autor = clean(item.get("rg"))
-            endereco_autor = clean(item.get("endereco"))
 
             dados = []
             if nome_autor:
                 dados.append(nome_autor)
             if contato_autor:
                 dados.append(f"contato {contato_autor}")
-            if rg_autor:
-                dados.append(f"RG/documento {rg_autor}")
-            if endereco_autor:
-                dados.append(f"endereço {endereco_autor}")
-
             if dados:
                 partes.append(", ".join(dados))
 

@@ -16,8 +16,6 @@ def render_roubo_furto(submission, crime_label: str) -> str:
 
             nome_pessoa = clean(item.get("nome"))
             contato = clean(item.get("contato"))
-            rg = clean(item.get("rg"))
-            endereco = clean(item.get("endereco"))
             altura = clean(item.get("altura_aproximada"))
             peso = clean(item.get("peso_aproximado"))
             cor_pele = clean(item.get("cor_pele"))
@@ -29,10 +27,6 @@ def render_roubo_furto(submission, crime_label: str) -> str:
                 dados.append(nome_pessoa)
             if contato:
                 dados.append(f"contato {contato}")
-            if rg:
-                dados.append(f"RG/documento {rg}")
-            if endereco:
-                dados.append(f"endereço {endereco}")
             if altura:
                 dados.append(f"altura aproximada {altura}")
             if peso:
