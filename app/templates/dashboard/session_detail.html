@@ -17,12 +17,6 @@
   </div>
   <div class="d-flex gap-2">
     {% if session.is_active %}
-    <form action="{{ url_for('dashboard.purge_session', session_id=session.id) }}" method="post" class="d-inline">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <button class="btn btn-outline-warning btn-sm" onclick="return confirm('Apagar todos os dados sensíveis?')">
-        <i class="bi bi-trash"></i> Purgar Dados
-      </button>
-    </form>
     <form action="{{ url_for('dashboard.close_session', session_id=session.id) }}" method="post" class="d-inline">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button class="btn btn-danger btn-sm" onclick="return confirm('Encerrar plantão e apagar dados?')">
