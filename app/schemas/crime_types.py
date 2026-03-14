@@ -96,7 +96,7 @@ CRIME_SCHEMAS = {
             "id": "testemunhas",
             "label": "Testemunhas do acidente",
             "type": "group",
-            "max_items": 5,
+            "max_items": 2,
             "add_label": "Adicionar",
             "fields": [
                 {"id": "nome", "label": "Nome", "type": "text", "required": False, "maxlength": 200},
@@ -171,7 +171,7 @@ CRIME_SCHEMAS = {
             "id": "testemunhas",
             "label": "Testemunhas da ameaça",
             "type": "group",
-            "max_items": 5,
+            "max_items": 2,
             "add_label": "Adicionar",
             "fields": [
                 {"id": "nome", "label": "Nome", "type": "text", "required": False, "maxlength": 200},
@@ -616,7 +616,7 @@ CRIME_SCHEMAS = {
                 "id": "testemunhas",
                 "label": "Testemunha(s)",
                 "type": "group",
-                "max_items": 5,
+                "max_items": 2,
                 "add_label": "Adicionar",
                 "fields": [
                     {"id": "nome", "label": "Nome", "type": "text", "required": False, "maxlength": 200},
