@@ -6,6 +6,10 @@ from app.extensions import db, login_manager, csrf, limiter
 from app.models import PoliceUser
 from app.sessions.expiry import start_expiry_daemon
 from app.cli import register_cli
+from app.middleware import HTTPSRedirectMiddleware
+from app.security_headers import add_security_headers
+from app.errors import register_error_handlers
+from app.log_sanitizer import SanitizingFilter
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +49,10 @@ def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
 
+    # Run class-level init (e.g. ProductionConfig validates SECRET_KEY)
+    if hasattr(config_class, "init_app"):
+        config_class.init_app(app)
+
     if app.config.get("SECRET_KEY") == _DEFAULT_SECRET_KEY:
         logger.warning(
             "Using default SECRET_KEY. Set the SECRET_KEY environment variable "
@@ -52,6 +60,14 @@ def create_app(config_class=Config):
         )
 
     app.jinja_env.filters["datefmt"] = _datefmt
+
+    # Structured logging with PII sanitization (non-debug mode)
+    if not app.debug:
+        handler = logging.StreamHandler()
+        handler.setLevel(logging.INFO)
+        handler.addFilter(SanitizingFilter())
+        app.logger.addHandler(handler)
+        app.logger.setLevel(logging.INFO)
 
     # Extensions
     db.init_app(app)
@@ -83,6 +99,18 @@ def create_app(config_class=Config):
     @app.route("/")
     def index():
         return redirect(url_for("auth.login"))
+
+    # Security headers on every response
+    app.after_request(add_security_headers)
+
+    # HTTPS redirect middleware
+    app.wsgi_app = HTTPSRedirectMiddleware(
+        app.wsgi_app,
+        force_https=app.config.get("FORCE_HTTPS", False),
+    )
+
+    # Custom error pages
+    register_error_handlers(app)
     
     # DB setup
     with app.app_context():

@@ -25,12 +25,12 @@
       <h5 class="mb-0">Formulário de Triagem Presencial</h5>
     </div>
     <div class="card-body">
-      <form method="post" action="{{ url_for('intake.submit', token=token) }}" enctype="multipart/form-data" novalidate>
+      <form method="post" action="{{ url_for('intake.submit', token=token) }}" enctype="multipart/form-data" novalidate autocomplete="off">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
         <h6 class="mb-3">Tipo de Ocorrência</h6>
         <div class="mb-3">
-          <select name="crime_type" id="crime_type" class="form-select" required onchange="updateQuestions()">
+          <select name="crime_type" id="crime_type" class="form-select" required onchange="updateQuestions()" autocomplete="off">
             <option value="">— Selecione o tipo —</option>
             {% for ct in crime_types %}
               <option value="{{ ct }}">{{ crime_labels[ct] }}</option>
@@ -38,10 +38,6 @@
           </select>
         </div>
 
-        {# 
-          BLOCO PRINCIPAL (fica oculto até selecionar o tipo)
-          Regra: "quando ainda não selecionou, não aparece nenhum campo para ele preencher"
-        #}
         <div id="form-fields" class="d-none">
 
           {% if schema.enabled_fields.get('nome', True)
@@ -54,53 +50,52 @@
             {% if schema.enabled_fields.get('nome', True) %}
             <div class="col-md-6 mb-3">
               <label class="form-label">Nome completo *</label>
-              <input type="text" name="guest_name" class="form-control" required maxlength="200">
+              <input type="text" name="guest_name" class="form-control" required maxlength="200" autocomplete="off">
             </div>
             {% endif %}
 
             {% if schema.enabled_fields.get('nascimento', True) %}
             <div class="col-md-6 mb-3">
               <label class="form-label">Data de Nascimento</label>
-              <input type="date" name="dob" class="form-control">
+              <input type="date" name="dob" class="form-control" autocomplete="off">
             </div>
             {% endif %}
 
             {% if schema.enabled_fields.get('rg', True) %}
             <div class="col-md-6 mb-3">
               <label class="form-label">RG</label>
-              <input type="text" name="rg" class="form-control" maxlength="20">
+              <input type="text" name="rg" class="form-control" maxlength="20" autocomplete="off">
             </div>
             {% endif %}
 
             {% if schema.enabled_fields.get('cpf', True) %}
             <div class="col-md-6 mb-3">
               <label class="form-label">CPF</label>
-              <input type="text" name="cpf" class="form-control" maxlength="20">
+              <input type="text" name="cpf" class="form-control" maxlength="20" autocomplete="off">
             </div>
             {% endif %}
             
             <div class="col-md-6 mb-3">
               <label class="form-label">Telefone para contato</label>
-              <input type="text" name="phone" class="form-control" maxlength="20">
+              <input type="text" name="phone" class="form-control" maxlength="20" autocomplete="off">
             </div>
 
             {% if schema.enabled_fields.get('endereco', True) %}
             <div class="col-12 mb-3">
               <label class="form-label">Endereço completo</label>
-              <input type="text" name="address" class="form-control" maxlength="400">
+              <input type="text" name="address" class="form-control" maxlength="400" autocomplete="off">
             </div>
             {% endif %}
           </div>
           {% endif %}
 
-          {# Perguntas por tipo (se existirem) #}
           {% for ct in crime_types %}
           <div class="question-section" id="qs-{{ ct }}">
             <h6 class="mb-3">Perguntas — {{ crime_labels[ct] }}</h6>
             {% set questions = questions_by_crime.get(ct, []) %}
             {% if questions and questions|length > 0 %}
               {% for q in questions %}
-                            <div
+              <div
                 class="mb-3 question-field"
                 {% if q.show_if %}
                   data-show-if-field="{{ q.show_if.field }}"
@@ -112,7 +107,7 @@
                 </label>
 
                 {% if q.type == 'select' %}
-                  <select name="q_{{ q.id }}" class="form-select" {% if q.required %}required{% endif %}>
+                  <select name="q_{{ q.id }}" class="form-select" autocomplete="off" {% if q.required %}required{% endif %}>
                     <option value="">— Selecione —</option>
                     {% for opt in q.options %}
                     <option value="{{ opt }}">{{ opt }}</option>
@@ -120,13 +115,12 @@
                   </select>
 
                 {% elif q.type == 'date' %}
-                  <input type="date" name="q_{{ q.id }}" class="form-control" {% if q.required %}required{% endif %}>
+                  <input type="date" name="q_{{ q.id }}" class="form-control" autocomplete="off" {% if q.required %}required{% endif %}>
 
                 {% elif q.type == 'number' %}
-                  <input type="number" name="q_{{ q.id }}" class="form-control" min="0" step="0.01" {% if q.required %}required{% endif %}>
+                  <input type="number" name="q_{{ q.id }}" class="form-control" min="0" step="0.01" autocomplete="off" {% if q.required %}required{% endif %}>
 
                 {% elif q.type == 'group' %}
-                  {# grupo repetível: q_<groupId>__<index>__<fieldId> #}
                   {% set gid = q.id %}
                   {% set max_items = q.max_items or 5 %}
                   {% set add_label = q.add_label or 'Adicionar' %}
@@ -143,7 +137,6 @@
 
                     <div id="group-{{ gid }}-items"></div>
 
-                    {# template oculto do item (clonado via JS) #}
                     <template id="group-{{ gid }}-tpl">
                       <div class="card mb-2 group-item" data-index="__INDEX__">
                         <div class="card-body py-2">
@@ -171,6 +164,7 @@
                                   <select
                                     class="form-select form-select-sm"
                                     name="q_{{ gid }}__@@INDEX@@__{{ f.id }}"
+                                    autocomplete="off"
                                     {% if f.required %}required{% endif %}
                                   >
                                     <option value="">— Selecione —</option>
@@ -183,6 +177,7 @@
                                   <select
                                     class="form-select form-select-sm"
                                     name="q_{{ gid }}__@@INDEX@@__{{ f.id }}"
+                                    autocomplete="off"
                                     {% if f.required %}required{% endif %}
                                   >
                                     <option value="">— Selecione —</option>
@@ -195,6 +190,7 @@
                                     type="date"
                                     class="form-control form-control-sm"
                                     name="q_{{ gid }}__@@INDEX@@__{{ f.id }}"
+                                    autocomplete="off"
                                     {% if f.required %}required{% endif %}
                                   >
 
@@ -205,6 +201,7 @@
                                     name="q_{{ gid }}__@@INDEX@@__{{ f.id }}"
                                     min="0"
                                     step="0.01"
+                                    autocomplete="off"
                                     {% if f.required %}required{% endif %}
                                   >
 
@@ -213,6 +210,7 @@
                                     type="text"
                                     class="form-control form-control-sm"
                                     name="q_{{ gid }}__@@INDEX@@__{{ f.id }}"
+                                    autocomplete="off"
                                     {% if f.maxlength %}maxlength="{{ f.maxlength }}"{% endif %}
                                     {% if f.required %}required{% endif %}
                                   >
@@ -220,40 +218,39 @@
                               </div>
                             {% endfor %}
                           </div>
-                          </div>
                         </div>
+                      </div>
                     </template>
                   </div>
-                  
 
-              {% elif q.type == 'checkbox_group' %}
-                <div class="border rounded p-2">
-                  {% for opt in q.options %}
-                    <div class="form-check">
-                      <input
-                        class="form-check-input"
-                        type="checkbox"
-                        name="q_{{ q.id }}"
-                        value="{{ opt }}"
-                        id="chk_{{ q.id }}_{{ loop.index }}"
-                      >
-                      <label class="form-check-label" for="chk_{{ q.id }}_{{ loop.index }}">
-                        {{ opt }}
-                      </label>
-                    </div>
-                  {% endfor %}
-                </div>
-
+                {% elif q.type == 'checkbox_group' %}
+                  <div class="border rounded p-2">
+                    {% for opt in q.options %}
+                      <div class="form-check">
+                        <input
+                          class="form-check-input"
+                          type="checkbox"
+                          name="q_{{ q.id }}"
+                          value="{{ opt }}"
+                          id="chk_{{ q.id }}_{{ loop.index }}"
+                          autocomplete="off"
+                        >
+                        <label class="form-check-label" for="chk_{{ q.id }}_{{ loop.index }}">
+                          {{ opt }}
+                        </label>
+                      </div>
+                    {% endfor %}
+                  </div>
 
                 {% elif q.type == 'boolean' %}
-                  <select name="q_{{ q.id }}" class="form-select" {% if q.required %}required{% endif %}>
+                  <select name="q_{{ q.id }}" class="form-select" autocomplete="off" {% if q.required %}required{% endif %}>
                     <option value="">— Selecione —</option>
                     <option value="sim">Sim</option>
                     <option value="nao">Não</option>
                   </select>
 
                 {% else %}
-                  <input type="text" name="q_{{ q.id }}" class="form-control" maxlength="500" {% if q.required %}required{% endif %}>
+                  <input type="text" name="q_{{ q.id }}" class="form-control" maxlength="500" autocomplete="off" {% if q.required %}required{% endif %}>
                 {% endif %}
               </div>
               {% endfor %}
@@ -268,7 +265,7 @@
           {% if schema.enabled_fields.get('relato', True) %}
           <div class="mb-3 mt-3">
             <label class="form-label">Relato livre</label>
-            <textarea name="narrative" class="form-control" rows="5" maxlength="3000" placeholder="Descreva os fatos com suas palavras..."></textarea>
+            <textarea name="narrative" class="form-control" rows="5" maxlength="3000" placeholder="Descreva os fatos com suas palavras..." autocomplete="off"></textarea>
           </div>
           {% endif %}
 
@@ -313,6 +310,24 @@ function updateQuestions() {
   updateTopLevelConditionalFields();
 }
 
+function setFieldGroupDisabled(fieldWrap, disabled) {
+  fieldWrap.querySelectorAll("input, select, textarea").forEach(el => {
+    el.disabled = disabled;
+  });
+}
+
+function clearFieldGroup(fieldWrap) {
+  fieldWrap.querySelectorAll("input, select, textarea").forEach(el => {
+    if (el.type === "checkbox" || el.type === "radio") {
+      el.checked = false;
+    } else {
+      el.value = "";
+    }
+  });
+
+  fieldWrap.querySelectorAll(".group-item").forEach(item => item.remove());
+}
+
 function updateTopLevelConditionalFields() {
   document.querySelectorAll('.question-section.active').forEach(section => {
     section.querySelectorAll('.question-field[data-show-if-field]').forEach(fieldWrap => {
@@ -328,28 +343,25 @@ function updateTopLevelConditionalFields() {
 
       fieldWrap.classList.toggle("conditional-hidden", !shouldShow);
 
-      if (!shouldShow) {
-        fieldWrap.querySelectorAll("input, select, textarea").forEach(el => {
-          if (el.tagName === "SELECT") {
-            el.value = "";
-          } else {
-            el.value = "";
-          }
-        });
-
-        fieldWrap.querySelectorAll(".group-item").forEach(item => item.remove());
+      if (shouldShow) {
+        setFieldGroupDisabled(fieldWrap, false);
+      } else {
+        clearFieldGroup(fieldWrap);
+        setFieldGroupDisabled(fieldWrap, true);
       }
+    });
+
+    section.querySelectorAll('.question-field:not([data-show-if-field])').forEach(fieldWrap => {
+      setFieldGroupDisabled(fieldWrap, false);
     });
   });
 }
 
-// garante estado correto ao carregar
 document.addEventListener('DOMContentLoaded', () => {
   updateQuestions();
 });
 
-
-const GROUP_STATE = {}; // gid -> nextIndex
+const GROUP_STATE = {};
 
 function addGroupItem(gid) {
   const activeSection = document.querySelector('.question-section.active');
@@ -374,7 +386,9 @@ function addGroupItem(gid) {
   const temp = document.createElement("div");
   temp.innerHTML = html.trim();
 
-  const newItem = temp.firstChild;
+  const newItem = temp.firstElementChild;
+  if (!newItem) return;
+
   items.appendChild(newItem);
   bindGroupConditionalEvents(newItem);
 }
@@ -383,7 +397,6 @@ function removeGroupItem(btn) {
   const card = btn.closest(".group-item");
   if (card) card.remove();
 }
-
 
 function updateGroupConditionalFields(groupItem) {
   if (!groupItem) return;
@@ -401,10 +414,23 @@ function updateGroupConditionalFields(groupItem) {
     const shouldShow = currentValue === expectedValue;
     fieldWrap.classList.toggle("conditional-hidden", !shouldShow);
 
-    const innerInput = fieldWrap.querySelector("input, select, textarea");
-    if (!shouldShow && innerInput) {
-      innerInput.value = "";
-    }
+    const innerFields = fieldWrap.querySelectorAll("input, select, textarea");
+    innerFields.forEach(el => {
+      if (shouldShow) {
+        el.disabled = false;
+      } else {
+        if (el.type === "checkbox" || el.type === "radio") {
+          el.checked = false;
+        } else {
+          el.value = "";
+        }
+        el.disabled = true;
+      }
+    });
+  });
+
+  groupItem.querySelectorAll(".group-field:not([data-show-if-field]) input, .group-field:not([data-show-if-field]) select, .group-field:not([data-show-if-field]) textarea").forEach(el => {
+    el.disabled = false;
   });
 }
 
@@ -423,7 +449,6 @@ document.addEventListener('change', (event) => {
     updateTopLevelConditionalFields();
   }
 });
-
 </script>
 </body>
 </html>

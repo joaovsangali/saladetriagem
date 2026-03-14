@@ -158,7 +158,7 @@ def submit(token):
             answers[qid] = items
             continue
 
-        # ✅ NOVO: checkbox_group
+        # checkbox_group
         if qtype == "checkbox_group":
             values = [v.strip() for v in request.form.getlist(f"q_{qid}") if v.strip()]
             answers[qid] = values if values else []
@@ -168,7 +168,10 @@ def submit(token):
         val = request.form.get(f"q_{qid}", "").strip()
 
         if qtype == "boolean":
-            answers[qid] = val.lower() in ("1", "true", "yes", "sim", "on")
+            if val == "":
+                answers[qid] = None
+            else:
+                answers[qid] = val.lower() in ("1", "true", "yes", "sim", "on")
         else:
             answers[qid] = val if val else None
 

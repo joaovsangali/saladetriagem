@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Meu Histórico de Acessos — Sala de Triagem{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2 class="mb-0"><i class="bi bi-shield-lock me-2"></i>Meu Histórico de Acessos</h2>
+  <a href="{{ url_for('dashboard.index') }}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left me-1"></i>Voltar
+  </a>
+</div>
+
+<p class="text-muted small">Exibindo os últimos 100 registros de acesso a triagens, em ordem cronológica inversa.</p>
+
+{% if logs %}
+<div class="table-responsive">
+  <table class="table table-striped table-hover table-sm align-middle">
+    <thead class="table-dark">
+      <tr>
+        <th>Data/Hora</th>
+        <th>Ação</th>
+        <th>Triagem</th>
+        <th>IP</th>
+        <th>Navegador</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for log in logs %}
+      <tr>
+        <td class="text-nowrap">{{ log.accessed_at | datefmt("dd/mm/yyyy HH:MM") }}</td>
+        <td>
+          {% if log.action == "view" %}
+            <span class="badge bg-primary">Visualização</span>
+          {% elif log.action == "close" %}
+            <span class="badge bg-success">Concluído</span>
+          {% elif log.action == "discard" %}
+            <span class="badge bg-secondary">Descartado</span>
+          {% elif log.action == "download_photo" %}
+            <span class="badge bg-info text-dark">Foto baixada</span>
+          {% elif log.action == "copy_text" %}
+            <span class="badge bg-warning text-dark">Texto copiado</span>
+          {% else %}
+            <span class="badge bg-light text-dark">{{ log.action }}</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if log.submission_id %}
+            <code class="small">{{ log.submission_id[:12] }}…</code>
+          {% else %}
+            <span class="text-muted">—</span>
+          {% endif %}
+        </td>
+        <td><code class="small">{{ log.ip_address or "—" }}</code></td>
+        <td class="text-truncate" style="max-width: 200px;" title="{{ log.user_agent or '' }}">
+          <span class="small text-muted">{{ (log.user_agent or "—")[:60] }}</span>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="alert alert-info">
+  <i class="bi bi-info-circle me-2"></i>Nenhum registro de acesso encontrado.
+</div>
+{% endif %}
+{% endblock %}

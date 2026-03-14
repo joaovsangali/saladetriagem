@@ -10,7 +10,7 @@ from flask import render_template, redirect, url_for, flash, request, abort, Res
 from flask_login import login_required, current_user
 from app.dashboard import dashboard_bp
 from app.extensions import db
-from app.models import DashboardSession, IntakeLink, MinimalLogEntry
+from app.models import DashboardSession, IntakeLink, MinimalLogEntry, AccessLog
 from app.store import submission_store
 from app.schemas.crime_types import DEFAULT_FORM_SCHEMA
 
@@ -278,6 +278,20 @@ def print_qr(session_id):
         qr_svg=qr_svg,
         intake_url=intake_url,
     )
+
+
+@dashboard_bp.route("/my-audit-log")
+@login_required
+def my_audit_log():
+    """Display the current officer's access audit log (last 100 entries)."""
+    logs = (
+        AccessLog.query.filter_by(user_id=current_user.id)
+        .order_by(AccessLog.accessed_at.desc())
+        .limit(100)
+        .all()
+    )
+    return render_template("dashboard/audit_log.html", logs=logs)
+
 
 def _generate_qr_svg(url: str) -> str:
     """Generate a clean inline SVG QR code string."""
