@@ -9,6 +9,7 @@ from app.models import DashboardSession, MinimalLogEntry
 from app.store import submission_store
 from app.renderer.text import TextRenderer
 from app.schemas.crime_types import CRIME_SCHEMAS
+from app.audit import log_access
 
 def _get_owned_session(session_id):
     return DashboardSession.query.filter_by(
@@ -34,7 +35,9 @@ def get_submission(session_id, submission_id):
     sub = submission_store.get(submission_id)
     if not sub or sub.dashboard_id != session_id:
         abort(404)
-    
+
+    log_access(current_user, submission_id, "view")
+
     questions = CRIME_SCHEMAS.get(sub.crime_type, {}).get("questions", [])
     structured = TextRenderer.render_structured(sub, questions)
     text = TextRenderer.render(sub)
@@ -76,7 +79,9 @@ def close_submission(session_id, submission_id):
     db.session.add(log)
     submission_store.delete(submission_id)
     db.session.commit()
-    
+
+    log_access(current_user, submission_id, "close")
+
     return jsonify({"status": "ok"})
 
 @api_bp.route("/sessions/<int:session_id>/submissions/<submission_id>/discard", methods=["POST"])
@@ -99,7 +104,9 @@ def discard_submission(session_id, submission_id):
     db.session.add(log)
     submission_store.delete(submission_id)
     db.session.commit()
-    
+
+    log_access(current_user, submission_id, "discard")
+
     return jsonify({"status": "ok"})
 
 @api_bp.route("/sessions/<int:session_id>/submissions/<submission_id>/photo/<int:index>")
@@ -112,6 +119,7 @@ def get_photo(session_id, submission_id, index):
     if index < 0 or index >= len(sub.photos):
         abort(404)
     
+    log_access(current_user, submission_id, "download_photo")
     return Response(
         sub.photos[index],
         mimetype="image/jpeg",

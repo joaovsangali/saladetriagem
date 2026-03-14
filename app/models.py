@@ -70,3 +70,27 @@ class MinimalLogEntry(db.Model):
     received_at = db.Column(db.DateTime)
     closed_at = db.Column(db.DateTime, nullable=True)
     status = db.Column(db.String(20), default="received")  # received, closed, discarded
+
+
+class AccessLog(db.Model):
+    """Audit trail: every access to sensitive submission data is recorded here."""
+
+    __tablename__ = "access_logs"
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("police_users.id"), nullable=False)
+    # submission_id may be None for session-level actions
+    submission_id = db.Column(db.String(64), nullable=True)
+    # action: view | close | discard | download_photo | copy_text
+    action = db.Column(db.String(50), nullable=False)
+    accessed_at = db.Column(
+        db.DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+    ip_address = db.Column(db.String(45), nullable=True)   # IPv4 or IPv6
+    user_agent = db.Column(db.String(256), nullable=True)
+
+    user = db.relationship("PoliceUser", backref="access_logs")
+
+    def __repr__(self):
+        return f"<AccessLog user={self.user_id} action={self.action} sub={self.submission_id}>"

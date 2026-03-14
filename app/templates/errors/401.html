@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Não autorizado — Sala de Triagem{% endblock %}
+{% block content %}
+<div class="row justify-content-center mt-5">
+  <div class="col-md-6 text-center">
+    <h1 class="display-1 text-secondary">401</h1>
+    <h2 class="mb-3">Não autorizado</h2>
+    <p class="text-muted">Você precisa fazer login para acessar este recurso.</p>
+    <a href="{{ url_for('auth.login') }}" class="btn btn-primary mt-2">Fazer login</a>
+  </div>
+</div>
+{% endblock %}
