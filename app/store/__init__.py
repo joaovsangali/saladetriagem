@@ -105,4 +105,22 @@ class SubmissionStore:
         with self._lock:
             return len([sid for sid in self._dashboard_index.get(dashboard_id, []) if sid in self._store])
 
-submission_store = SubmissionStore()
+
+def _build_store():
+    """Return a Redis-backed store if Redis is available, else in-memory."""
+    try:
+        from app.redis_client import get_redis_client
+        from app.storage.redis_store import RedisSubmissionStore
+
+        client = get_redis_client()
+        if client is not None:
+            import logging
+            logging.getLogger(__name__).info("Using Redis-backed submission store")
+            return RedisSubmissionStore(client)
+    except Exception:
+        pass
+    return SubmissionStore()
+
+
+submission_store = _build_store()
+
