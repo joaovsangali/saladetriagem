@@ -16,9 +16,11 @@ class HTTPSRedirectMiddleware:
         self.force_https = force_https
 
     def __call__(self, environ, start_response):
+        # CORREÇÃO: Só redireciona se force_https estiver True
         if self.force_https:
-            proto = environ.get("HTTP_X_FORWARDED_PROTO", "http")
-            if proto == "http":
+            proto = environ.get("HTTP_X_FORWARDED_PROTO", "")
+            # CORREÇÃO: Só redireciona se o header existir E for http
+            if proto and proto.lower() == "http":
                 host = environ.get("HTTP_HOST", "")
                 path = environ.get("PATH_INFO", "/")
                 query = environ.get("QUERY_STRING", "")
@@ -53,4 +55,3 @@ class RequestIDMiddleware:
             return start_response(status, headers, exc_info)
 
         return self.app(environ, _start_response)
-

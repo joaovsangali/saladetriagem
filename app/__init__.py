@@ -140,8 +140,13 @@ def create_app(config_class=Config):
     # ``flask db upgrade`` (Alembic migrations) instead.
     import os as _os
     if not _os.environ.get("SKIP_DB_CREATE_ALL", "").lower() in ("true", "1", "yes"):
+        # db.create_all()  # Desabilitado - usar migrations
         with app.app_context():
-            db.create_all()
+            try:
+                # Apenas tenta criar se não existir
+                db.create_all()
+            except Exception as e:
+                app.logger.warning(f"Tables may already exist: {e}")
 
     # CLI
     register_cli(app)
