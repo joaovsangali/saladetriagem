@@ -1,11 +1,24 @@
 from app.renderer.common import clean, format_date_br
 
-
 def render_roubo_furto(submission, crime_label: str) -> str:
     answers = submission.answers or {}
 
     nome = submission.guest_name or "a parte declarante"
-    modalidade = clean(answers.get("modalidade"))
+    modalidade_raw = answers.get("modalidade")
+    if not modalidade_raw:
+        # Inferir automaticamente baseado nos campos preenchidos
+        if any(key.startswith("roubo_") and answers.get(key) for key in answers.keys()):
+            modalidade_raw = "Roubo"
+        elif any(key.startswith("furto_") and answers.get(key) for key in answers.keys()):
+            modalidade_raw = "Furto"
+    modalidade = clean(modalidade_raw)
+
+    # ===== ADICIONE ESTA FUNÇÃO AQUI =====
+    def _get_answer(prefix: str, field: str):
+        """Try to get answer with prefix first, then without prefix"""
+        prefixed_key = f"{prefix}_{field}"
+        return answers.get(prefixed_key, answers.get(field))
+    # ===== FIM =====
 
     def _format_people(items: list) -> str:
         partes = []
@@ -95,22 +108,23 @@ def render_roubo_furto(submission, crime_label: str) -> str:
         return "; ".join(partes)
 
     if modalidade == "Roubo":
-        data_fato = clean(answers.get("roubo_data_fato"))
-        hora_fato = clean(answers.get("roubo_hora_fato"))
-        local_fato = clean(answers.get("roubo_local_fato"))
-        autores = answers.get("roubo_autores") or []
-        meio_utilizado = clean(answers.get("roubo_meio_utilizado"))
-        meio_utilizado_outro = clean(answers.get("roubo_meio_utilizado_outro"))
-        cartoes = answers.get("roubo_cartoes") or []
-        celulares = answers.get("roubo_celulares") or []
-        joias = answers.get("roubo_joias") or []
-        veiculos_subtraidos = answers.get("roubo_veiculos_subtraidos") or []
-        outros_bens = clean(answers.get("roubo_outros_bens"))
-        valor_estimado = clean(answers.get("roubo_valor_estimado"))
-        veiculo_fuga = answers.get("roubo_veiculo_fuga") or []
-        testemunhas = answers.get("roubo_testemunhas") or []
-        cameras = clean(answers.get("roubo_cameras"))
-        houve_dinheiro = answers.get("roubo_houve_dinheiro")
+        # Use helper function to get values with or without prefix
+        data_fato = clean(_get_answer("roubo", "data_fato"))
+        hora_fato = clean(_get_answer("roubo", "hora_fato"))
+        local_fato = clean(_get_answer("roubo", "local_fato"))
+        autores = _get_answer("roubo", "autores") or []
+        meio_utilizado = clean(_get_answer("roubo", "meio_utilizado"))
+        meio_utilizado_outro = clean(_get_answer("roubo", "meio_utilizado_outro"))
+        cartoes = _get_answer("roubo", "cartoes") or []
+        celulares = _get_answer("roubo", "celulares") or []
+        joias = _get_answer("roubo", "joias") or []
+        veiculos_subtraidos = _get_answer("roubo", "veiculos_subtraidos") or []
+        outros_bens = clean(_get_answer("roubo", "outros_bens"))
+        valor_estimado = clean(_get_answer("roubo", "valor_estimado"))
+        veiculo_fuga = _get_answer("roubo", "veiculo_fuga") or []
+        testemunhas = _get_answer("roubo", "testemunhas") or []
+        cameras = clean(_get_answer("roubo", "cameras"))
+        houve_dinheiro = _get_answer("roubo", "houve_dinheiro")
 
         autores_txt = _format_people(autores)
         testemunhas_txt = _format_testemunhas(testemunhas)
@@ -197,21 +211,22 @@ def render_roubo_furto(submission, crime_label: str) -> str:
         return f"{texto}\n\n{corpo}"
 
     if modalidade == "Furto":
-        data_fato = clean(answers.get("furto_data_fato"))
-        hora_fato = clean(answers.get("furto_hora_fato"))
-        local_fato = clean(answers.get("furto_local_fato"))
-        autores = answers.get("furto_autores") or []
-        meio_utilizado = answers.get("furto_meio_utilizado") or []
-        cartoes = answers.get("furto_cartoes") or []
-        celulares = answers.get("furto_celulares") or []
-        joias = answers.get("furto_joias") or []
-        veiculos_subtraidos = answers.get("furto_veiculos_subtraidos") or []
-        outros_bens = clean(answers.get("furto_outros_bens"))
-        valor_estimado = clean(answers.get("furto_valor_estimado"))
-        veiculo_fuga = answers.get("furto_veiculo_fuga") or []
-        testemunhas = answers.get("furto_testemunhas") or []
-        cameras = clean(answers.get("furto_cameras"))
-        houve_dinheiro = answers.get("furto_houve_dinheiro")
+        # Use helper function to get values with or without prefix
+        data_fato = clean(_get_answer("furto", "data_fato"))
+        hora_fato = clean(_get_answer("furto", "hora_fato"))
+        local_fato = clean(_get_answer("furto", "local_fato"))
+        autores = _get_answer("furto", "autores") or []
+        meio_utilizado = _get_answer("furto", "meio_utilizado") or []
+        cartoes = _get_answer("furto", "cartoes") or []
+        celulares = _get_answer("furto", "celulares") or []
+        joias = _get_answer("furto", "joias") or []
+        veiculos_subtraidos = _get_answer("furto", "veiculos_subtraidos") or []
+        outros_bens = clean(_get_answer("furto", "outros_bens"))
+        valor_estimado = clean(_get_answer("furto", "valor_estimado"))
+        veiculo_fuga = _get_answer("furto", "veiculo_fuga") or []
+        testemunhas = _get_answer("furto", "testemunhas") or []
+        cameras = clean(_get_answer("furto", "cameras"))
+        houve_dinheiro = _get_answer("furto", "houve_dinheiro")
 
         autores_txt = _format_people(autores)
         testemunhas_txt = _format_testemunhas(testemunhas)
