@@ -1476,7 +1476,7 @@ DEFAULT_FORM_SCHEMA = {
     "domain": "police",
     "schema_version": 1,
 
-    "crime_types": list(CRIME_SCHEMAS.keys()),
+    "crime_types": list(CRIME_SCHEMAS.keys()),  
     "crime_labels": {k: v.get("label", k) for k, v in CRIME_SCHEMAS.items()},
 
     "enabled_fields": {
