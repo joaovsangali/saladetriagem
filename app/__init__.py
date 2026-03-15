@@ -2,11 +2,11 @@ import logging
 from datetime import timezone, timedelta
 from flask import Flask
 from config import Config
-from app.extensions import db, login_manager, csrf, limiter
+from app.extensions import db, login_manager, csrf, limiter, migrate
 from app.models import PoliceUser
 from app.sessions.expiry import start_expiry_daemon
 from app.cli import register_cli
-from app.middleware import HTTPSRedirectMiddleware
+from app.middleware import HTTPSRedirectMiddleware, RequestIDMiddleware
 from app.security_headers import add_security_headers
 from app.errors import register_error_handlers
 from app.log_sanitizer import SanitizingFilter
@@ -71,6 +71,7 @@ def create_app(config_class=Config):
 
     # Extensions
     db.init_app(app)
+    migrate.init_app(app, db)
     login_manager.init_app(app)
     csrf.init_app(app)
     limiter.init_app(app)
@@ -95,10 +96,22 @@ def create_app(config_class=Config):
     app.register_blueprint(intake_bp)
     
     # Root redirect
-    from flask import redirect, url_for
+    from flask import jsonify, redirect, url_for
+
     @app.route("/")
     def index():
         return redirect(url_for("auth.login"))
+
+    @app.route("/health")
+    def health():
+        """Health check endpoint for load balancers and Docker healthchecks."""
+        try:
+            db.session.execute(db.text("SELECT 1"))
+            db_ok = True
+        except Exception:
+            db_ok = False
+        status = "ok" if db_ok else "degraded"
+        return jsonify({"status": status, "db": db_ok}), 200 if db_ok else 503
 
     # Security headers on every response
     app.after_request(add_security_headers)
@@ -109,17 +122,31 @@ def create_app(config_class=Config):
         force_https=app.config.get("FORCE_HTTPS", False),
     )
 
+    # Request-ID tracking middleware
+    app.wsgi_app = RequestIDMiddleware(app.wsgi_app)
+
+    # Prometheus metrics (optional — no-op if package not installed)
+    from app.monitoring import init_metrics
+    init_metrics(app)
+
+    # Structured JSON logging in production
+    from app.logging_config import configure_logging
+    configure_logging(app)
+
     # Custom error pages
     register_error_handlers(app)
-    
-    # DB setup
-    with app.app_context():
-        db.create_all()
-    
+
+    # DB setup — create tables for development/testing; in production use
+    # ``flask db upgrade`` (Alembic migrations) instead.
+    import os as _os
+    if not _os.environ.get("SKIP_DB_CREATE_ALL", "").lower() in ("true", "1", "yes"):
+        with app.app_context():
+            db.create_all()
+
     # CLI
     register_cli(app)
-    
+
     # Start expiry daemon
     start_expiry_daemon(app)
-    
+
     return app

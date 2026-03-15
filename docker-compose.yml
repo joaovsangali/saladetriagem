@@ -1,0 +1,85 @@
+version: "3.9"
+
+# Development environment — all services on a single machine
+# Usage: docker-compose up
+
+services:
+  web:
+    build: .
+    command: gunicorn --config gunicorn.conf.py wsgi:app
+    ports:
+      - "8000:8000"
+    env_file: .env
+    environment:
+      - FLASK_ENV=development
+      - DATABASE_URL=postgresql://triagem:triagem@db:5432/triagem_db
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+      - STORAGE_BACKEND=local
+      - UPLOAD_FOLDER=/var/app/uploads
+    volumes:
+      - .:/app
+      - uploads:/var/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker:
+    build: .
+    command: celery -A app.celery_app worker --loglevel=info
+    env_file: .env
+    environment:
+      - DATABASE_URL=postgresql://triagem:triagem@db:5432/triagem_db
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+    volumes:
+      - .:/app
+    depends_on:
+      - web
+      - redis
+
+  beat:
+    build: .
+    command: celery -A app.celery_app beat --loglevel=info
+    env_file: .env
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+    volumes:
+      - .:/app
+    depends_on:
+      - redis
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: triagem_db
+      POSTGRES_USER: triagem
+      POSTGRES_PASSWORD: triagem
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U triagem -d triagem_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --save 60 1 --loglevel warning
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:
+  redisdata:
+  uploads:
