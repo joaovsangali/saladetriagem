@@ -13,9 +13,9 @@ services:
     environment:
       - FLASK_ENV=development
       - DATABASE_URL=postgresql://triagem:triagem@db:5432/triagem_db
-      - REDIS_URL=redis://redis:6379/0
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD}@redis:6379/1
       - FORCE_HTTPS=false  # ← ADICIONE ESTA LINHA
       - STORAGE_BACKEND=local
       - UPLOAD_FOLDER=/var/app/uploads
@@ -34,9 +34,9 @@ services:
     env_file: .env
     environment:
       - DATABASE_URL=postgresql://triagem:triagem@db:5432/triagem_db
-      - REDIS_URL=redis://redis:6379/0
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD}@redis:6379/1
     volumes:
       - .:/app
     depends_on:
@@ -48,8 +48,8 @@ services:
     command: celery -A app.celery_app beat --loglevel=info
     env_file: .env
     environment:
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD}@redis:6379/1
     volumes:
       - .:/app
     depends_on:
@@ -71,11 +71,11 @@ services:
 
   redis:
     image: redis:7-alpine
-    command: redis-server --save 60 1 --loglevel warning
+    command: redis-server --requirepass ${REDIS_PASSWORD} --save 60 1 --loglevel warning
     volumes:
       - redisdata:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "sh", "-c", "REDISCLI_AUTH=$$REDIS_PASSWORD redis-cli --no-auth-warning ping"]
       interval: 10s
       timeout: 5s
       retries: 5
