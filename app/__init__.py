@@ -1,10 +1,10 @@
 import logging
+import os
 from datetime import timezone, timedelta
 from flask import Flask
 from config import Config
 from app.extensions import db, login_manager, csrf, limiter, migrate
 from app.models import PoliceUser
-from app.sessions.expiry import start_expiry_daemon
 from app.cli import register_cli
 from app.middleware import HTTPSRedirectMiddleware, RequestIDMiddleware
 from app.security_headers import add_security_headers
@@ -14,6 +14,7 @@ from app.log_sanitizer import SanitizingFilter
 logger = logging.getLogger(__name__)
 
 _DEFAULT_SECRET_KEY = "dev-secret-change-in-prod"
+_MIN_SECRET_KEY_LENGTH = 32
 
 # Try to use proper IANA timezone (requires tzdata on Windows).
 # Fall back to a fixed UTC-3 offset — Brazil dropped DST in 2019, so
@@ -53,10 +54,22 @@ def create_app(config_class=Config):
     if hasattr(config_class, "init_app"):
         config_class.init_app(app)
 
-    if app.config.get("SECRET_KEY") == _DEFAULT_SECRET_KEY:
+    # Global SECRET_KEY validation — independent of config class.
+    # In production (FLASK_ENV=production) a weak key is a hard error.
+    # In development/testing, emit a visible warning but allow boot.
+    _secret = app.config.get("SECRET_KEY", "")
+    _is_production = os.environ.get("FLASK_ENV", "development") == "production"
+    if _secret == _DEFAULT_SECRET_KEY or len(_secret) < _MIN_SECRET_KEY_LENGTH:
+        if _is_production:
+            raise ValueError(
+                "ERRO CRÍTICO: SECRET_KEY inválida para produção. "
+                "Gere uma chave segura com: "
+                "python -c \"import secrets; print(secrets.token_urlsafe(64))\" "
+                "e configure via variável de ambiente SECRET_KEY."
+            )
         logger.warning(
-            "Using default SECRET_KEY. Set the SECRET_KEY environment variable "
-            "before deploying to production."
+            "Using default or weak SECRET_KEY. Set the SECRET_KEY environment "
+            "variable before deploying to production."
         )
 
     app.jinja_env.filters["datefmt"] = _datefmt
@@ -136,22 +149,7 @@ def create_app(config_class=Config):
     # Custom error pages
     register_error_handlers(app)
 
-    # DB setup — create tables for development/testing; in production use
-    # ``flask db upgrade`` (Alembic migrations) instead.
-    import os as _os
-    if not _os.environ.get("SKIP_DB_CREATE_ALL", "").lower() in ("true", "1", "yes"):
-        # db.create_all()  # Desabilitado - usar migrations
-        with app.app_context():
-            try:
-                # Apenas tenta criar se não existir
-                db.create_all()
-            except Exception as e:
-                app.logger.warning(f"Tables may already exist: {e}")
-
     # CLI
     register_cli(app)
-
-    # Start expiry daemon
-    start_expiry_daemon(app)
 
     return app

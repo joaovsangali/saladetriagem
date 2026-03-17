@@ -3,12 +3,30 @@
 import threading
 import time
 import logging
+import warnings
 from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 
 
 def start_expiry_daemon(app):
+    """Start a background thread for session expiry.
+
+    .. deprecated::
+        Use the Celery Beat task ``app.tasks.session_expiry.expire_sessions``
+        instead.  This threading daemon creates one background thread per
+        Gunicorn worker, causing race conditions in multi-worker deployments.
+        It is kept here only to ease the transition and for local development
+        without Celery.
+    """
+    warnings.warn(
+        "start_expiry_daemon() is deprecated. "
+        "Configure Celery Beat with the 'expire-sessions-every-5-minutes' "
+        "schedule instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
     def _run():
         while True:
             time.sleep(300)  # every 5 minutes
@@ -19,7 +37,7 @@ def start_expiry_daemon(app):
 
     t = threading.Thread(target=_run, daemon=True, name="session-expiry-daemon")
     t.start()
-    logger.info("Session expiry daemon started.")
+    logger.info("Session expiry daemon started (deprecated — use Celery Beat).")
 
 
 def _expire_sessions(app):

@@ -28,6 +28,14 @@ class Config:
     if _db_url.startswith("postgresql"):
         SQLALCHEMY_ENGINE_OPTIONS["pool_size"] = int(os.environ.get("DB_POOL_SIZE", 10))
         SQLALCHEMY_ENGINE_OPTIONS["max_overflow"] = int(os.environ.get("DB_MAX_OVERFLOW", 20))
+        # Optional SSL mode — set DATABASE_SSLMODE=require for managed databases
+        # (e.g. AWS RDS, Azure Database for PostgreSQL).  Defaults to "prefer"
+        # which works for both SSL-enabled and plain connections.
+        _sslmode = os.environ.get("DATABASE_SSLMODE", "prefer")
+        if _sslmode != "disable":
+            connect_args = SQLALCHEMY_ENGINE_OPTIONS.get("connect_args", {})
+            connect_args["sslmode"] = _sslmode
+            SQLALCHEMY_ENGINE_OPTIONS["connect_args"] = connect_args
 
     # ------------------------------------------------------------------
     # WTForms / CSRF
