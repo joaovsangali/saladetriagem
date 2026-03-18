@@ -165,7 +165,7 @@ def session_detail(session_id):
     qr_svg = None
     intake_url = None
     if session.is_active and link:
-        intake_url = url_for("intake.form", token=link.token, _external=True)
+        intake_url = url_for("intake.form", token=link.token, _external=True, _scheme=request.scheme)
         qr_svg = _generate_qr_svg(intake_url)
 
     submissions = submission_store.list_for_dashboard(session.id) if session.is_active else []
@@ -269,7 +269,7 @@ def print_qr(session_id):
     qr_svg = None
     intake_url = None
     if session.is_active and link:
-        intake_url = url_for("intake.form", token=link.token, _external=True)
+        intake_url = url_for("intake.form", token=link.token, _external=True, _scheme=request.scheme)
         qr_svg = _generate_qr_svg(intake_url)
 
     return render_template(
