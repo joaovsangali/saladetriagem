@@ -79,6 +79,7 @@ class RedisSubmissionStore:
             "crime_type": submission.crime_type,
             "received_at": submission.received_at.isoformat(),
             "photo_count": len(submission.photos),
+            "photo_keys": list(getattr(submission, "photo_keys", [])),
         }
         return json.dumps(data).encode()
 
@@ -111,6 +112,7 @@ class RedisSubmissionStore:
             crime_type=data["crime_type"],
             photos=photos,
             received_at=received_at,
+            photo_keys=data.get("photo_keys", []),
         )
 
     # ------------------------------------------------------------------

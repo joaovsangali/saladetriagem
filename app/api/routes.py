@@ -1,7 +1,7 @@
 import base64
 import uuid
 from datetime import datetime, timezone
-from flask import jsonify, abort, request, Response
+from flask import jsonify, abort, request, Response, redirect
 from flask_login import login_required, current_user
 from app.api import api_bp
 from app.extensions import db
@@ -41,6 +41,8 @@ def get_submission(session_id, submission_id):
     questions = CRIME_SCHEMAS.get(sub.crime_type, {}).get("questions", [])
     structured = TextRenderer.render_structured(sub, questions)
     text = TextRenderer.render(sub)
+
+    photo_keys = list(getattr(sub, "photo_keys", []))
     
     return jsonify({
         "id": sub.submission_id,
@@ -54,7 +56,9 @@ def get_submission(session_id, submission_id):
         "narrative": sub.narrative,
         "answers": sub.answers,
         "received_at": sub.received_at.isoformat(),
-        "photo_count": len(sub.photos),
+        # Total photo count = S3 keys + in-memory bytes (may be mixed on
+        # partial S3 failure; see intake route for details).
+        "photo_count": len(photo_keys) + len(sub.photos),
         "structured": structured,
         "text": text,
     })
@@ -116,12 +120,35 @@ def get_photo(session_id, submission_id, index):
     sub = submission_store.get(submission_id)
     if not sub or sub.dashboard_id != session_id:
         abort(404)
-    if index < 0 or index >= len(sub.photos):
-        abort(404)
-    
+
     log_access(current_user, submission_id, "download_photo")
+
+    photo_keys = list(getattr(sub, "photo_keys", []))
+
+    # Photos are split between S3-backed keys (photo_keys) and in-memory bytes
+    # (sub.photos).  S3 keys come first (index 0 .. len(photo_keys)-1) and
+    # in-memory bytes follow (index len(photo_keys) .. total-1).
+    total_keys = len(photo_keys)
+    total_bytes = len(sub.photos)
+    total = total_keys + total_bytes
+
+    if index < 0 or index >= total:
+        abort(404)
+
+    if index < total_keys:
+        # Photo is in external storage — redirect to a signed URL.
+        storage = getattr(current_app, "photo_storage", None)
+        if storage is not None:
+            url = storage.get_url(photo_keys[index])
+            if url:
+                return redirect(url)
+        # storage unavailable or get_url returned None — cannot serve
+        abort(404)
+
+    # Photo is in memory (local / Redis path).
+    mem_index = index - total_keys
     return Response(
-        sub.photos[index],
+        sub.photos[mem_index],
         mimetype="image/jpeg",
         headers={"Cache-Control": "no-store"},
     )
