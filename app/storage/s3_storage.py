@@ -59,9 +59,20 @@ class S3PhotoStorage(PhotoStorage):
             logger.warning("Failed to generate S3 signed URL for %s: %s", key, exc)
             return None
 
-    def delete(self, key: str) -> None:
+    def delete(self, key: str) -> bool:
+        """Delete a photo from S3 by key."""
         try:
             self._client.delete_object(Bucket=self._bucket, Key=key)
             logger.debug("Deleted S3 object: %s", key)
+            return True
         except Exception as exc:
-            logger.warning("Failed to delete S3 object %s: %s", key, exc)
+            logger.error("Failed to delete S3 object %s: %s", key, exc)
+            return False
+
+    def health_check(self) -> bool:
+        """Check if S3 is accessible."""
+        try:
+            self._client.head_bucket(Bucket=self._bucket)
+            return True
+        except Exception:
+            return False

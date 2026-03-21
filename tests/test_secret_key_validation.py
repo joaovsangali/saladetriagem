@@ -19,6 +19,7 @@ class _GoodProdConfig(ProductionConfig):
     DEFAULT_MAX_PHOTOS = 3
     DEFAULT_MAX_PHOTO_SIZE_MB = 3
     SECRET_KEY = "a" * 64  # valid key
+    STORAGE_BACKEND = "s3"  # required in production
 
 
 class _DefaultKeyProdConfig(_GoodProdConfig):

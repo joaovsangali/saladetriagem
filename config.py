@@ -26,8 +26,10 @@ class Config:
     _db_url = SQLALCHEMY_DATABASE_URI
     SQLALCHEMY_ENGINE_OPTIONS: dict = {"pool_pre_ping": True}
     if _db_url.startswith("postgresql"):
-        SQLALCHEMY_ENGINE_OPTIONS["pool_size"] = int(os.environ.get("DB_POOL_SIZE", 10))
-        SQLALCHEMY_ENGINE_OPTIONS["max_overflow"] = int(os.environ.get("DB_MAX_OVERFLOW", 20))
+        SQLALCHEMY_ENGINE_OPTIONS["pool_size"] = int(os.environ.get("DB_POOL_SIZE", 20))
+        SQLALCHEMY_ENGINE_OPTIONS["max_overflow"] = int(os.environ.get("DB_MAX_OVERFLOW", 40))
+        SQLALCHEMY_ENGINE_OPTIONS["pool_recycle"] = int(os.environ.get("DB_POOL_RECYCLE", 3600))
+        SQLALCHEMY_ENGINE_OPTIONS["pool_timeout"] = int(os.environ.get("DB_POOL_TIMEOUT", 30))
         # Optional SSL mode — set DATABASE_SSLMODE=require for managed databases
         # (e.g. AWS RDS, Azure Database for PostgreSQL).  Defaults to "prefer"
         # which works for both SSL-enabled and plain connections.
@@ -113,4 +115,10 @@ class ProductionConfig(Config):
                 "Gere uma chave segura com:\n"
                 "  python -c \"import secrets; print(secrets.token_urlsafe(64))\"\n"
                 "Configure via environment variable SECRET_KEY"
+            )
+
+        if app.config.get("STORAGE_BACKEND") != "s3":
+            raise ValueError(
+                "ERRO CRÍTICO: STORAGE_BACKEND deve ser 's3' em produção. "
+                "Configure AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, S3_BUCKET."
             )

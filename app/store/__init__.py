@@ -100,6 +100,23 @@ class SubmissionStore:
     
     def purge_dashboard(self, dashboard_id: int):
         with self._lock:
+            # Delete photos from external storage before purging
+            try:
+                from flask import current_app
+                storage = getattr(current_app, "photo_storage", None)
+                if storage:
+                    ids = self._dashboard_index.get(dashboard_id, [])
+                    for sid in ids:
+                        sub = self._store.get(sid)
+                        if sub and sub.photo_keys:
+                            for key in sub.photo_keys:
+                                try:
+                                    storage.delete(key)
+                                except Exception:
+                                    pass
+            except RuntimeError:
+                pass  # No application context (e.g. tests)
+
             ids = self._dashboard_index.pop(dashboard_id, [])
             for sid in ids:
                 self._store.pop(sid, None)
