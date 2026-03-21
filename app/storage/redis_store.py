@@ -190,6 +190,28 @@ class RedisSubmissionStore:
 
     def purge_dashboard(self, dashboard_id: int):
         ids = self._r.lrange(self._idx_key(dashboard_id), 0, -1)
+
+        # Delete photos from external storage before purging Redis keys
+        try:
+            from flask import current_app
+            storage = getattr(current_app, "photo_storage", None)
+            if storage:
+                for sid in ids:
+                    sid_str = sid.decode() if isinstance(sid, bytes) else sid
+                    raw = self._r.get(self._sub_key(sid_str))
+                    if raw:
+                        try:
+                            data = json.loads(raw.decode())
+                            for key in data.get("photo_keys", []):
+                                try:
+                                    storage.delete(key)
+                                except Exception:
+                                    pass
+                        except Exception:
+                            pass
+        except RuntimeError:
+            pass  # No application context (e.g. tests)
+
         pipe = self._r.pipeline()
         for sid in ids:
             sid_str = sid.decode() if isinstance(sid, bytes) else sid

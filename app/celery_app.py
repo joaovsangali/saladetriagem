@@ -18,7 +18,7 @@ celery_app = Celery(
     "saladetriagem",
     broker=broker or None,
     backend=backend or None,
-    include=["app.tasks.session_expiry"],
+    include=["app.tasks.session_expiry", "app.tasks.cleanup"],
 )
 
 celery_app.conf.update(
@@ -32,6 +32,14 @@ celery_app.conf.update(
         "expire-sessions-every-5-minutes": {
             "task": "app.tasks.session_expiry.expire_sessions",
             "schedule": 300,  # every 5 minutes
+        },
+        "cleanup-orphan-photos-hourly": {
+            "task": "app.tasks.cleanup.cleanup_orphan_photos",
+            "schedule": 3600,  # every 1 hour
+        },
+        "cleanup-old-access-logs-daily": {
+            "task": "app.tasks.cleanup.cleanup_old_access_logs",
+            "schedule": crontab(hour=3, minute=0),  # 3am
         },
     },
 )

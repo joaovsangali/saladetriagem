@@ -41,6 +41,11 @@
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button class="btn btn-outline-danger btn-sm" onclick="return confirm('Encerrar plantão e apagar dados?')">Encerrar</button>
         </form>
+        {% else %}
+        <form action="{{ url_for('dashboard.delete_session', session_id=s.id) }}" method="post" class="d-inline">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn-outline-danger btn-sm" onclick="return confirm('Deletar este plantão e seus registros permanentemente?')">Deletar</button>
+        </form>
         {% endif %}
       </div>
     </div>

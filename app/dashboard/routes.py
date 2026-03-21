@@ -125,11 +125,16 @@ def new_session():
         flash("Informe um nome para o plantão.", "warning")
         return redirect(url_for("dashboard.index"))
 
+    total_count = DashboardSession.query.filter_by(user_id=current_user.id).count()
+    if total_count >= 12:
+        flash("Você tem 12 plantões no histórico. Delete um plantão antigo antes de criar novo.", "warning")
+        return redirect(url_for("dashboard.index"))
+
     active_count = DashboardSession.query.filter_by(
         user_id=current_user.id, is_active=True
     ).count()
-    if active_count >= current_user.max_dashboards:
-        flash(f"Limite de {current_user.max_dashboards} dashboards ativos atingido.", "warning")
+    if active_count >= 1:
+        flash("Você já tem 1 plantão ativo. Feche o plantão atual antes de criar novo.", "warning")
         return redirect(url_for("dashboard.index"))
 
     session = DashboardSession(
@@ -253,6 +258,26 @@ def delete_closed_sessions():
         db.session.delete(s)
     db.session.commit()
     flash(f"{len(closed)} plantão(ões) encerrado(s) apagado(s).", "info")
+    return redirect(url_for("dashboard.index"))
+
+
+@dashboard_bp.route("/sessions/<int:session_id>/delete", methods=["POST"])
+@login_required
+def delete_session(session_id):
+    session = DashboardSession.query.filter_by(
+        id=session_id, user_id=current_user.id
+    ).first_or_404()
+
+    if session.is_active:
+        flash("Feche o plantão antes de deletar.", "warning")
+        return redirect(url_for("dashboard.session_detail", session_id=session.id))
+
+    MinimalLogEntry.query.filter_by(dashboard_id=session.id).delete()
+    IntakeLink.query.filter_by(dashboard_id=session.id).delete()
+    db.session.delete(session)
+    db.session.commit()
+
+    flash("Plantão deletado com sucesso.", "info")
     return redirect(url_for("dashboard.index"))
 
 

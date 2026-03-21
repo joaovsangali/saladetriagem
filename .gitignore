@@ -33,6 +33,7 @@ dump.rdb
 
 # Celery
 celerybeat-schedule
+celerybeat-schedule.db
 celerybeat.pid
 
 # Python additional

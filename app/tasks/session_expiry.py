@@ -66,10 +66,25 @@ try:
         import os
         from app import create_app
         from config import Config
+        from app.redis_client import get_redis_client
 
         app = create_app(Config)
         with app.app_context():
-            expire_sessions_task()
+            # Distributed lock to avoid concurrent execution across workers
+            redis_client = get_redis_client()
+            lock_key = "lock:expire_sessions"
+
+            if redis_client:
+                # Acquire lock for 4 minutes (task runs every 5 min)
+                if not redis_client.set(lock_key, "1", nx=True, ex=240):
+                    logger.info("Another worker is already running expire_sessions")
+                    return
+
+            try:
+                expire_sessions_task()
+            finally:
+                if redis_client:
+                    redis_client.delete(lock_key)
 
 except Exception:
     # Celery not configured — this module is still importable but the task

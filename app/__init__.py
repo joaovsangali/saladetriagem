@@ -118,13 +118,53 @@ def create_app(config_class=Config):
     @app.route("/health")
     def health():
         """Health check endpoint for load balancers and Docker healthchecks."""
+        from flask import current_app as _app
+        checks = {
+            "status": "ok",
+            "db": False,
+            "redis": False,
+            "s3": None,
+        }
+
+        # Check PostgreSQL
         try:
             db.session.execute(db.text("SELECT 1"))
-            db_ok = True
+            checks["db"] = True
         except Exception:
-            db_ok = False
-        status = "ok" if db_ok else "degraded"
-        return jsonify({"status": status, "db": db_ok}), 200 if db_ok else 503
+            checks["status"] = "degraded"
+
+        # Check Redis
+        try:
+            from app.redis_client import get_redis_client
+            redis_client = get_redis_client()
+            if redis_client:
+                redis_client.set("healthcheck", "ok", ex=10)
+                if redis_client.get("healthcheck") == b"ok":
+                    checks["redis"] = True
+                else:
+                    checks["redis"] = False
+                    checks["status"] = "degraded"
+            else:
+                checks["redis"] = None  # Redis not configured (optional)
+        except Exception:
+            checks["redis"] = False
+            checks["status"] = "degraded"
+
+        # Check S3
+        try:
+            storage = getattr(_app, "photo_storage", None)
+            if storage and hasattr(storage, "health_check"):
+                checks["s3"] = storage.health_check()
+                if not checks["s3"]:
+                    checks["status"] = "degraded"
+            else:
+                checks["s3"] = None  # S3 not configured
+        except Exception:
+            checks["s3"] = False
+            checks["status"] = "degraded"
+
+        status_code = 200 if checks["status"] == "ok" else 503
+        return jsonify(checks), status_code
 
     # Security headers on every response
     app.after_request(add_security_headers)

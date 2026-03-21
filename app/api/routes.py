@@ -1,7 +1,7 @@
 import base64
 import uuid
 from datetime import datetime, timezone
-from flask import jsonify, abort, request, Response, redirect
+from flask import jsonify, abort, request, Response, redirect, current_app
 from flask_login import login_required, current_user
 from app.api import api_bp
 from app.extensions import db
@@ -81,6 +81,13 @@ def close_submission(session_id, submission_id):
         status="closed",
     )
     db.session.add(log)
+
+    # Delete photos from S3
+    storage = getattr(current_app, "photo_storage", None)
+    if storage and sub.photo_keys:
+        for key in sub.photo_keys:
+            storage.delete(key)
+
     submission_store.delete(submission_id)
     db.session.commit()
 
@@ -106,6 +113,13 @@ def discard_submission(session_id, submission_id):
         status="discarded",
     )
     db.session.add(log)
+
+    # Delete photos from S3
+    storage = getattr(current_app, "photo_storage", None)
+    if storage and sub.photo_keys:
+        for key in sub.photo_keys:
+            storage.delete(key)
+
     submission_store.delete(submission_id)
     db.session.commit()
 
