@@ -146,6 +146,11 @@ def create_app(config_class=Config):
     from app.logging_config import configure_logging
     configure_logging(app)
 
+    # Photo storage backend (local or S3, based on STORAGE_BACKEND config)
+    from app.storage import get_photo_storage
+
+    app.photo_storage = get_photo_storage(app)
+
     # Custom error pages
     register_error_handlers(app)
 

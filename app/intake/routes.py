@@ -5,14 +5,17 @@
 # - Garante defaults úteis no schema (domain/schema_version) sem quebrar nada
 
 import io
+import logging
 import uuid
 from datetime import datetime, timezone
-from flask import render_template, redirect, url_for, flash, request
+from flask import render_template, redirect, url_for, flash, request, current_app
 from app.intake import intake_bp
 from app.extensions import limiter
 from app.models import IntakeLink, DashboardSession
 from app.store import submission_store, Submission
 from app.schemas.crime_types import CRIME_SCHEMAS
+
+logger = logging.getLogger(__name__)
 
 _DEFAULT_MAX_PHOTO_SIZE_MB = 3
 
@@ -177,8 +180,17 @@ def submit(token):
 
     # process photos
     photos = []
+    photo_keys = []
     files = request.files.getlist("photos")
     allowed_mime = {"image/jpeg", "image/png"}
+    # Only externalise photos to storage when the backend is S3.
+    # For local mode the existing in-memory / Redis path is preserved so that
+    # the API can serve photos directly without an extra disk read.
+    use_external_storage = (
+        current_app.config.get("STORAGE_BACKEND", "local") == "s3"
+        and getattr(current_app, "photo_storage", None) is not None
+    )
+    storage = getattr(current_app, "photo_storage", None) if use_external_storage else None
     for f in files[:max_photos]:
         if not f or not f.filename:
             continue
@@ -187,7 +199,19 @@ def submit(token):
         data = f.read(max_photo_size + 1)
         if len(data) > max_photo_size:
             continue
-        photos.append(_strip_exif(data))
+        cleaned = _strip_exif(data)
+        if storage is not None:
+            # Persist to S3 and keep only the key in memory.  On failure fall
+            # back to in-memory bytes so a transient S3 error never blocks a
+            # submission.
+            try:
+                key = storage.save(cleaned, f.filename or "photo.jpg")
+                photo_keys.append(key)
+            except Exception as exc:
+                logger.warning("S3 photo upload failed, keeping in memory: %s", exc)
+                photos.append(cleaned)
+        else:
+            photos.append(cleaned)
 
     sub = Submission(
         submission_id=str(uuid.uuid4()),
@@ -202,6 +226,7 @@ def submit(token):
         narrative=narrative,
         crime_type=crime_type,
         photos=photos,
+        photo_keys=photo_keys,
         received_at=datetime.now(timezone.utc),
     )
 

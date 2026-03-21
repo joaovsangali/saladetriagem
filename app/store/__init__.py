@@ -36,7 +36,11 @@ class Submission:
     crime_type: str
     photos: List[bytes]
     received_at: datetime
-    
+    # Storage keys for photos saved via photo_storage (S3 / local disk).
+    # When set, photos bytes are not kept in memory.  Defaults to empty list
+    # for backward compatibility with existing in-memory submissions.
+    photo_keys: List[str] = field(default_factory=list)
+
 
 class SubmissionStore:
     def __init__(self):
