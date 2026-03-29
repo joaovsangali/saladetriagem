@@ -20,6 +20,10 @@ class _GoodProdConfig(ProductionConfig):
     DEFAULT_MAX_PHOTO_SIZE_MB = 3
     SECRET_KEY = "a" * 64  # valid key
     STORAGE_BACKEND = "s3"  # required in production
+    FORCE_HTTPS = True  # required in production
+    S3_BUCKET = "test-bucket"
+    S3_ACCESS_KEY = "test-access-key"
+    S3_SECRET_KEY = "test-secret-key"
 
 
 class _DefaultKeyProdConfig(_GoodProdConfig):

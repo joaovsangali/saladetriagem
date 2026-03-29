@@ -29,8 +29,6 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" || exit 1
 
-# Run database migrations then start the application server.
-# The migration step is idempotent and runs exactly once per container startup,
-# eliminating the race conditions caused by db.create_all() being invoked by
-# each Gunicorn worker individually.
-CMD flask db upgrade && gunicorn --config gunicorn.conf.py wsgi:app
+# Default command (overridden in docker-compose for worker/beat)
+# NOTE: Migrations must be run separately via scripts/run_migrations.sh
+CMD ["gunicorn", "--config", "gunicorn.conf.py", "wsgi:app"]

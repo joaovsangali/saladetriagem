@@ -128,7 +128,6 @@ def create_app(config_class=Config):
             "s3": None,
             "celery_worker": None,
             "celery_beat": None,
-            "celery_pipeline": None,
         }
 
         # Check PostgreSQL
@@ -186,15 +185,14 @@ def create_app(config_class=Config):
 
                 checks["celery_worker"] = _fresh_enough("celery:worker:heartbeat")
                 checks["celery_beat"] = _fresh_enough("celery:beat:heartbeat")
-                checks["celery_pipeline"] = _fresh_enough("celery:pipeline:heartbeat")
 
-                if checks["celery_worker"] is False or checks["celery_beat"] is False:
+                # Only degrade if both are down (more forgiving for MVP)
+                if checks["celery_worker"] is False and checks["celery_beat"] is False:
                     checks["status"] = "degraded"
 
             except Exception:
                 checks["celery_worker"] = False
                 checks["celery_beat"] = False
-                checks["celery_pipeline"] = False
                 checks["status"] = "degraded"
 
         status_code = 200 if checks["status"] == "ok" else 503

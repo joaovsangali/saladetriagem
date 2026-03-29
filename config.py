@@ -1,4 +1,5 @@
 import os
+import logging
 from datetime import timedelta
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -106,6 +107,7 @@ class ProductionConfig(Config):
 
     @classmethod
     def init_app(cls, app):
+        """Validate production configuration on app startup."""
         secret = app.config.get("SECRET_KEY", "")
         if secret == _DEFAULT_SECRET_KEY or len(secret) < 32:
             raise ValueError(
@@ -115,8 +117,36 @@ class ProductionConfig(Config):
                 "Configure via environment variable SECRET_KEY"
             )
 
-        if app.config.get("STORAGE_BACKEND") != "s3":
+        # Require S3 in production
+        storage_backend = app.config.get("STORAGE_BACKEND", "")
+        if storage_backend != "s3":
             raise ValueError(
-                "ERRO CRÍTICO: STORAGE_BACKEND deve ser 's3' em produção. "
-                "Configure S3_ACCESS_KEY, S3_SECRET_KEY e S3_BUCKET."
+                "ERRO CRÍTICO: STORAGE_BACKEND deve ser 's3' em produção.\n"
+                "Configure S3_BUCKET, S3_ACCESS_KEY, S3_SECRET_KEY.\n"
+                "Para desenvolvimento local, use Config (não ProductionConfig)."
             )
+
+        # Require FORCE_HTTPS in production
+        force_https = app.config.get("FORCE_HTTPS", False)
+        if not force_https:
+            raise ValueError(
+                "ERRO CRÍTICO: FORCE_HTTPS deve ser True em produção.\n"
+                "A aplicação está configurada para rodar atrás de proxy reverso com TLS.\n"
+                "Configure FORCE_HTTPS=True no .env"
+            )
+
+        # Validate S3 credentials are set
+        s3_bucket = app.config.get("S3_BUCKET", "")
+        s3_access_key = app.config.get("S3_ACCESS_KEY", "")
+        s3_secret_key = app.config.get("S3_SECRET_KEY", "")
+
+        if not all([s3_bucket, s3_access_key, s3_secret_key]):
+            raise ValueError(
+                "ERRO CRÍTICO: Credenciais S3 incompletas.\n"
+                "Configure: S3_BUCKET, S3_ACCESS_KEY, S3_SECRET_KEY"
+            )
+
+        logger = logging.getLogger(__name__)
+        logger.info("ProductionConfig validated successfully")
+        logger.info("Storage: S3 (bucket=%s)", s3_bucket)
+        logger.info("HTTPS: forced=%s", force_https)

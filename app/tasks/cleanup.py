@@ -88,6 +88,36 @@ try:
                 if redis_client:
                     redis_client.delete(lock_key)
 
+    @celery_app.task(name="app.tasks.cleanup.cleanup_old_minimal_logs")
+    def cleanup_old_minimal_logs():
+        """Delete minimal log entries older than 180 days."""
+        from app import create_app
+        from config import Config
+        from app.extensions import db
+        from app.models import MinimalLogEntry
+        from app.redis_client import get_redis_client
+
+        app = create_app(Config)
+        with app.app_context():
+            # Distributed lock
+            redis_client = get_redis_client()
+            lock_key = "lock:cleanup_old_minimal_logs"
+            if redis_client:
+                if not redis_client.set(lock_key, "1", nx=True, ex=3500):
+                    logger.info("Another worker is already running cleanup_old_minimal_logs")
+                    return
+
+            try:
+                cutoff = datetime.now(timezone.utc) - timedelta(days=180)
+                count = MinimalLogEntry.query.filter(
+                    MinimalLogEntry.received_at < cutoff
+                ).delete()
+                db.session.commit()
+                logger.info("Deleted %d old minimal log entries (older than 180 days)", count)
+            finally:
+                if redis_client:
+                    redis_client.delete(lock_key)
+
 except Exception:
     # Celery not configured — tasks will not be registered.
     pass
