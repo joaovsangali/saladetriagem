@@ -34,10 +34,6 @@ celery_app.conf.update(
     enable_utc=True,
     # Scheduled tasks
     beat_schedule={
-        "celery-pipeline-heartbeat-every-minute": {
-            "task": "app.tasks.heartbeat.celery_pipeline_heartbeat",
-            "schedule": 60,  # every 1 minute
-        },
         "expire-sessions-every-5-minutes": {
             "task": "app.tasks.session_expiry.expire_sessions",
             "schedule": 300,  # every 5 minutes
