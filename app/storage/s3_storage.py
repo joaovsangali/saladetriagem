@@ -2,7 +2,7 @@
 
 import logging
 import uuid
-from typing import Optional
+from typing import List, Optional
 
 from app.storage.photo_storage import PhotoStorage
 
@@ -68,6 +68,24 @@ class S3PhotoStorage(PhotoStorage):
         except Exception as exc:
             logger.error("Failed to delete S3 object %s: %s", key, exc)
             return False
+
+    def list_all(self) -> List[str]:
+        """List all stored photo object keys under the photos/ prefix."""
+        keys: List[str] = []
+
+        try:
+            paginator = self._client.get_paginator("list_objects_v2")
+            for page in paginator.paginate(Bucket=self._bucket, Prefix="photos/"):
+                for obj in page.get("Contents", []):
+                    key = obj.get("Key")
+                    if key:
+                        keys.append(key)
+
+            logger.debug("Listed %d S3 photo object(s)", len(keys))
+            return keys
+        except Exception as exc:
+            logger.error("Failed to list S3 objects in bucket %s: %s", self._bucket, exc)
+            return []
 
     def health_check(self) -> bool:
         """Check if S3 is accessible."""

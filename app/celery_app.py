@@ -8,6 +8,7 @@ Usage (start beat scheduler):
 """
 
 import os
+import time
 from celery import Celery
 from celery.schedules import crontab
 
@@ -18,7 +19,11 @@ celery_app = Celery(
     "saladetriagem",
     broker=broker or None,
     backend=backend or None,
-    include=["app.tasks.session_expiry", "app.tasks.cleanup"],
+    include=[
+        "app.tasks.session_expiry",
+        "app.tasks.cleanup",
+        "app.tasks.heartbeat",
+    ],
 )
 
 celery_app.conf.update(
@@ -29,6 +34,10 @@ celery_app.conf.update(
     enable_utc=True,
     # Scheduled tasks
     beat_schedule={
+        "celery-pipeline-heartbeat-every-minute": {
+            "task": "app.tasks.heartbeat.celery_pipeline_heartbeat",
+            "schedule": 60,  # every 1 minute
+        },
         "expire-sessions-every-5-minutes": {
             "task": "app.tasks.session_expiry.expire_sessions",
             "schedule": 300,  # every 5 minutes
@@ -43,3 +52,47 @@ celery_app.conf.update(
         },
     },
 )
+
+
+@celery_app.on_after_configure.connect
+def update_beat_heartbeat(sender, **kwargs):  # noqa: ARG001
+    """Record a lightweight heartbeat from Celery Beat startup/config time."""
+    try:
+        from app.redis_client import get_redis_client
+
+        redis_client = get_redis_client()
+        if redis_client:
+            redis_client.set("celery:beat:heartbeat", str(time.time()), ex=300)
+    except Exception:
+        pass
+
+
+@celery_app.on_after_finalize.connect
+def setup_periodic_beat_marker(sender, **kwargs):  # noqa: ARG001
+    """Refresh beat heartbeat periodically from the beat process itself."""
+    try:
+        from app.redis_client import get_redis_client
+
+        def _mark_beat_alive():
+            redis_client = get_redis_client()
+            if redis_client:
+                redis_client.set("celery:beat:heartbeat", str(time.time()), ex=300)
+
+        sender.add_periodic_task(60.0, _beat_marker_task.s(), name="beat-self-heartbeat")
+    except Exception:
+        pass
+
+
+@celery_app.task(name="app.celery_app._beat_marker_task")
+def _beat_marker_task():
+    """Scheduled by beat to confirm beat scheduling is active."""
+    try:
+        from app.redis_client import get_redis_client
+
+        redis_client = get_redis_client()
+        if redis_client:
+            redis_client.set("celery:beat:heartbeat", str(time.time()), ex=300)
+            return True
+    except Exception:
+        pass
+    return False

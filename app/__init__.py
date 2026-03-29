@@ -118,12 +118,17 @@ def create_app(config_class=Config):
     @app.route("/health")
     def health():
         """Health check endpoint for load balancers and Docker healthchecks."""
+        import time
         from flask import current_app as _app
+
         checks = {
             "status": "ok",
             "db": False,
             "redis": False,
             "s3": None,
+            "celery_worker": None,
+            "celery_beat": None,
+            "celery_pipeline": None,
         }
 
         # Check PostgreSQL
@@ -134,6 +139,7 @@ def create_app(config_class=Config):
             checks["status"] = "degraded"
 
         # Check Redis
+        redis_client = None
         try:
             from app.redis_client import get_redis_client
             redis_client = get_redis_client()
@@ -145,7 +151,7 @@ def create_app(config_class=Config):
                     checks["redis"] = False
                     checks["status"] = "degraded"
             else:
-                checks["redis"] = None  # Redis not configured (optional)
+                checks["redis"] = None  # Redis not configured / unavailable
         except Exception:
             checks["redis"] = False
             checks["status"] = "degraded"
@@ -155,13 +161,41 @@ def create_app(config_class=Config):
             storage = getattr(_app, "photo_storage", None)
             if storage and hasattr(storage, "health_check"):
                 checks["s3"] = storage.health_check()
-                if not checks["s3"]:
+                if checks["s3"] is False:
                     checks["status"] = "degraded"
             else:
                 checks["s3"] = None  # S3 not configured
         except Exception:
             checks["s3"] = False
             checks["status"] = "degraded"
+
+        # Check Celery heartbeat(s)
+        if redis_client:
+            try:
+                now = time.time()
+
+                def _fresh_enough(key: str, max_age_seconds: int = 300):
+                    raw = redis_client.get(key)
+                    if not raw:
+                        return False
+                    try:
+                        ts = float(raw.decode() if isinstance(raw, bytes) else raw)
+                        return (now - ts) < max_age_seconds
+                    except Exception:
+                        return False
+
+                checks["celery_worker"] = _fresh_enough("celery:worker:heartbeat")
+                checks["celery_beat"] = _fresh_enough("celery:beat:heartbeat")
+                checks["celery_pipeline"] = _fresh_enough("celery:pipeline:heartbeat")
+
+                if checks["celery_worker"] is False or checks["celery_beat"] is False:
+                    checks["status"] = "degraded"
+
+            except Exception:
+                checks["celery_worker"] = False
+                checks["celery_beat"] = False
+                checks["celery_pipeline"] = False
+                checks["status"] = "degraded"
 
         status_code = 200 if checks["status"] == "ok" else 503
         return jsonify(checks), status_code
