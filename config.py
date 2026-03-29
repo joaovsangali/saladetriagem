@@ -21,17 +21,18 @@ class Config:
         f"sqlite:///{os.path.join(BASE_DIR, 'triagem.db')}",
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+
     # Connection pool settings only apply to PostgreSQL (SQLite ignores these
     # options and raises an error if passed explicitly via engine options).
     _db_url = SQLALCHEMY_DATABASE_URI
     SQLALCHEMY_ENGINE_OPTIONS: dict = {"pool_pre_ping": True}
     if _db_url.startswith("postgresql"):
-        SQLALCHEMY_ENGINE_OPTIONS["pool_size"] = int(os.environ.get("DB_POOL_SIZE", 20))
-        SQLALCHEMY_ENGINE_OPTIONS["max_overflow"] = int(os.environ.get("DB_MAX_OVERFLOW", 40))
+        SQLALCHEMY_ENGINE_OPTIONS["pool_size"] = int(os.environ.get("DB_POOL_SIZE", 10))
+        SQLALCHEMY_ENGINE_OPTIONS["max_overflow"] = int(os.environ.get("DB_MAX_OVERFLOW", 10))
         SQLALCHEMY_ENGINE_OPTIONS["pool_recycle"] = int(os.environ.get("DB_POOL_RECYCLE", 3600))
         SQLALCHEMY_ENGINE_OPTIONS["pool_timeout"] = int(os.environ.get("DB_POOL_TIMEOUT", 30))
         # Optional SSL mode — set DATABASE_SSLMODE=require for managed databases
-        # (e.g. AWS RDS, Azure Database for PostgreSQL).  Defaults to "prefer"
+        # (e.g. AWS RDS, Azure Database for PostgreSQL). Defaults to "prefer"
         # which works for both SSL-enabled and plain connections.
         _sslmode = os.environ.get("DATABASE_SSLMODE", "prefer")
         if _sslmode != "disable":
@@ -55,11 +56,8 @@ class Config:
     # ------------------------------------------------------------------
     # Rate limiting
     # ------------------------------------------------------------------
-    # Use Redis when available, fall back to memory
     REDIS_URL = os.environ.get("REDIS_URL", "")
-    RATELIMIT_STORAGE_URI = (
-        os.environ.get("REDIS_URL", "") or "memory://"
-    )
+    RATELIMIT_STORAGE_URI = REDIS_URL or "memory://"
     RATELIMIT_DEFAULT = "200 per day;50 per hour"
 
     # ------------------------------------------------------------------
@@ -120,5 +118,5 @@ class ProductionConfig(Config):
         if app.config.get("STORAGE_BACKEND") != "s3":
             raise ValueError(
                 "ERRO CRÍTICO: STORAGE_BACKEND deve ser 's3' em produção. "
-                "Configure AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, S3_BUCKET."
+                "Configure S3_ACCESS_KEY, S3_SECRET_KEY e S3_BUCKET."
             )

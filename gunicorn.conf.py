@@ -4,7 +4,6 @@ Usage:
     gunicorn --config gunicorn.conf.py wsgi:app
 """
 
-import multiprocessing
 import os
 
 # ---------------------------------------------------------------------------
@@ -15,8 +14,8 @@ bind = os.environ.get("GUNICORN_BIND", "0.0.0.0:8000")
 # ---------------------------------------------------------------------------
 # Workers
 # ---------------------------------------------------------------------------
-# Formula: (2 × CPU cores) + 1  —  good for I/O-bound Flask apps
-_default_workers = (2 * multiprocessing.cpu_count()) + 1
+# Default explícito e previsível para produção pequena/média.
+_default_workers = 4
 workers = int(os.environ.get("GUNICORN_WORKERS", _default_workers))
 threads = int(os.environ.get("GUNICORN_THREADS", 2))
 worker_class = os.environ.get("GUNICORN_WORKER_CLASS", "gthread")
@@ -47,6 +46,7 @@ proc_name = "saladetriagem"
 # ---------------------------------------------------------------------------
 # Lifecycle hooks
 # ---------------------------------------------------------------------------
+
 
 def on_starting(server):  # noqa: ARG001
     server.log.info("Gunicorn starting — %d worker(s)", workers)
