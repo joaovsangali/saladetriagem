@@ -125,6 +125,22 @@ def new_session():
         flash("Informe um nome para o plantão.", "warning")
         return redirect(url_for("dashboard.index"))
 
+    # Plan limit: max sessions per month
+    from app.decorators import increment_sessions_created
+    from app.models import PlanUsage
+    from datetime import datetime, timezone
+    limits = current_user.get_current_plan_limits()
+    month = datetime.now(timezone.utc).strftime('%Y-%m')
+    usage = PlanUsage.query.filter_by(user_id=current_user.id, month=month).first()
+    sessions_this_month = usage.sessions_created if usage else 0
+    if sessions_this_month >= limits['max_sessions_per_month']:
+        flash(
+            f"Limite de {limits['max_sessions_per_month']} plantões/mês atingido no seu plano. "
+            "Faça upgrade para continuar.",
+            'warning',
+        )
+        return redirect(url_for("dashboard.index"))
+
     total_count = DashboardSession.query.filter_by(user_id=current_user.id).count()
     if total_count >= 12:
         flash("Você tem 12 plantões no histórico. Delete um plantão antigo antes de criar novo.", "warning")
@@ -137,10 +153,13 @@ def new_session():
         flash("Você já tem 1 plantão ativo. Feche o plantão atual antes de criar novo.", "warning")
         return redirect(url_for("dashboard.index"))
 
+    # Use plan duration limit
+    max_hours = limits.get('max_session_duration_hours', 12)
+    from datetime import timedelta
     session = DashboardSession(
         user_id=current_user.id,
         label=label,
-        expires_at=DashboardSession.make_expires_at(),
+        expires_at=datetime.now(timezone.utc) + timedelta(hours=max_hours),
     )
     db.session.add(session)
     db.session.commit()
@@ -152,6 +171,9 @@ def new_session():
     )
     db.session.add(link)
     db.session.commit()
+
+    # Track usage
+    increment_sessions_created(current_user.id)
 
     flash(f"Plantão '{label}' criado com sucesso.", "success")
     return redirect(url_for("dashboard.session_detail", session_id=session.id))

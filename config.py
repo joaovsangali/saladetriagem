@@ -96,6 +96,20 @@ class Config:
     REQUIRE_CPF_FOR_SIGNUP = _bool_env("REQUIRE_CPF_FOR_SIGNUP", "False")
     FORCE_HTTPS = _bool_env("FORCE_HTTPS", "False")
 
+    # ------------------------------------------------------------------
+    # SMS
+    # ------------------------------------------------------------------
+    SMS_PROVIDER = os.environ.get('SMS_PROVIDER', 'dev')  # dev | twilio
+    TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID', '')
+    TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN', '')
+    TWILIO_FROM_NUMBER = os.environ.get('TWILIO_FROM_NUMBER', '')
+
+    # ------------------------------------------------------------------
+    # Plans
+    # ------------------------------------------------------------------
+    GLOBAL_SMS_LIMIT_PER_MONTH = int(os.environ.get('GLOBAL_SMS_LIMIT_PER_MONTH', 100))
+    TRIAL_DURATION_DAYS = int(os.environ.get('TRIAL_DURATION_DAYS', 30))
+
 
 class ProductionConfig(Config):
     DEBUG = False

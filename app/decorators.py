@@ -1,0 +1,86 @@
+"""Plan limit enforcement decorators."""
+
+from functools import wraps
+
+from flask import flash, redirect, url_for
+from flask_login import current_user
+
+from app.extensions import db
+
+
+def require_plan_limit(limit_key: str):
+    """Decorator to enforce plan limits before executing a view."""
+
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            limits = current_user.get_current_plan_limits()
+
+            if limit_key == 'max_sessions_per_month':
+                from app.models import PlanUsage, DashboardSession
+                from datetime import datetime, timezone
+                month = datetime.now(timezone.utc).strftime('%Y-%m')
+                usage = PlanUsage.query.filter_by(
+                    user_id=current_user.id, month=month
+                ).first()
+                sessions_this_month = usage.sessions_created if usage else 0
+                if sessions_this_month >= limits['max_sessions_per_month']:
+                    flash(
+                        f"Limite de {limits['max_sessions_per_month']} plantões/mês atingido. "
+                        "Faça upgrade para continuar.",
+                        'warning',
+                    )
+                    return redirect(url_for('account.index'))
+
+            elif limit_key == 'max_submissions_per_session':
+                # Get session_id from kwargs
+                session_id = kwargs.get('session_id') or kwargs.get('dashboard_id')
+                if session_id:
+                    from app.store import submission_store
+                    count = submission_store.count_for_dashboard(session_id)
+                    if count >= limits['max_submissions_per_session']:
+                        flash(
+                            f"Limite de {limits['max_submissions_per_session']} submissões por plantão atingido.",
+                            'warning',
+                        )
+                        return redirect(url_for('dashboard.index'))
+
+            elif limit_key == 'can_view_photos':
+                if not limits.get('can_view_photos'):
+                    from flask import abort
+                    abort(403)
+
+            return f(*args, **kwargs)
+
+        return decorated_function
+
+    return decorator
+
+
+def _get_or_create_plan_usage(user_id: int, month: str):
+    """Get or create a PlanUsage record for the given user and month."""
+    from app.models import PlanUsage
+    usage = PlanUsage.query.filter_by(user_id=user_id, month=month).first()
+    if not usage:
+        usage = PlanUsage(user_id=user_id, month=month)
+        db.session.add(usage)
+        db.session.flush()
+    return usage
+
+
+def increment_sessions_created(user_id: int):
+    """Increment the sessions_created counter for the current month."""
+    from datetime import datetime, timezone
+    month = datetime.now(timezone.utc).strftime('%Y-%m')
+    usage = _get_or_create_plan_usage(user_id, month)
+    usage.sessions_created += 1
+    db.session.commit()
+
+
+def increment_submissions(user_id: int):
+    """Increment total_submissions counter for the current month."""
+    from datetime import datetime, timezone
+    month = datetime.now(timezone.utc).strftime('%Y-%m')
+    usage = _get_or_create_plan_usage(user_id, month)
+    usage.total_submissions += 1
+    db.session.commit()

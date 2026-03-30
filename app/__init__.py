@@ -102,11 +102,50 @@ def create_app(config_class=Config):
     from app.dashboard import dashboard_bp
     from app.api import api_bp
     from app.intake import intake_bp
-    
+    from app.account import account_bp
+
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(api_bp)
     app.register_blueprint(intake_bp)
+    app.register_blueprint(account_bp)
+
+    # Session validation: enforce single active session per user
+    from flask import request as _request, session as _session
+    from flask_login import current_user as _cu, logout_user as _lu
+
+    @app.before_request
+    def validate_user_session():
+        """Invalidate session if the token is no longer active in DB."""
+        if not _cu.is_authenticated:
+            return None
+        # Skip static files and auth routes
+        if _request.endpoint and (
+            _request.endpoint.startswith('static')
+            or _request.endpoint in ('auth.login', 'auth.logout', 'auth.register',
+                                     'auth.confirm_email', 'auth.resend_confirmation',
+                                     'auth.verify_phone', 'auth.verify_phone_submit',
+                                     'auth.resend_sms', 'health', 'index')
+        ):
+            return None
+        token = _session.get('user_session_token')
+        if not token:
+            return None
+        from app.models import UserSession
+        from datetime import datetime, timezone
+        user_session = UserSession.query.filter_by(
+            session_token=token, user_id=_cu.id, is_active=True
+        ).first()
+        if not user_session:
+            _lu()
+            from flask import flash, redirect, url_for
+            flash('Sua sessão foi encerrada. Faça login novamente.', 'warning')
+            return redirect(url_for('auth.login'))
+        # Update last activity
+        user_session.last_activity_at = datetime.now(timezone.utc)
+        from app.extensions import db
+        db.session.commit()
+        return None
     
     # Root redirect
     from flask import jsonify, redirect, url_for

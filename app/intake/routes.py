@@ -87,6 +87,14 @@ def submit(token):
     if not session or not session.is_active or session.is_expired:
         return render_template("intake/expired.html")
 
+    # Enforce plan limit: max submissions per session
+    owner = session.owner
+    if owner:
+        limits = owner.get_current_plan_limits()
+        current_count = submission_store.count_for_dashboard(session.id)
+        if current_count >= limits['max_submissions_per_session']:
+            return render_template("intake/expired.html")
+
     schema = link.form_schema or {}
 
     # Defaults "future-proof"
@@ -240,6 +248,11 @@ def submit(token):
         return redirect(url_for("intake.form", token=token))
 
     submission_store.add(sub)
+
+    # Track usage for plan enforcement
+    if owner:
+        from app.decorators import increment_submissions
+        increment_submissions(owner.id)
 
     return redirect(url_for("intake.ok", token=token))
 

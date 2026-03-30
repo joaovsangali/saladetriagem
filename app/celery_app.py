@@ -23,6 +23,7 @@ celery_app = Celery(
         "app.tasks.session_expiry",
         "app.tasks.cleanup",
         "app.tasks.heartbeat",
+        "app.tasks.plan_management",
     ],
 )
 
@@ -45,6 +46,10 @@ celery_app.conf.update(
         "cleanup-old-access-logs-daily": {
             "task": "app.tasks.cleanup.cleanup_old_access_logs",
             "schedule": crontab(hour=3, minute=0),  # 3am
+        },
+        "downgrade-expired-trials-daily": {
+            "task": "app.tasks.plan_management.downgrade_expired_trials",
+            "schedule": crontab(hour=2, minute=0),  # 2am
         },
     },
 )
