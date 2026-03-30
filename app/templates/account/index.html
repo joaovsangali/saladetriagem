@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}Minha Conta — Sala de Triagem{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-12 mb-3">
+    <h4>Minha Conta</h4>
+  </div>
+
+  {# Plan info #}
+  <div class="col-md-6 mb-4">
+    <div class="card">
+      <div class="card-header"><strong>Plano atual</strong></div>
+      <div class="card-body">
+        {% if trial_info.active %}
+          <p><span class="badge bg-warning text-dark">Trial Premium</span> — {{ trial_info.days_left }} dia(s) restantes</p>
+          <div class="alert alert-{{ trial_info.warning_level }} py-2 small mb-2">
+            Seu trial expira em {{ trial_info.ends_at|datefmt }}.
+          </div>
+        {% elif current_user.plan_type == 'premium' %}
+          <p><span class="badge bg-success">Premium</span></p>
+        {% else %}
+          <p><span class="badge bg-secondary">Grátis</span></p>
+          <p class="small text-muted">Faça upgrade para Premium para acesso ilimitado às fotos e mais plantões.</p>
+        {% endif %}
+
+        <table class="table table-sm mt-3">
+          <thead><tr><th>Limite</th><th>Valor</th></tr></thead>
+          <tbody>
+            <tr><td>Plantões/mês</td><td>{{ limits.max_sessions_per_month }}</td></tr>
+            <tr><td>Duração máx. plantão</td><td>{{ limits.max_session_duration_hours }}h</td></tr>
+            <tr><td>Submissões/plantão</td><td>{{ limits.max_submissions_per_session }}</td></tr>
+            <tr><td>Visualizar fotos</td><td>{% if limits.can_view_photos %}✅{% else %}❌{% endif %}</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  {# User info #}
+  <div class="col-md-6 mb-4">
+    <div class="card">
+      <div class="card-header"><strong>Dados da conta</strong></div>
+      <div class="card-body">
+        <p><strong>Nome:</strong> {{ current_user.display_name }}</p>
+        <p><strong>E-mail:</strong> {{ current_user.email }}</p>
+        <p><strong>Telefone:</strong> {{ current_user.phone or '—' }}
+          {% if current_user.phone_verified_at %}
+            <span class="badge bg-success ms-1">Verificado</span>
+          {% else %}
+            <span class="badge bg-warning text-dark ms-1">Não verificado</span>
+            <a href="{{ url_for('auth.verify_phone') }}" class="btn btn-sm btn-outline-warning ms-1">Verificar</a>
+          {% endif %}
+        </p>
+        <p><strong>Conta criada em:</strong> {{ current_user.created_at|datefmt }}</p>
+      </div>
+    </div>
+  </div>
+
+  {# Change password #}
+  <div class="col-md-6 mb-4">
+    <div class="card">
+      <div class="card-header"><strong>Alterar senha</strong></div>
+      <div class="card-body">
+        <form method="post" action="{{ url_for('account.change_password') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="mb-3">
+            <label class="form-label">Senha atual</label>
+            <input type="password" name="current_password" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Nova senha</label>
+            <input type="password" name="new_password" class="form-control" required minlength="8">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Confirmar nova senha</label>
+            <input type="password" name="confirm_password" class="form-control" required minlength="8">
+          </div>
+          <button type="submit" class="btn btn-primary">Alterar senha</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  {# Active sessions #}
+  <div class="col-md-6 mb-4">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <strong>Sessões ativas</strong>
+        <form method="post" action="{{ url_for('account.end_all_other_sessions') }}" class="d-inline">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn btn-sm btn-outline-danger"
+                  onclick="return confirm('Encerrar todas as outras sessões?')">
+            Encerrar outras
+          </button>
+        </form>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0">
+          <thead><tr><th>IP</th><th>Última atividade</th><th></th></tr></thead>
+          <tbody>
+            {% for s in active_sessions %}
+            <tr {% if s.session_token == current_token %}class="table-success"{% endif %}>
+              <td>{{ s.ip_address or '—' }}{% if s.session_token == current_token %} <span class="badge bg-success">atual</span>{% endif %}</td>
+              <td>{{ s.last_activity_at|datefmt }}</td>
+              <td>
+                {% if s.session_token != current_token %}
+                <form method="post" action="{{ url_for('account.end_session', token=s.session_token) }}" class="d-inline">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="btn btn-sm btn-outline-danger">Encerrar</button>
+                </form>
+                {% endif %}
+              </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="3" class="text-muted text-center py-2">Nenhuma sessão ativa.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

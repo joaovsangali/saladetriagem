@@ -14,11 +14,6 @@
                    value="{{ form_data.get('display_name', '') }}">
           </div>
           <div class="mb-3">
-            <label class="form-label">CPF{% if require_cpf %} <span class="text-danger">*</span>{% endif %}</label>
-            <input type="text" name="cpf" class="form-control" {% if require_cpf %}required{% endif %}
-                   placeholder="000.000.000-00" value="{{ form_data.get('cpf', '') }}">
-          </div>
-          <div class="mb-3">
             <label class="form-label">Telefone <span class="text-danger">*</span></label>
             <input type="tel" name="phone" class="form-control" required
                    placeholder="(00) 00000-0000" value="{{ form_data.get('phone', '') }}">

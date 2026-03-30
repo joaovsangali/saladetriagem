@@ -1,0 +1,10 @@
+{% set trial_info = current_user.get_trial_info() %}
+{% if trial_info.active %}
+<div class="alert alert-{{ trial_info.warning_level }} alert-dismissible fade show d-flex justify-content-between align-items-center" role="alert">
+  <span>
+    <strong>Trial Premium:</strong> Restam {{ trial_info.days_left }} dia(s).
+    <a href="{{ url_for('account.index') }}" class="alert-link ms-1">Ver planos</a>
+  </span>
+  <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+{% endif %}

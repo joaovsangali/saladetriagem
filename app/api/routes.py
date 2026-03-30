@@ -130,6 +130,10 @@ def discard_submission(session_id, submission_id):
 @api_bp.route("/sessions/<int:session_id>/submissions/<submission_id>/photo/<int:index>")
 @login_required
 def get_photo(session_id, submission_id, index):
+    # Enforce plan: free users cannot view photos
+    if not current_user.get_current_plan_limits().get('can_view_photos'):
+        abort(403)
+
     session = _get_owned_session(session_id)
     sub = submission_store.get(submission_id)
     if not sub or sub.dashboard_id != session_id:
