@@ -29,7 +29,7 @@ CRIME_SCHEMAS = {
                         "required": False,
                         "options": ["Carro", "Moto", "Outros"]
                     },
-                                        {
+                    {
                         "id": "descricao",
                         "label": "Modelo do veículo",
                         "type": "text",

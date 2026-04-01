@@ -301,7 +301,7 @@ def delete_session(session_id):
         id=session_id, user_id=current_user.id
     ).first_or_404()
 
-    if not session.is_active:
+    if session.is_active:
         flash("Feche a triagem antes de deletar.", "warning")
         return redirect(url_for("dashboard.session_detail", session_id=session.id))
 
