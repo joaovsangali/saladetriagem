@@ -3,16 +3,16 @@
 {% block content %}
 {% include 'partials/trial_banner.html' %}
 <div class="d-flex justify-content-between align-items-center mb-3">
-  <h4 class="mb-0">Meus Plantões</h4>
+  <h4 class="mb-0">Minhas Triagens</h4>
   <div class="d-flex gap-2">
     <form action="{{ url_for('dashboard.delete_closed_sessions') }}" method="post" class="d-inline">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <button class="btn btn-outline-danger btn-sm" onclick="return confirm('Apagar todos os plantões encerrados e seus registros?')">
-        Apagar plantões encerrados
+      <button class="btn btn-outline-danger btn-sm" onclick="return confirm('Apagar todas as triagens encerradas e seus registros?')">
+        Apagar triagens encerradas
       </button>
     </form>
     <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#newSessionModal">
-      <i class="bi bi-plus-circle"></i> Novo Plantão
+      <i class="bi bi-plus-circle"></i> Nova Triagem
     </button>
   </div>
 </div>
@@ -40,19 +40,19 @@
         {% if s.is_active %}
         <form action="{{ url_for('dashboard.close_session', session_id=s.id) }}" method="post" class="d-inline">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <button class="btn btn-outline-danger btn-sm" onclick="return confirm('Encerrar plantão e apagar dados?')">Encerrar</button>
+          <button class="btn btn-outline-danger btn-sm" onclick="return confirm('Encerrar triagem e apagar dados?')">Encerrar</button>
         </form>
         {% else %}
         <form action="{{ url_for('dashboard.delete_session', session_id=s.id) }}" method="post" class="d-inline">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <button class="btn btn-outline-danger btn-sm" onclick="return confirm('Deletar este plantão e seus registros permanentemente?')">Deletar</button>
+          <button class="btn btn-outline-danger btn-sm" onclick="return confirm('Deletar esta triagem e seus registros permanentemente?')">Deletar</button>
         </form>
         {% endif %}
       </div>
     </div>
   </div>
   {% else %}
-  <div class="col-12"><p class="text-muted">Nenhum plantão encontrado. Crie um novo.</p></div>
+  <div class="col-12"><p class="text-muted">Nenhuma triagem encontrada. Crie uma nova.</p></div>
   {% endfor %}
 </div>
 
@@ -62,17 +62,34 @@
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Novo Plantão</h5>
+        <h5 class="modal-title">Nova Triagem</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <form method="post" action="{{ url_for('dashboard.new_session') }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="modal-body">
           <div class="mb-3">
-            <label class="form-label">Nome do Plantão</label>
-            <input type="text" name="label" class="form-control" placeholder="Ex: Plantão Noturno 28/02" required>
+            <label class="form-label">Nome da triagem</label>
+            <input type="text" name="label" class="form-control" placeholder="Ex: Triagem Manhã 01/04" required>
           </div>
-          <p class="text-muted small">O plantão ficará ativo por até 12 horas e será encerrado automaticamente.</p>
+          <div class="mb-3">
+            <label class="form-label">Duração (horas)</label>
+            <select name="duration_hours" class="form-select" required>
+              <option value="3">3 horas</option>
+              <option value="6">6 horas</option>
+              <option value="12" selected>12 horas</option>
+            </select>
+            {% set limits = current_user.get_current_plan_limits() %}
+            <div class="form-text">Limite do seu plano: {{ limits['max_session_duration_hours'] }}h</div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Tipo de triagem</label>
+            <select class="form-select" disabled>
+              <option selected>Triagem Policial</option>
+            </select>
+            <input type="hidden" name="triagem_type" value="policial">
+            <div class="form-text text-muted">Outros tipos de triagem em breve.</div>
+          </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>

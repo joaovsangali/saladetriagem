@@ -13,7 +13,7 @@ CRIME_SCHEMAS = {
         "label": "Acidente de Trânsito",
         "questions": [
             {"id": "data_fato", "label": "Data do fato", "type": "date", "required": False},
-            {"id": "hora_fato", "label": "Hora aproximada", "type": "text", "required": False},
+            {"id": "hora_fato", "label": "Hora aproximada", "type": "time", "required": False},
             {"id": "local_fato", "label": "Local do fato", "type": "text", "required": False},
             {
                 "id": "veiculos",
@@ -23,6 +23,13 @@ CRIME_SCHEMAS = {
                 "add_label": "Adicionar",
                 "fields": [
                     {
+                        "id": "tipo_veiculo",
+                        "label": "Tipo do veículo",
+                        "type": "radio",
+                        "required": False,
+                        "options": ["Carro", "Moto", "Outros"]
+                    },
+                                        {
                         "id": "descricao",
                         "label": "Modelo do veículo",
                         "type": "text",
@@ -391,7 +398,7 @@ CRIME_SCHEMAS = {
         "label": "Embriaguez no Volante",
         "questions": [
             {"id": "data_fato", "label": "Data do fato/abordagem", "type": "date", "required": False},
-            {"id": "hora_fato", "label": "Hora aproximada", "type": "text", "required": False},
+            {"id": "hora_fato", "label": "Hora aproximada", "type": "time", "required": False},
             {"id": "local_fato", "label": "Local", "type": "text", "required": False},
             {
                 "id": "veiculos",
@@ -400,6 +407,7 @@ CRIME_SCHEMAS = {
                 "max_items": 5,
                 "add_label": "Adicionar",
                 "fields": [
+                    {"id": "tipo_veiculo", "label": "Tipo do veículo", "type": "radio", "required": False, "options": ["Carro", "Moto", "Outros"]},
                     {"id": "marca", "label": "Marca", "type": "text", "required": False, "maxlength": 100},
                     {"id": "modelo", "label": "Modelo", "type": "text", "required": False, "maxlength": 100},
                     {"id": "cor", "label": "Cor", "type": "text", "required": False, "maxlength": 50},
@@ -661,7 +669,7 @@ CRIME_SCHEMAS = {
         "label": "Lesão Corporal",
         "questions": [
             {"id": "data_fato", "label": "Data do fato", "type": "date", "required": False},
-            {"id": "hora_fato", "label": "Hora aproximada", "type": "text", "required": False},
+            {"id": "hora_fato", "label": "Hora aproximada", "type": "time", "required": False},
             {"id": "local_fato", "label": "Local do fato", "type": "text", "required": False},
             {
                 "id": "relacao_autor",
@@ -895,7 +903,7 @@ CRIME_SCHEMAS = {
         "label": "Porte Ilegal de Arma de Fogo",
         "questions": [
             {"id": "data_fato", "label": "Data do fato/abordagem", "type": "date", "required": False},
-            {"id": "hora_fato", "label": "Hora do fato/abordagem", "type": "text", "required": False},
+            {"id": "hora_fato", "label": "Hora do fato/abordagem", "type": "time", "required": False},
             {"id": "local_fato", "label": "Local", "type": "text", "required": False},
             {
                 "id": "armas",
@@ -1054,6 +1062,7 @@ CRIME_SCHEMAS = {
                 "add_label": "Adicionar",
                 "show_if": {"field": "roubo_houve_celular", "value": "sim"},
                 "fields": [
+                    {"id": "tipo_veiculo", "label": "Tipo do veículo", "type": "radio", "required": False, "options": ["Carro", "Moto", "Outros"]},
                     {"id": "marca", "label": "Marca", "type": "text", "required": False, "maxlength": 100},
                     {"id": "modelo", "label": "Modelo", "type": "text", "required": False, "maxlength": 100},
                     {"id": "numero_telefone", "label": "Número do telefone", "type": "text", "required": False, "maxlength": 30},
@@ -1084,6 +1093,7 @@ CRIME_SCHEMAS = {
                 "add_label": "Adicionar",
                 "show_if": {"field": "roubo_houve_joias", "value": "sim"},
                 "fields": [
+                    {"id": "tipo_veiculo", "label": "Tipo do veículo", "type": "radio", "required": False, "options": ["Carro", "Moto", "Outros"]},
                     {"id": "marca", "label": "Marca", "type": "text", "required": False, "maxlength": 100},
                     {"id": "metal_pedra", "label": "Metal/pedra preciosa", "type": "text", "required": False, "maxlength": 150},
                 ],
@@ -1104,6 +1114,7 @@ CRIME_SCHEMAS = {
                 "add_label": "Adicionar",
                 "show_if": {"field": "roubo_houve_veiculo", "value": "sim"},
                 "fields": [
+                    {"id": "tipo_veiculo", "label": "Tipo do veículo", "type": "radio", "required": False, "options": ["Carro", "Moto", "Outros"]},
                     {"id": "marca", "label": "Marca", "type": "text", "required": False, "maxlength": 100},
                     {"id": "tipo", "label": "Tipo (carro, moto e outros)", "type": "text", "required": False, "maxlength": 100},
                     {"id": "cor", "label": "Cor", "type": "text", "required": False, "maxlength": 50},
@@ -1142,6 +1153,7 @@ CRIME_SCHEMAS = {
                 "add_label": "Adicionar",
                 "show_if": {"field": "modalidade", "value": "Roubo"},
                 "fields": [
+                    {"id": "tipo_veiculo", "label": "Tipo do veículo", "type": "radio", "required": False, "options": ["Carro", "Moto", "Outros"]},
                     {"id": "marca", "label": "Marca", "type": "text", "required": False, "maxlength": 100},
                     {"id": "tipo", "label": "Tipo", "type": "text", "required": False, "maxlength": 100},
                     {"id": "cor", "label": "Cor", "type": "text", "required": False, "maxlength": 50},
@@ -1268,6 +1280,7 @@ CRIME_SCHEMAS = {
                 "add_label": "Adicionar",
                 "show_if": {"field": "furto_houve_celular", "value": "sim"},
                 "fields": [
+                    {"id": "tipo_veiculo", "label": "Tipo do veículo", "type": "radio", "required": False, "options": ["Carro", "Moto", "Outros"]},
                     {"id": "marca", "label": "Marca", "type": "text", "required": False, "maxlength": 100},
                     {"id": "modelo", "label": "Modelo", "type": "text", "required": False, "maxlength": 100},
                     {"id": "numero_telefone", "label": "Número do telefone", "type": "text", "required": False, "maxlength": 30},
@@ -1298,6 +1311,7 @@ CRIME_SCHEMAS = {
                 "add_label": "Adicionar",
                 "show_if": {"field": "furto_houve_joias", "value": "sim"},
                 "fields": [
+                    {"id": "tipo_veiculo", "label": "Tipo do veículo", "type": "radio", "required": False, "options": ["Carro", "Moto", "Outros"]},
                     {"id": "marca", "label": "Marca", "type": "text", "required": False, "maxlength": 100},
                     {"id": "metal_pedra", "label": "Metal/pedra preciosa", "type": "text", "required": False, "maxlength": 150},
                 ],
@@ -1318,6 +1332,7 @@ CRIME_SCHEMAS = {
                 "add_label": "Adicionar",
                 "show_if": {"field": "furto_houve_veiculo", "value": "sim"},
                 "fields": [
+                    {"id": "tipo_veiculo", "label": "Tipo do veículo", "type": "radio", "required": False, "options": ["Carro", "Moto", "Outros"]},
                     {"id": "marca", "label": "Marca", "type": "text", "required": False, "maxlength": 100},
                     {"id": "tipo", "label": "Tipo (carro, moto e outros)", "type": "text", "required": False, "maxlength": 100},
                     {"id": "cor", "label": "Cor", "type": "text", "required": False, "maxlength": 50},
@@ -1356,6 +1371,7 @@ CRIME_SCHEMAS = {
                 "add_label": "Adicionar",
                 "show_if": {"field": "modalidade", "value": "Furto"},
                 "fields": [
+                    {"id": "tipo_veiculo", "label": "Tipo do veículo", "type": "radio", "required": False, "options": ["Carro", "Moto", "Outros"]},
                     {"id": "marca", "label": "Marca", "type": "text", "required": False, "maxlength": 100},
                     {"id": "tipo", "label": "Tipo", "type": "text", "required": False, "maxlength": 100},
                     {"id": "cor", "label": "Cor", "type": "text", "required": False, "maxlength": 50},
@@ -1391,7 +1407,7 @@ CRIME_SCHEMAS = {
         "label": "Tráfico de Drogas",
         "questions": [
             {"id": "data_fato", "label": "Data do fato/denúncia/abordagem", "type": "date", "required": False},
-            {"id": "hora_fato", "label": "Hora aproximada", "type": "text", "required": False},
+            {"id": "hora_fato", "label": "Hora aproximada", "type": "time", "required": False},
             {"id": "local_fato", "label": "Local", "type": "text", "required": False},
             {
                 "id": "autores",

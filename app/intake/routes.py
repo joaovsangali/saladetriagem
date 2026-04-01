@@ -114,10 +114,31 @@ def submit(token):
 
     dob = request.form.get("dob", "").strip() or None
     rg = request.form.get("rg", "").strip() or None
-    cpf = request.form.get("cpf", "").strip() or None
+    raw_cpf = request.form.get("cpf", "").strip() or None
+    from app.utils.validators import normalize_cpf
+    cpf = normalize_cpf(raw_cpf) if raw_cpf else None
     address = request.form.get("address", "").strip() or None
     narrative = request.form.get("narrative", "").strip() or None
     phone = request.form.get("phone", "").strip() or None
+    email = request.form.get("email", "").strip() or None
+
+    # Policial Militar fields
+    policial_militar = request.form.get("policial_militar", "") == "sim"
+    pm_re = request.form.get("pm_re", "").strip() or None if policial_militar else None
+    pm_batalhao = request.form.get("pm_batalhao", "").strip() or None if policial_militar else None
+    pm_companhia = request.form.get("pm_companhia", "").strip() or None if policial_militar else None
+
+    # Vítimas (PM)
+    vitimas = []
+    if policial_militar:
+        for i in range(1, 6):
+            nome = request.form.get(f"vitima__{i}__nome", "").strip()
+            if nome:
+                vitimas.append({
+                    "nome": nome,
+                    "idade": request.form.get(f"vitima__{i}__idade", "").strip() or None,
+                    "situacao": request.form.get(f"vitima__{i}__situacao", "").strip() or None,
+                })
 
     # Collect answers: usa o schema do link (não CRIME_SCHEMAS global)
     questions_by_crime = schema.get("questions_by_crime", {})
@@ -186,11 +207,11 @@ def submit(token):
         else:
             answers[qid] = val if val else None
 
-    # process photos
+    # process photos and PDFs
     photos = []
     photo_keys = []
     files = request.files.getlist("photos")
-    allowed_mime = {"image/jpeg", "image/png"}
+    allowed_mime = {"image/jpeg", "image/png", "image/gif", "application/pdf"}
     # Only externalise photos to storage when the backend is S3.
     # For local mode the existing in-memory / Redis path is preserved so that
     # the API can serve photos directly without an extra disk read.
@@ -207,7 +228,11 @@ def submit(token):
         data = f.read(max_photo_size + 1)
         if len(data) > max_photo_size:
             continue
-        cleaned = _strip_exif(data)
+        # Only strip EXIF from images, not PDFs
+        if f.mimetype == "application/pdf":
+            cleaned = data
+        else:
+            cleaned = _strip_exif(data)
         if storage is not None:
             # Persist to S3 and keep only the key in memory.  On failure fall
             # back to in-memory bytes so a transient S3 error never blocks a
@@ -220,6 +245,21 @@ def submit(token):
                 photos.append(cleaned)
         else:
             photos.append(cleaned)
+
+    # Incorporate PM and victim data into answers
+    if policial_militar:
+        pm_data = {
+            "policial_militar": True,
+            "pm_re": pm_re,
+            "pm_batalhao": pm_batalhao,
+            "pm_companhia": pm_companhia,
+        }
+        if vitimas:
+            pm_data["vitimas"] = vitimas
+        answers["_pm_info"] = pm_data
+
+    if email:
+        answers["_email"] = email
 
     sub = Submission(
         submission_id=str(uuid.uuid4()),
@@ -241,7 +281,7 @@ def submit(token):
     # Duplicate check — same name or same RG within this dashboard
     if submission_store.is_duplicate(sub):
         flash(
-            "Já existe um registro com esse nome ou RG neste plantão. "
+            "Já existe um registro com esse nome ou RG nesta triagem. "
             "Se necessário, informe o policial.",
             "warning",
         )
