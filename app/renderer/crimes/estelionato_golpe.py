@@ -1,10 +1,11 @@
-from app.renderer.common import clean, format_date_br
+from app.renderer.common import clean, format_date_br, format_declarant_id
 
 
 def render_estelionato_golpe(submission, crime_label: str) -> str:
     answers = submission.answers or {}
 
     nome = submission.guest_name or "a parte declarante"
+    declarant = format_declarant_id(submission)
     data_fato = clean(answers.get("data_fato"))
     local_fato = clean(answers.get("local_fato"))
     modalidade = clean(answers.get("modalidade"))
@@ -106,7 +107,7 @@ def render_estelionato_golpe(submission, crime_label: str) -> str:
     testemunhas_txt = _format_testemunhas(testemunhas)
     transferencias_txt = _format_transferencias(transferencias)
 
-    texto = f"Comparece nesta delegacia de polícia, {nome} para noticiar crime de estelionato."
+    texto = f"Comparece nesta delegacia de polícia, {declarant} para noticiar crime de estelionato."
 
     corpo = f"{nome}, declarante, informa"
 

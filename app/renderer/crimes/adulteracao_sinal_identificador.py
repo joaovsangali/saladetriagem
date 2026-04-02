@@ -1,10 +1,11 @@
-from app.renderer.common import clean, format_date_br
+from app.renderer.common import clean, format_date_br, format_declarant_id
 
 
 def render_adulteracao_sinal_identificador(submission, crime_label: str) -> str:
     answers = submission.answers or {}
 
     nome = submission.guest_name or "a parte declarante"
+    declarant = format_declarant_id(submission)
     data_fato = clean(answers.get("data_fato"))
     local_fato = clean(answers.get("local_fato"))
     placa = clean(answers.get("placa"))
@@ -62,7 +63,7 @@ def render_adulteracao_sinal_identificador(submission, crime_label: str) -> str:
     autores_txt = _format_autores(autores)
     testemunhas_txt = _format_testemunhas(testemunhas)
 
-    texto = f"Comparece nesta delegacia de polícia, {nome} para noticiar possível adulteração de sinal identificador de veículo automotor."
+    texto = f"Comparece nesta delegacia de polícia, {declarant} para noticiar possível adulteração de sinal identificador de veículo automotor."
 
     corpo = f"{nome}, declarante, informa"
 

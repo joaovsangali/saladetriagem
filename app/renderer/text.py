@@ -15,6 +15,7 @@ from app.renderer.crimes.porte_ilegal_arma_fogo import render_porte_ilegal_arma_
 from app.renderer.crimes.roubo_furto import render_roubo_furto
 from app.renderer.crimes.trafico_drogas import render_trafico_drogas
 from app.renderer.crimes.outros import render_outros
+from app.renderer.crimes.violencia_sexual import render_violencia_sexual
 
 
 class TextRenderer:
@@ -34,6 +35,7 @@ class TextRenderer:
         "porte_ilegal_arma_fogo": "Porte Ilegal de Arma de Fogo",
         "roubo_furto": "Roubo/Furto",
         "trafico_drogas": "Tráfico de Drogas",
+        "violencia_sexual": "Violência Sexual",
         "outros": "Outros",
     }
 
@@ -53,6 +55,7 @@ class TextRenderer:
         "porte_ilegal_arma_fogo": render_porte_ilegal_arma_fogo,
         "roubo_furto": render_roubo_furto,
         "trafico_drogas": render_trafico_drogas,
+        "violencia_sexual": render_violencia_sexual,
         "outros": render_outros,
     }
 

@@ -131,13 +131,19 @@ def submit(token):
     # Vítimas (PM)
     vitimas = []
     if policial_militar:
+        from app.utils.validators import normalize_cpf as _normalize_cpf
         for i in range(1, 6):
-            nome = request.form.get(f"vitima__{i}__nome", "").strip()
-            if nome:
+            nome_vitima = request.form.get(f"vitima__{i}__nome", "").strip()
+            if nome_vitima:
+                raw_cpf_vitima = request.form.get(f"vitima__{i}__cpf", "").strip() or None
                 vitimas.append({
-                    "nome": nome,
-                    "idade": request.form.get(f"vitima__{i}__idade", "").strip() or None,
+                    "nome": nome_vitima,
+                    "data_nascimento": request.form.get(f"vitima__{i}__data_nascimento", "").strip() or None,
                     "situacao": request.form.get(f"vitima__{i}__situacao", "").strip() or None,
+                    "rg": request.form.get(f"vitima__{i}__rg", "").strip() or None,
+                    "cpf": _normalize_cpf(raw_cpf_vitima) if raw_cpf_vitima else None,
+                    "email": request.form.get(f"vitima__{i}__email", "").strip() or None,
+                    "endereco": request.form.get(f"vitima__{i}__endereco", "").strip() or None,
                 })
 
     # Collect answers: usa o schema do link (não CRIME_SCHEMAS global)

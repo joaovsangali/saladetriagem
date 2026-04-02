@@ -1,9 +1,10 @@
-from app.renderer.common import clean, format_date_br
+from app.renderer.common import clean, format_date_br, format_declarant_id
 
 def render_roubo_furto(submission, crime_label: str) -> str:
     answers = submission.answers or {}
 
     nome = submission.guest_name or "a parte declarante"
+    declarant = format_declarant_id(submission)
     modalidade_raw = answers.get("modalidade")
     if not modalidade_raw:
         # Inferir automaticamente baseado nos campos preenchidos
@@ -151,7 +152,7 @@ def render_roubo_furto(submission, crime_label: str) -> str:
 
         meio_final = meio_utilizado_outro if meio_utilizado == "Outros" and meio_utilizado_outro else meio_utilizado
 
-        texto = f"Comparece nesta delegacia de polícia, {nome} para noticiar crime de roubo."
+        texto = f"Comparece nesta delegacia de polícia, {declarant} para noticiar crime de roubo."
 
         corpo = f"{nome}, declarante, informa"
 
@@ -252,7 +253,7 @@ def render_roubo_furto(submission, crime_label: str) -> str:
             {"marca": "marca", "tipo": "tipo", "cor": "cor", "modelo": "modelo", "placa": "placa"},
         )
 
-        texto = f"Comparece nesta delegacia de polícia, {nome} para noticiar crime de furto."
+        texto = f"Comparece nesta delegacia de polícia, {declarant} para noticiar crime de furto."
 
         corpo = f"{nome}, declarante, informa"
 
@@ -311,7 +312,7 @@ def render_roubo_furto(submission, crime_label: str) -> str:
 
         return f"{texto}\n\n{corpo}"
 
-    texto = f"Comparece nesta delegacia de polícia, {nome} para noticiar fato relacionado a roubo/furto."
+    texto = f"Comparece nesta delegacia de polícia, {declarant} para noticiar fato relacionado a roubo/furto."
 
     corpo = (
         f"{nome}, declarante, informa que relatou fato classificado no formulário como roubo/furto, "

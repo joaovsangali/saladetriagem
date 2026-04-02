@@ -1,10 +1,11 @@
-from app.renderer.common import clean, format_date_br
+from app.renderer.common import clean, format_date_br, format_declarant_id
 
 
 def render_perda_documentos(submission, crime_label: str) -> str:
     answers = submission.answers or {}
 
     nome = submission.guest_name or "a parte declarante"
+    declarant = format_declarant_id(submission)
     data = clean(answers.get("data"))
     local = clean(answers.get("local"))
     documentos = answers.get("documentos") or []
@@ -34,7 +35,7 @@ def render_perda_documentos(submission, crime_label: str) -> str:
 
     documentos_txt = _format_documentos(documentos)
 
-    texto = f"Comparece nesta delegacia de polícia, {nome} para comunicar perda de documentos."
+    texto = f"Comparece nesta delegacia de polícia, {declarant} para comunicar perda de documentos."
 
     corpo = f"{nome}, declarante, informa"
 
