@@ -17,7 +17,7 @@ from app.schemas.crime_types import DEFAULT_FORM_SCHEMA
 
 def _persist_pending_submissions(session: DashboardSession, *, status: str = "received") -> int:
     """
-    Grava em MinimalLogEntry tudo que ainda estiver pendente em RAM para este plantão.
+    Grava em MinimalLogEntry tudo que ainda estiver pendente em RAM para esta triagem.
     Não purge aqui — isso continua sendo responsabilidade do caller.
     """
     pending = submission_store.list_for_dashboard(session.id)
@@ -122,7 +122,7 @@ def index():
 def new_session():
     label = request.form.get("label", "").strip()
     if not label:
-        flash("Informe um nome para o plantão.", "warning")
+        flash("Informe um nome para a triagem.", "warning")
         return redirect(url_for("dashboard.index"))
 
     # Plan limit: max sessions per month
@@ -135,7 +135,7 @@ def new_session():
     sessions_this_month = usage.sessions_created if usage else 0
     if sessions_this_month >= limits['max_sessions_per_month']:
         flash(
-            f"Limite de {limits['max_sessions_per_month']} plantões/mês atingido no seu plano. "
+            f"Limite de {limits['max_sessions_per_month']} triagens/mês atingido no seu plano. "
             "Faça upgrade para continuar.",
             'warning',
         )
@@ -143,23 +143,34 @@ def new_session():
 
     total_count = DashboardSession.query.filter_by(user_id=current_user.id).count()
     if total_count >= 12:
-        flash("Você tem 12 plantões no histórico. Delete um plantão antigo antes de criar novo.", "warning")
+        flash("Você tem 12 triagens no histórico. Delete uma triagem antiga antes de criar nova.", "warning")
         return redirect(url_for("dashboard.index"))
 
     active_count = DashboardSession.query.filter_by(
         user_id=current_user.id, is_active=True
     ).count()
     if active_count >= 1:
-        flash("Você já tem 1 plantão ativo. Feche o plantão atual antes de criar novo.", "warning")
+        flash("Você já tem 1 triagem ativa. Feche a triagem atual antes de criar nova.", "warning")
         return redirect(url_for("dashboard.index"))
 
-    # Use plan duration limit
+    # Use duration from form, capped by plan limit
     max_hours = limits.get('max_session_duration_hours', 12)
+    try:
+        duration_hours = int(request.form.get('duration_hours', max_hours))
+    except (ValueError, TypeError):
+        duration_hours = max_hours
+
+    if duration_hours > max_hours:
+        flash(f'Duração excede o limite do seu plano ({max_hours}h).', 'danger')
+        return redirect(url_for("dashboard.index"))
+
+    duration_hours = max(1, min(duration_hours, max_hours))
+
     from datetime import timedelta
     session = DashboardSession(
         user_id=current_user.id,
         label=label,
-        expires_at=datetime.now(timezone.utc) + timedelta(hours=max_hours),
+        expires_at=datetime.now(timezone.utc) + timedelta(hours=duration_hours),
     )
     db.session.add(session)
     db.session.commit()
@@ -175,7 +186,7 @@ def new_session():
     # Track usage
     increment_sessions_created(current_user.id)
 
-    flash(f"Plantão '{label}' criado com sucesso.", "success")
+    flash(f"Triagem '{label}' criada com sucesso.", "success")
     return redirect(url_for("dashboard.session_detail", session_id=session.id))
 
 
@@ -218,7 +229,7 @@ def close_session(session_id):
     _expire_session_if_needed(session)
 
     if not session.is_active:
-        flash("Este plantão já estava encerrado ou expirado.", "info")
+        flash("Esta triagem já estava encerrada ou expirada.", "info")
         return redirect(url_for("dashboard.index"))
 
     # Persistir pendentes antes de apagar RAM
@@ -231,7 +242,7 @@ def close_session(session_id):
         link.is_active = False
 
     db.session.commit()
-    flash(f"Plantão encerrado. {saved} registro(s) pendente(s) foram salvos no histórico.", "info")
+    flash(f"Triagem encerrada. {saved} registro(s) pendente(s) foram salvos no histórico.", "info")
     return redirect(url_for("dashboard.index"))
 
 @dashboard_bp.route("/sessions/<int:session_id>/links/new", methods=["POST"])
@@ -244,7 +255,7 @@ def new_link(session_id):
     _expire_session_if_needed(session)
 
     if not session.is_active:
-        flash("Este plantão já expirou e não pode receber novos links.", "warning")
+        flash("Esta triagem já expirou e não pode receber novos links.", "warning")
         return redirect(url_for("dashboard.session_detail", session_id=session.id))
 
     link = IntakeLink(
@@ -279,7 +290,7 @@ def delete_closed_sessions():
         IntakeLink.query.filter_by(dashboard_id=s.id).delete()
         db.session.delete(s)
     db.session.commit()
-    flash(f"{len(closed)} plantão(ões) encerrado(s) apagado(s).", "info")
+    flash(f"{len(closed)} triagem(ns) encerrada(s) apagada(s).", "info")
     return redirect(url_for("dashboard.index"))
 
 
@@ -291,7 +302,7 @@ def delete_session(session_id):
     ).first_or_404()
 
     if session.is_active:
-        flash("Feche o plantão antes de deletar.", "warning")
+        flash("Feche a triagem antes de deletar.", "warning")
         return redirect(url_for("dashboard.session_detail", session_id=session.id))
 
     MinimalLogEntry.query.filter_by(dashboard_id=session.id).delete()
@@ -299,7 +310,7 @@ def delete_session(session_id):
     db.session.delete(session)
     db.session.commit()
 
-    flash("Plantão deletado com sucesso.", "info")
+    flash("Triagem deletada com sucesso.", "info")
     return redirect(url_for("dashboard.index"))
 
 

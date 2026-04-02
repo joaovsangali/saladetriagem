@@ -40,7 +40,7 @@ def require_plan_limit(limit_key: str):
                     count = submission_store.count_for_dashboard(session_id)
                     if count >= limits['max_submissions_per_session']:
                         flash(
-                            f"Limite de {limits['max_submissions_per_session']} submissões por plantão atingido.",
+                            f"Limite de {limits['max_submissions_per_session']} submissões por triagem atingido.",
                             'warning',
                         )
                         return redirect(url_for('dashboard.index'))

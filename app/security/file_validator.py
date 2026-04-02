@@ -7,15 +7,18 @@ from typing import Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
-# Magic bytes for allowed image types
+# Magic bytes for allowed file types
 _JPEG_MAGIC = b"\xff\xd8\xff"
 _PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
+_PDF_MAGIC = b"%PDF"
 
 # Maximum allowed image dimensions (width × height)
 _MAX_DIMENSION = 8000  # pixels
 
 # Maximum file size in bytes (overridable)
 _DEFAULT_MAX_SIZE = 10 * 1024 * 1024  # 10 MB
+
+ALLOWED_MIMES = ('image/jpeg', 'image/png', 'image/gif', 'application/pdf')
 
 
 class FileValidationError(ValueError):
@@ -27,13 +30,13 @@ def validate_image(
     max_size_bytes: int = _DEFAULT_MAX_SIZE,
     allowed_mimetypes: Optional[Tuple[str, ...]] = None,
 ) -> str:
-    """Validate *data* as a safe image upload.
+    """Validate *data* as a safe image or PDF upload.
 
-    Returns the detected MIME type (``"image/jpeg"`` or ``"image/png"``).
+    Returns the detected MIME type (e.g. ``"image/jpeg"`` or ``"application/pdf"``).
     Raises :class:`FileValidationError` on any validation failure.
     """
     if allowed_mimetypes is None:
-        allowed_mimetypes = ("image/jpeg", "image/png")
+        allowed_mimetypes = ALLOWED_MIMES
 
     # 1. Size check
     if len(data) > max_size_bytes:
@@ -48,7 +51,11 @@ def validate_image(
             f"File type not allowed: {mime}. Allowed: {allowed_mimetypes}"
         )
 
-    # 3. Image dimension check using Pillow
+    # 3. For PDFs, skip image-specific validation
+    if mime == 'application/pdf':
+        return mime
+
+    # 4. Image dimension check using Pillow
     try:
         from PIL import Image
 
@@ -81,4 +88,6 @@ def _detect_mime(data: bytes) -> str:
         return "image/jpeg"
     if data[:8] == _PNG_MAGIC:
         return "image/png"
+    if data[:4] == _PDF_MAGIC:
+        return "application/pdf"
     return "application/octet-stream"

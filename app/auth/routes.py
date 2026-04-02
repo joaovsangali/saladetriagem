@@ -150,6 +150,15 @@ def register():
         if not errors and PoliceUser.query.filter_by(email=email).first():
             errors.append("E-mail já cadastrado.")
 
+        if not errors and phone:
+            from app.utils.validators import normalize_phone
+            phone_normalized = normalize_phone(phone)
+            existing_users = PoliceUser.query.with_entities(PoliceUser.phone).all()
+            for (existing_phone,) in existing_users:
+                if existing_phone and normalize_phone(existing_phone) == phone_normalized:
+                    errors.append("Telefone já cadastrado.")
+                    break
+
         if errors:
             for msg in errors:
                 flash(msg, "danger")

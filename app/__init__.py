@@ -103,12 +103,14 @@ def create_app(config_class=Config):
     from app.api import api_bp
     from app.intake import intake_bp
     from app.account import account_bp
+    from app.plans_page import plans_page_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(api_bp)
     app.register_blueprint(intake_bp)
     app.register_blueprint(account_bp)
+    app.register_blueprint(plans_page_bp)
 
     # Session validation: enforce single active session per user
     from flask import request as _request, session as _session

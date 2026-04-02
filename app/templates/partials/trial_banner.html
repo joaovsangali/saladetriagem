@@ -3,7 +3,15 @@
 <div class="alert alert-{{ trial_info.warning_level }} alert-dismissible fade show d-flex justify-content-between align-items-center" role="alert">
   <span>
     <strong>Trial Premium:</strong> Restam {{ trial_info.days_left }} dia(s).
-    <a href="{{ url_for('account.index') }}" class="alert-link ms-1">Ver planos</a>
+    <a href="{{ url_for('plans.index') }}" class="alert-link ms-1">Ver planos</a>
+  </span>
+  <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+{% elif current_user.plan_type == 'free' %}
+<div class="alert alert-info alert-dismissible fade show d-flex justify-content-between align-items-center" role="alert">
+  <span>
+    <strong>Plano Gratuito:</strong> Você está usando a versão gratuita.
+    <a href="{{ url_for('plans.index') }}" class="alert-link ms-1">Ver planos Premium</a>
   </span>
   <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
 </div>

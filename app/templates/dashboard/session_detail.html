@@ -19,8 +19,8 @@
     {% if session.is_active %}
     <form action="{{ url_for('dashboard.close_session', session_id=session.id) }}" method="post" class="d-inline">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <button class="btn btn-danger btn-sm" onclick="return confirm('Encerrar plantão e apagar dados?')">
-        <i class="bi bi-stop-circle"></i> Encerrar Plantão
+      <button class="btn btn-danger btn-sm" onclick="return confirm('Encerrar triagem e apagar dados?')">
+        <i class="bi bi-stop-circle"></i> Encerrar Triagem
       </button>
     </form>
     {% endif %}
@@ -51,7 +51,7 @@
           </div>
           {% endif %}
         {% else %}
-          <p class="text-muted small">Plantão inativo ou sem link.</p>
+          <p class="text-muted small">Triagem inativa ou sem link.</p>
           {% if session.is_active %}
           <form action="{{ url_for('dashboard.new_link', session_id=session.id) }}" method="post">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

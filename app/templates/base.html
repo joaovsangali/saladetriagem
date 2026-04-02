@@ -18,7 +18,8 @@
   <div class="container">
     <a class="navbar-brand" href="{{ url_for('dashboard.index') }}">Sala de Triagem</a>
     <div class="ms-auto d-flex align-items-center gap-3">
-      <a href="{{ url_for('account.index') }}" class="text-light small text-decoration-none">
+      <a href="{{ url_for('account.index') }}" class="text-light text-decoration-none d-flex align-items-center gap-1 small">
+        <i class="bi bi-person-circle fs-5"></i>
         {{ current_user.display_name }}
       </a>
       <form action="{{ url_for('auth.logout') }}" method="post" class="d-inline">

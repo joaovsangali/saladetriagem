@@ -1,0 +1,175 @@
+/* intake-mobile.css — Mobile-first styles for guest intake forms */
+
+/* Base layout */
+body {
+  background-color: #f4f6f9;
+  font-size: 16px;
+}
+
+.intake-container {
+  padding: 12px;
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+/* Card improvements */
+.intake-card {
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  border: none;
+}
+
+.intake-card .card-header {
+  background-color: #2c3e50;
+  color: #fff;
+  border-radius: 12px 12px 0 0;
+  padding: 16px 20px;
+}
+
+.intake-card .card-body {
+  padding: 20px 16px;
+}
+
+/* Sections */
+.intake-section-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #e9ecef;
+}
+
+/* Form controls — larger touch targets */
+.intake-form .form-control,
+.intake-form .form-select {
+  padding: 12px 14px;
+  font-size: 16px; /* Prevents iOS zoom on focus */
+  border-radius: 8px;
+  border: 1.5px solid #ced4da;
+  min-height: 48px;
+}
+
+.intake-form .form-control:focus,
+.intake-form .form-select:focus {
+  border-color: #2c6fad;
+  box-shadow: 0 0 0 3px rgba(44, 111, 173, 0.15);
+}
+
+/* Labels */
+.intake-form .form-label {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #343a40;
+  margin-bottom: 6px;
+}
+
+/* Help text */
+.intake-form .form-text {
+  font-size: 0.82rem;
+  color: #6c757d;
+  margin-top: 4px;
+}
+
+/* Submit button */
+.intake-submit-btn {
+  padding: 14px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  border-radius: 8px;
+  min-height: 52px;
+  letter-spacing: 0.3px;
+}
+
+/* Checkbox and radio — larger touch targets */
+.intake-form .form-check {
+  padding: 8px 0 8px 2.2em;
+  min-height: 40px;
+}
+
+.intake-form .form-check-input {
+  width: 1.3em;
+  height: 1.3em;
+  margin-top: 0.1em;
+  margin-left: -2.2em;
+  cursor: pointer;
+}
+
+.intake-form .form-check-label {
+  font-size: 0.95rem;
+  cursor: pointer;
+  padding-top: 2px;
+}
+
+/* PM conditional fields container */
+#pm-fields-container {
+  background-color: #f0f4f8;
+  border-left: 4px solid #2c6fad;
+  border-radius: 0 8px 8px 0;
+  padding: 16px;
+  margin-top: 12px;
+  margin-bottom: 8px;
+}
+
+/* Victims container */
+#pm-vitimas-container {
+  background-color: #fff8e1;
+  border-left: 4px solid #ffc107;
+  border-radius: 0 8px 8px 0;
+  padding: 16px;
+  margin-top: 12px;
+}
+
+/* Group items */
+.group-item .card-body {
+  padding: 12px;
+}
+
+/* Radio button group for vehicle type */
+.radio-group-inline {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.radio-group-inline .form-check {
+  padding: 8px 12px 8px 2.5em;
+  border: 1.5px solid #dee2e6;
+  border-radius: 8px;
+  min-width: 90px;
+  background: #fff;
+}
+
+.radio-group-inline .form-check:has(.form-check-input:checked) {
+  border-color: #2c6fad;
+  background-color: #eef3fb;
+}
+
+/* Textarea */
+.intake-form textarea.form-control {
+  min-height: 120px;
+  resize: vertical;
+}
+
+/* Disclaimer */
+.intake-disclaimer {
+  font-size: 0.85rem;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+/* Responsive tweaks */
+@media (max-width: 576px) {
+  .intake-container {
+    padding: 8px;
+  }
+
+  .intake-card .card-body {
+    padding: 16px 12px;
+  }
+
+  .radio-group-inline {
+    flex-direction: column;
+    gap: 8px;
+  }
+}
