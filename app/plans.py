@@ -3,9 +3,9 @@
 PLANS = {
     'free': {
         'name': 'Grátis',
-        'max_sessions_per_month': 4,
-        'max_session_duration_hours': 3,
-        'max_submissions_per_session': 5,
+        'max_sessions_per_month': 5,
+        'max_session_duration_hours': 6,
+        'max_submissions_per_session': 10,
         'can_view_photos': False,
         'can_view_pdfs': False,
         'max_photos_per_submission': 3,

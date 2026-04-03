@@ -1,0 +1,15 @@
+/* custom.css — Global overrides for Sala de Triagem */
+
+/* Navbar — força cor preta */
+.navbar-dark.bg-dark {
+    background-color: #000 !important;
+}
+
+.navbar-dark .navbar-brand,
+.navbar-dark .nav-link {
+    color: #fff !important;
+}
+
+.navbar-dark .nav-link:hover {
+    color: #ddd !important;
+}
