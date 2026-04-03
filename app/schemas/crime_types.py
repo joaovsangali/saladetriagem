@@ -156,8 +156,7 @@ CRIME_SCHEMAS = {
         "label": "Ameaça",
         "questions": [
             {"id": "data_fato", "label": "Data da ameaça", "type": "date", "required": False},
-            {"id": "meio_ameaca", "label": "Como a ameaça foi realizada?", "type": "select", "options": ["Pessoalmente", "Por telefone", "Por mensagem/app", "Por terceiros", "Outro"], "required": False},
-            {"id": "conteudo_ameaca", "label": "Qual o conteúdo da ameaça?", "type": "text", "required": False},
+            {"id": "meio_ameaca", "label": "Como a ameaça foi realizada?", "type": "select", "options": ["Pessoalmente", "Por telefone", "Por mensagem/app", "Por rede social", "Por terceiros", "Outro"], "required": False},
             {
             "id": "autores",
             "label": "Autor(es) da ameaça",
@@ -171,8 +170,8 @@ CRIME_SCHEMAS = {
                 {"id": "endereco", "label": "Endereço", "type": "text", "required": False, "maxlength": 400},
             ],
             },
+            {"id": "conteudo_ameaca", "label": "Como o(a) autor(a) lhe ameaçou?", "type": "text", "required": False},
             {"id": "relacao_autor", "label": "Relação com o autor da ameaça", "type": "text", "required": False},
-            {"id": "contexto", "label": "Contexto/motivo da ameaça", "type": "text", "required": False},
             {"id": "medida_protetiva", "label": "Já possui medida protetiva?", "type": "boolean", "required": False},
             {
             "id": "testemunhas",
@@ -193,7 +192,7 @@ CRIME_SCHEMAS = {
         "label": "Calúnia/Difamação/Injúria",
         "questions": [
             {"id": "data_fato", "label": "Data do fato", "type": "date", "required": False},
-            {"id": "meio", "label": "Meio utilizado (presencial, rede social, mensagem, etc.)", "type": "text", "required": False},
+            {"id": "meio", "label": "Meio utilizado (presencial, rede social, mensagem, etc.)", "type": "select", "options": ["Pessoalmente", "Por telefone", "Por mensagem/app", "Por rede social", "Por terceiros", "Outro"], "required": False},
             {"id": "conteudo", "label": "Conteúdo/ofensa/alegação (descreva)", "type": "text", "required": False},
             {
             "id": "autores",

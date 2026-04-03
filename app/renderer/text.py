@@ -30,7 +30,7 @@ class TextRenderer:
         "embriaguez_volante": "Embriaguez no Volante",
         "estelionato_golpe": "Estelionato (Golpe)",
         "lesao_corporal": "Lesão Corporal",
-        "maria_da_penha": "Violência Doméstica (Maria da Penha)",
+        "maria_da_penha": "Violência Contra a Mulher (Maria da Penha)",
         "violencia_sexual": "Violência Sexual",
         "perda_documentos": "Perda de Documentos",
         "porte_ilegal_arma_fogo": "Porte Ilegal de Arma de Fogo",
