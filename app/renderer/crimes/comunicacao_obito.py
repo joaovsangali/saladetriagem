@@ -1,10 +1,11 @@
-from app.renderer.common import clean, format_date_br
+from app.renderer.common import clean, format_date_br, format_declarant_id
 
 
 def render_comunicacao_obito(submission, crime_label: str) -> str:
     answers = submission.answers or {}
 
     nome = submission.guest_name or "a parte declarante"
+    declarant = format_declarant_id(submission)
     comunicante = clean(answers.get("comunicante"))
     data_obito = clean(answers.get("data_obito"))
     local_obito = clean(answers.get("local_obito"))
@@ -32,7 +33,7 @@ def render_comunicacao_obito(submission, crime_label: str) -> str:
 
     falecido_txt = _format_falecido(identificacao)
 
-    texto = f"Comparece nesta delegacia de polícia, {nome} para comunicar ocorrência de óbito."
+    texto = f"Comparece nesta delegacia de polícia, {declarant} para comunicar ocorrência de óbito."
 
     corpo = f"{nome}, declarante, informa"
 

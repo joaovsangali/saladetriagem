@@ -89,9 +89,9 @@
 
             {% if schema.enabled_fields.get('endereco', True) %}
             <div class="col-12 mb-3">
-              <label class="form-label">Local onde ocorreu o fato</label>
+              <label class="form-label">Endereço</label>
               <input type="text" name="address" class="form-control" maxlength="400" autocomplete="off"
-                     placeholder=", nº 123, bloco A, apto 45, próximo ao mercado/padaria/escola">
+                     placeholder="Rua, nº, bairro, cidade">
             </div>
             {% endif %}
 
@@ -336,7 +336,7 @@
                 {% endif %}
 
                 <!-- Violência Doméstica — botão questionários -->
-                {% if q.id == 'deseja_medidas_protetivas' %}
+                {% if q.id == 'deseja_medida_protetiva' %}
                 <div id="btn-questionarios-vd" style="display:none;" class="mt-2">
                   <button type="button" class="btn btn-outline-primary btn-sm"
                           data-bs-toggle="modal" data-bs-target="#modalQuestionariosVD">

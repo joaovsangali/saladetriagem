@@ -33,11 +33,44 @@ def join_parts(parts, sep=", "):
     return sep.join([p for p in parts if p])
 
 
+def get_pm_info(submission) -> dict:
+    """Return the _pm_info dict if this is a PM submission, else empty dict."""
+    return (submission.answers or {}).get("_pm_info") or {}
+
+
+def format_declarant_id(submission) -> str:
+    """Return 'o policial militar [nome], da [companhia] do [batalhão]' for PM, else the guest name."""
+    pm_info = get_pm_info(submission)
+    if pm_info.get("policial_militar"):
+        nome = submission.guest_name or "o policial militar"
+        companhia = pm_info.get("pm_companhia")
+        batalhao = pm_info.get("pm_batalhao")
+        ident = f"o policial militar {nome}"
+        if companhia and batalhao:
+            ident += f", da {companhia} do {batalhao}"
+        elif companhia:
+            ident += f", da {companhia}"
+        elif batalhao:
+            ident += f", do {batalhao}"
+        return ident
+    return submission.guest_name or "a parte declarante"
+
+
 def format_person_block(submission) -> str:
     parts = []
 
-    if submission.guest_name:
-        parts.append(f"compareceu {submission.guest_name}")
+    pm_info = get_pm_info(submission)
+    is_pm = pm_info.get("policial_militar", False)
+
+    if is_pm:
+        declarant = format_declarant_id(submission)
+        parts.append(f"compareceu {declarant}")
+        pm_re = pm_info.get("pm_re")
+        if pm_re:
+            parts.append(f"RE {pm_re}")
+    else:
+        if submission.guest_name:
+            parts.append(f"compareceu {submission.guest_name}")
 
     docs = []
     if submission.rg:
@@ -60,7 +93,32 @@ def format_person_block(submission) -> str:
     if not parts:
         return "Compareceu a parte noticiante."
 
-    return "Compareceu a parte noticiante, " + "; ".join(parts) + "."
+    result = "Compareceu a parte noticiante, " + "; ".join(parts) + "."
+
+    if is_pm:
+        vitimas = pm_info.get("vitimas") or []
+        if vitimas:
+            vitimas_parts = []
+            for v in vitimas:
+                vd = []
+                if v.get("nome"):
+                    vd.append(v["nome"])
+                if v.get("data_nascimento"):
+                    vd.append(f"nascido(a) em {format_date_br(v['data_nascimento'])}")
+                if v.get("rg"):
+                    vd.append(f"RG {v['rg']}")
+                if v.get("cpf"):
+                    vd.append(f"CPF {v['cpf']}")
+                if v.get("endereco"):
+                    vd.append(f"endereço {v['endereco']}")
+                if v.get("situacao"):
+                    vd.append(f"situação: {v['situacao']}")
+                if vd:
+                    vitimas_parts.append(", ".join(vd))
+            if vitimas_parts:
+                result += " Vítimas: " + "; ".join(vitimas_parts) + "."
+
+    return result
 
 
 def format_group_people(items: list, singular="pessoa", plural="pessoas") -> str:
@@ -154,7 +212,7 @@ def render_generic_text(submission, crime_label: str) -> str:
         fatos.append(f"Segundo informado, o fato ocorreu em {fato_base}.")
 
     for key, value in answers.items():
-        if key in {"data_fato", "hora_fato", "local_fato"}:
+        if key in {"data_fato", "hora_fato", "local_fato", "_pm_info", "_email"}:
             continue
 
         value = clean(value)

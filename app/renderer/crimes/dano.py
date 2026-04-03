@@ -1,10 +1,11 @@
-from app.renderer.common import clean, format_date_br
+from app.renderer.common import clean, format_date_br, format_declarant_id
 
 
 def render_dano(submission, crime_label: str) -> str:
     answers = submission.answers or {}
 
     nome = submission.guest_name or "a parte declarante"
+    declarant = format_declarant_id(submission)
     data_fato = clean(answers.get("data_fato"))
     local_fato = clean(answers.get("local_fato"))
     tipo_patrimonio = clean(answers.get("tipo_patrimonio"))
@@ -74,7 +75,7 @@ def render_dano(submission, crime_label: str) -> str:
     autores_txt = _format_autores(autor)
     testemunhas_txt = _format_testemunhas(testemunhas)
 
-    texto = f"Comparece nesta delegacia de polícia, {nome} para noticiar crime de dano."
+    texto = f"Comparece nesta delegacia de polícia, {declarant} para noticiar crime de dano."
 
     corpo = f"{nome}, declarante, informa"
 

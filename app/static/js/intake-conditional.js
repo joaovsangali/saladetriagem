@@ -72,8 +72,8 @@ document.addEventListener('DOMContentLoaded', function () {
             '<input type="text" class="form-control form-control-sm" name="vitima__' + idx + '__nome" maxlength="200" autocomplete="off">' +
           '</div>' +
           '<div class="col-md-3 mb-2">' +
-            '<label class="form-label small mb-1">Idade</label>' +
-            '<input type="number" class="form-control form-control-sm" name="vitima__' + idx + '__idade" min="0" max="120" autocomplete="off">' +
+            '<label class="form-label small mb-1">Data de Nascimento</label>' +
+            '<input type="date" class="form-control form-control-sm" name="vitima__' + idx + '__data_nascimento" autocomplete="off">' +
           '</div>' +
           '<div class="col-md-3 mb-2">' +
             '<label class="form-label small mb-1">Situação</label>' +
@@ -84,9 +84,40 @@ document.addEventListener('DOMContentLoaded', function () {
               '<option value="obito">Óbito</option>' +
             '</select>' +
           '</div>' +
+          '<div class="col-md-4 mb-2">' +
+            '<label class="form-label small mb-1">RG</label>' +
+            '<input type="text" class="form-control form-control-sm" name="vitima__' + idx + '__rg" maxlength="20" autocomplete="off">' +
+          '</div>' +
+          '<div class="col-md-4 mb-2">' +
+            '<label class="form-label small mb-1">CPF</label>' +
+            '<input type="text" class="form-control form-control-sm vitima-cpf" name="vitima__' + idx + '__cpf" maxlength="14" placeholder="000.000.000-00" autocomplete="off" inputmode="numeric">' +
+          '</div>' +
+          '<div class="col-md-4 mb-2">' +
+            '<label class="form-label small mb-1">E-mail</label>' +
+            '<input type="email" class="form-control form-control-sm" name="vitima__' + idx + '__email" maxlength="200" autocomplete="off">' +
+          '</div>' +
+          '<div class="col-12 mb-2">' +
+            '<label class="form-label small mb-1">Endereço</label>' +
+            '<input type="text" class="form-control form-control-sm" name="vitima__' + idx + '__endereco" maxlength="400" autocomplete="off">' +
+          '</div>' +
         '</div>' +
       '</div>';
     container.appendChild(card);
+
+    var cpfField = card.querySelector('.vitima-cpf');
+    if (cpfField) {
+      cpfField.addEventListener('input', function () {
+        var v = this.value.replace(/\D/g, '').slice(0, 11);
+        if (v.length > 9) {
+          v = v.replace(/^(\d{3})(\d{3})(\d{3})(\d{0,2}).*/, '$1.$2.$3-$4');
+        } else if (v.length > 6) {
+          v = v.replace(/^(\d{3})(\d{3})(\d{0,3}).*/, '$1.$2.$3');
+        } else if (v.length > 3) {
+          v = v.replace(/^(\d{3})(\d{0,3}).*/, '$1.$2');
+        }
+        this.value = v;
+      });
+    }
   };
 
   window.removeVitima = function (btn) {
@@ -109,8 +140,8 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   // ── Violência Doméstica — botão questionários ─────────────────────────────
-  var possuiMP   = document.querySelector('[name="q_possui_medida_protetiva"]');
-  var desejaMP   = document.querySelector('[name="q_deseja_medidas_protetivas"]');
+  var possuiMP   = document.querySelector('[name="q_medida_protetiva"]');
+  var desejaMP   = document.querySelector('[name="q_deseja_medida_protetiva"]');
   var btnQuest   = document.getElementById('btn-questionarios-vd');
 
   function toggleBtnQuestionarios() {

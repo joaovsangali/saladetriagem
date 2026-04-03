@@ -1,10 +1,11 @@
-from app.renderer.common import clean, format_date_br
+from app.renderer.common import clean, format_date_br, format_declarant_id
 
 
 def render_calunia_difamacao_injuria(submission, crime_label: str) -> str:
     answers = submission.answers or {}
 
     nome = submission.guest_name or "a parte declarante"
+    declarant = format_declarant_id(submission)
     data_fato = clean(answers.get("data_fato"))
     meio = clean(answers.get("meio"))
     conteudo = clean(answers.get("conteudo"))
@@ -57,7 +58,7 @@ def render_calunia_difamacao_injuria(submission, crime_label: str) -> str:
     autores_txt = _format_autores(autores)
     testemunhas_txt = _format_testemunhas(testemunhas)
 
-    texto = f"Comparece nesta delegacia de polícia, {nome} para noticiar fato relacionado a calúnia, difamação ou injúria."
+    texto = f"Comparece nesta delegacia de polícia, {declarant} para noticiar fato relacionado a calúnia, difamação ou injúria."
 
     corpo = f"{nome}, declarante, informa"
 

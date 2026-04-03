@@ -1,10 +1,11 @@
-from app.renderer.common import clean, format_date_br
+from app.renderer.common import clean, format_date_br, format_declarant_id
 
 
 def render_desaparecimento_encontro_pessoas(submission, crime_label: str) -> str:
     answers = submission.answers or {}
 
     nome = submission.guest_name or "a parte declarante"
+    declarant = format_declarant_id(submission)
     tipo = clean(answers.get("tipo"))
     data_desaparecimento = clean(answers.get("data_desaparecimento"))
     hora_desaparecimento = clean(answers.get("hora_desaparecimento"))
@@ -59,7 +60,7 @@ def render_desaparecimento_encontro_pessoas(submission, crime_label: str) -> str
     contatos_txt = _format_contatos(contato_familia)
 
     if tipo == "Encontro/Localização":
-        texto = f"Comparece nesta delegacia de polícia, {nome} para comunicar encontro/localização de pessoa."
+        texto = f"Comparece nesta delegacia de polícia, {declarant} para comunicar encontro/localização de pessoa."
         corpo = f"{nome}, declarante, informa"
 
         contexto = []
@@ -80,7 +81,7 @@ def render_desaparecimento_encontro_pessoas(submission, crime_label: str) -> str
 
         return f"{texto}\n\n{corpo}"
 
-    texto = f"Comparece nesta delegacia de polícia, {nome} para noticiar desaparecimento de pessoa."
+    texto = f"Comparece nesta delegacia de polícia, {declarant} para noticiar desaparecimento de pessoa."
 
     corpo = f"{nome}, declarante, informa"
 
