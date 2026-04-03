@@ -111,8 +111,6 @@ def format_person_block(submission) -> str:
                     vd.append(f"CPF {v['cpf']}")
                 if v.get("endereco"):
                     vd.append(f"endereço {v['endereco']}")
-                if v.get("situacao"):
-                    vd.append(f"situação: {v['situacao']}")
                 if vd:
                     vitimas_parts.append(", ".join(vd))
             if vitimas_parts:
