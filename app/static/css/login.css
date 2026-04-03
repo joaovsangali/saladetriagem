@@ -1,19 +1,17 @@
 /* login.css — Estilos da página de login */
 
-/* Break out of the base template container to cover full viewport */
-.container:has(.login-page) {
-    padding: 0;
-    max-width: 100%;
-    margin-top: 0 !important;
-}
-
+/* Full-viewport overlay — login page covers the entire screen.
+   Since the navbar is only shown when authenticated, there is no overlap. */
 .login-page {
+    position: fixed;
+    inset: 0;
     background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
-    min-height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 2rem 1rem;
+    overflow-y: auto;
+    z-index: 10;
 }
 
 .login-card {

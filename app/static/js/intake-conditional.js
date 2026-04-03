@@ -65,7 +65,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Find the lowest available slot index (1–5)
     var idx = 1;
-    while (usedIndices.has(idx) && idx <= MAX_VITIMAS) idx++;
+    while (idx <= MAX_VITIMAS && usedIndices.has(idx)) idx++;
     if (idx > MAX_VITIMAS) return;
 
     usedIndices.add(idx);
