@@ -39,7 +39,7 @@ def get_pm_info(submission) -> dict:
 
 
 def format_declarant_id(submission) -> str:
-    """Return 'o policial militar [nome], da [companhia] do [batalhão]' for PM, else the guest name."""
+    """Return 'o policial militar [nome], do [batalhão] batalhão e da [companhia] companhia' for PM, else the guest name."""
     pm_info = get_pm_info(submission)
     if pm_info.get("policial_militar"):
         nome = submission.guest_name or "o policial militar"

@@ -31,11 +31,11 @@ class TextRenderer:
         "estelionato_golpe": "Estelionato (Golpe)",
         "lesao_corporal": "Lesão Corporal",
         "maria_da_penha": "Violência Doméstica (Maria da Penha)",
+        "violencia_sexual": "Violência Sexual",
         "perda_documentos": "Perda de Documentos",
         "porte_ilegal_arma_fogo": "Porte Ilegal de Arma de Fogo",
         "roubo_furto": "Roubo/Furto",
         "trafico_drogas": "Tráfico de Drogas",
-        "violencia_sexual": "Violência Sexual",
         "outros": "Outros",
     }
 

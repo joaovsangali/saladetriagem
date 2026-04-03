@@ -31,7 +31,7 @@ def render_acidente_transito(submission, crime_label: str) -> str:
 
             dados = [f"veículo {idx}"]
             if descricao:
-                dados.append(f"modelo/descrição {descricao}")
+                dados.append(f"marca/modelo {descricao}")
             if placa:
                 dados.append(f"placa {placa}")
             if cor:

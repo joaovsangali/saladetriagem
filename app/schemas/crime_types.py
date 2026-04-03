@@ -31,7 +31,7 @@ CRIME_SCHEMAS = {
                     },
                     {
                         "id": "descricao",
-                        "label": "Modelo do veículo",
+                        "label": "Marca/Modelo",
                         "type": "text",
                         "required": False,
                         "maxlength": 300
