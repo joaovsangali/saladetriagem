@@ -866,6 +866,101 @@ CRIME_SCHEMAS = {
             },
         ],
     },
+        "violencia_sexual": {
+        "label": "Violência Sexual",
+        "questions": [
+            {
+                "id": "vitima_crianca",
+                "label": "A vítima é criança ou adolescente (menor de 18 anos)?",
+                "type": "boolean",
+                "required": False
+            },
+            {
+                "id": "crianca",
+                "label": "Criança",
+                "type": "group",
+                "max_items": 1,
+                "add_label": "Adicionar",
+                "fields": [
+                    {"id": "nome", "label": "Nome", "type": "text", "required": False, "maxlength": 200},
+                    {"id": "rg", "label": "RG/Documento", "type": "text", "required": False, "maxlength": 30},
+                    {"id": "contato", "label": "Contato (telefone)", "type": "text", "required": False, "maxlength": 30},
+                    {"id": "endereco", "label": "Endereço", "type": "text", "required": False, "maxlength": 400},
+                ],
+            },
+            {"id": "data_fato", "label": "Data do fato", "type": "date", "required": False},
+            {"id": "local_fato", "label": "Local do fato", "type": "text", "required": False},
+            {
+                "id": "autor",
+                "label": "Autor (agressor)",
+                "type": "group",
+                "max_items": 1,
+                "add_label": "Adicionar",
+                "fields": [
+                    {"id": "nome", "label": "Nome", "type": "text", "required": False, "maxlength": 200},
+                    {"id": "rg", "label": "RG/Documento", "type": "text", "required": False, "maxlength": 30},
+                    {"id": "contato", "label": "Contato (telefone)", "type": "text", "required": False, "maxlength": 30},
+                    {"id": "endereco", "label": "Endereço", "type": "text", "required": False, "maxlength": 400},
+                ],
+            },
+            {
+                "id": "relacao_agressor",
+                "label": "Relação da vítima com o agressor",
+                "type": "select",
+                "options": [
+                    "Desconhecido",
+                    "Cônjuge/companheiro(a)",
+                    "Ex-cônjuge/ex-companheiro(a)",
+                    "Familiar (pai, irmão, tio, avô)",
+                    "Conhecido (vizinho, amigo)",
+                    "Outros"
+                ],
+                "required": False
+            },
+            {
+                "id": "relacao_agressor_outro",
+                "label": "Descreva a relação:",
+                "type": "text",
+                "required": False,
+                "maxlength": 200,
+                "show_if": {
+                    "field": "relacao_agressor",
+                    "value": "Outros"
+                }
+            },
+            {"id": "reside_agressor", "label": "O agressor reside com a vítima?", "type": "boolean", "required": False},
+            {
+                "id": "atendimento_medico",
+                "label": "Houve necessidade de atendimento médico?",
+                "type": "boolean",
+                "required": False
+            },
+            {
+                "id": "local_atendimento_medico",
+                "label": "Informe o nome da UBS, PS, UPA, Hospital, Clínica etc.",
+                "type": "text",
+                "required": False,
+                "maxlength": 200,
+                "show_if": {
+                    "field": "atendimento_medico",
+                    "value": "sim"
+                }
+            },
+            {
+                "id": "testemunhas",
+                "label": "Testemunhas",
+                "type": "group",
+                "max_items": 2,
+                "add_label": "Adicionar",
+                "fields": [
+                    {"id": "nome", "label": "Nome", "type": "text", "required": False, "maxlength": 200},
+                    {"id": "rg", "label": "RG/Documento", "type": "text", "required": False, "maxlength": 30},
+                    {"id": "contato", "label": "Contato (telefone)", "type": "text", "required": False, "maxlength": 30},
+                    {"id": "endereco", "label": "Endereço", "type": "text", "required": False, "maxlength": 400},
+                ],
+            },
+        ],
+    },
     "perda_documentos": {
         "label": "Perda de Documentos",
         "questions": [
@@ -1467,99 +1562,6 @@ CRIME_SCHEMAS = {
                     {"id": "contato", "label": "Contato (telefone)", "type": "text", "required": False, "maxlength": 30},
                     {"id": "endereco", "label": "Endereço", "type": "text", "required": False, "maxlength": 400},
                 ],
-            },
-            {
-                "id": "testemunhas",
-                "label": "Testemunhas",
-                "type": "group",
-                "max_items": 2,
-                "add_label": "Adicionar",
-                "fields": [
-                    {"id": "nome", "label": "Nome", "type": "text", "required": False, "maxlength": 200},
-                    {"id": "rg", "label": "RG/Documento", "type": "text", "required": False, "maxlength": 30},
-                    {"id": "contato", "label": "Contato (telefone)", "type": "text", "required": False, "maxlength": 30},
-                    {"id": "endereco", "label": "Endereço", "type": "text", "required": False, "maxlength": 400},
-                ],
-            },
-        ],
-    },
-    "violencia_sexual": {
-        "label": "Violência Sexual",
-        "questions": [
-            {
-                "id": "vitima_crianca",
-                "label": "A vítima é criança ou adolescente (menor de 18 anos)?",
-                "type": "boolean",
-                "required": False
-            },
-            {
-                "id": "nome_responsavel",
-                "label": "Nome do responsável legal (caso a vítima seja criança/adolescente)",
-                "type": "text",
-                "required": False,
-                "maxlength": 200,
-                "show_if": {
-                    "field": "vitima_crianca",
-                    "value": "sim"
-                }
-            },
-            {"id": "data_fato", "label": "Data do fato", "type": "date", "required": False},
-            {"id": "local_fato", "label": "Local do fato", "type": "text", "required": False},
-            {
-                "id": "autor",
-                "label": "Autor (agressor)",
-                "type": "group",
-                "max_items": 1,
-                "add_label": "Adicionar",
-                "fields": [
-                    {"id": "nome", "label": "Nome", "type": "text", "required": False, "maxlength": 200},
-                    {"id": "rg", "label": "RG/Documento", "type": "text", "required": False, "maxlength": 30},
-                    {"id": "contato", "label": "Contato (telefone)", "type": "text", "required": False, "maxlength": 30},
-                    {"id": "endereco", "label": "Endereço", "type": "text", "required": False, "maxlength": 400},
-                ],
-            },
-            {
-                "id": "relacao_agressor",
-                "label": "Relação da vítima com o agressor",
-                "type": "select",
-                "options": [
-                    "Desconhecido",
-                    "Cônjuge/companheiro(a)",
-                    "Ex-cônjuge/ex-companheiro(a)",
-                    "Familiar (pai, irmão, tio, avô)",
-                    "Conhecido (vizinho, amigo)",
-                    "Outros"
-                ],
-                "required": False
-            },
-            {
-                "id": "relacao_agressor_outro",
-                "label": "Descreva a relação:",
-                "type": "text",
-                "required": False,
-                "maxlength": 200,
-                "show_if": {
-                    "field": "relacao_agressor",
-                    "value": "Outros"
-                }
-            },
-            {"id": "reside_agressor", "label": "O agressor reside com a vítima?", "type": "boolean", "required": False},
-            {
-                "id": "atendimento_medico",
-                "label": "Houve necessidade de atendimento médico?",
-                "type": "boolean",
-                "required": False
-            },
-            {
-                "id": "local_atendimento_medico",
-                "label": "Informe o nome da UBS, PS, UPA, Hospital, Clínica etc.",
-                "type": "text",
-                "required": False,
-                "maxlength": 200,
-                "show_if": {
-                    "field": "atendimento_medico",
-                    "value": "sim"
-                }
             },
             {
                 "id": "testemunhas",
