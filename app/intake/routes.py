@@ -139,7 +139,6 @@ def submit(token):
                 vitimas.append({
                     "nome": nome_vitima,
                     "data_nascimento": request.form.get(f"vitima__{i}__data_nascimento", "").strip() or None,
-                    "situacao": request.form.get(f"vitima__{i}__situacao", "").strip() or None,
                     "rg": request.form.get(f"vitima__{i}__rg", "").strip() or None,
                     "cpf": _normalize_cpf(raw_cpf_vitima) if raw_cpf_vitima else None,
                     "email": request.form.get(f"vitima__{i}__email", "").strip() or None,

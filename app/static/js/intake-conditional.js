@@ -75,15 +75,6 @@ document.addEventListener('DOMContentLoaded', function () {
             '<label class="form-label small mb-1">Data de Nascimento</label>' +
             '<input type="date" class="form-control form-control-sm" name="vitima__' + idx + '__data_nascimento" autocomplete="off">' +
           '</div>' +
-          '<div class="col-md-3 mb-2">' +
-            '<label class="form-label small mb-1">Situação</label>' +
-            '<select class="form-select form-select-sm" name="vitima__' + idx + '__situacao" autocomplete="off">' +
-              '<option value="">—</option>' +
-              '<option value="ferida">Ferida</option>' +
-              '<option value="ilesa">Ilesa</option>' +
-              '<option value="obito">Óbito</option>' +
-            '</select>' +
-          '</div>' +
           '<div class="col-md-4 mb-2">' +
             '<label class="form-label small mb-1">RG</label>' +
             '<input type="text" class="form-control form-control-sm" name="vitima__' + idx + '__rg" maxlength="20" autocomplete="off">' +
