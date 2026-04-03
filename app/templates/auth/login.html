@@ -1,29 +1,32 @@
 {% extends "base.html" %}
 {% block title %}Login — Sala de Triagem{% endblock %}
+
 {% block content %}
-<div class="row justify-content-center">
-  <div class="col-md-5">
-    <div class="card shadow-sm">
-      <div class="card-body p-4">
-        <h4 class="card-title mb-3 text-center">Sala de Triagem</h4>
-        <p class="text-center text-muted small mb-4">Acesso restrito a usuários cadastrados</p>
-        <form method="post" action="{{ url_for('auth.login') }}">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <div class="mb-3">
-            <label class="form-label">E-mail</label>
-            <input type="email" name="email" class="form-control" required autofocus>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Senha</label>
-            <input type="password" name="password" class="form-control" required>
-          </div>
-          <button type="submit" class="btn btn-primary w-100">Entrar</button>
-        </form>
-        <p class="text-center mt-3 small">
-          Não tem conta? <a href="{{ url_for('auth.register') }}">Cadastrar</a>
-        </p>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
+<div class="login-page">
+  <div class="login-card">
+    <img
+      src="{{ url_for('static', filename='logo-navbar.png') }}"
+      alt="Sala de Triagem"
+      class="login-logo"
+    >
+    <h4 class="text-center mb-1">Sala de Triagem</h4>
+    <p class="text-center text-muted mb-4">Acesso restrito a usuários cadastrados</p>
+    <form method="post" action="{{ url_for('auth.login') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="mb-3">
+        <label class="form-label">E-mail</label>
+        <input type="email" name="email" class="form-control" required autofocus>
       </div>
-    </div>
+      <div class="mb-4">
+        <label class="form-label">Senha</label>
+        <input type="password" name="password" class="form-control" required>
+      </div>
+      <button type="submit" class="btn btn-primary w-100">Entrar</button>
+    </form>
+    <p class="text-center mt-3 small mb-0">
+      Não tem conta? <a href="{{ url_for('auth.register') }}">Cadastrar</a>
+    </p>
   </div>
 </div>
 {% endblock %}

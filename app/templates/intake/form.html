@@ -106,7 +106,8 @@
 
               <!-- PM conditional fields -->
               <div id="pm-fields-container" style="display:none;">
-                <div class="row mt-2">
+                <p class="text-muted small mt-2 mb-1"><strong>Digite apenas números</strong></p>
+                <div class="row mt-1">
                   <div class="col-md-4 mb-2">
                     <label class="form-label small mb-1">RE</label>
                     <input type="text" name="pm_re" class="form-control form-control-sm" maxlength="20" autocomplete="off">
@@ -125,7 +126,7 @@
               <!-- Vítimas (PM) -->
               <div id="pm-vitimas-container" style="display:none;">
                 <div class="d-flex justify-content-between align-items-center mb-2 mt-2">
-                  <strong class="small">Vítimas (até 5)</strong>
+                  <strong class="small">Vítimas (até 5) — <span id="vitima-counter">0/5</span></strong>
                   <button type="button" class="btn btn-outline-secondary btn-sm" onclick="addVitima()">+ Adicionar vítima</button>
                 </div>
                 <div id="vitimas-list"></div>

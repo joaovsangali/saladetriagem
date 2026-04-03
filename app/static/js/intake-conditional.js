@@ -45,20 +45,33 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   // ── Vítimas (PM) — add / remove ──────────────────────────────────────────
-  var vitimasCounter = 0;
-  var MAX_VITIMAS    = 5;
+  var usedIndices = new Set();
+  var MAX_VITIMAS = 5;
+
+  function updateVitimaCount() {
+    var container = document.getElementById('vitimas-list');
+    var counter = document.getElementById('vitima-counter');
+    if (!container || !counter) return;
+    var active = container.querySelectorAll('.vitima-block:not(.removed)').length;
+    counter.textContent = active + '/' + MAX_VITIMAS;
+  }
 
   window.addVitima = function () {
     var container = document.getElementById('vitimas-list');
     if (!container) return;
 
-    var current = container.querySelectorAll('.vitima-item').length;
-    if (current >= MAX_VITIMAS) return;
+    var active = container.querySelectorAll('.vitima-block:not(.removed)');
+    if (active.length >= MAX_VITIMAS) return;
 
-    vitimasCounter++;
-    var idx  = vitimasCounter;
+    // Find the lowest available slot index (1–5)
+    var idx = 1;
+    while (idx <= MAX_VITIMAS && usedIndices.has(idx)) idx++;
+    if (idx > MAX_VITIMAS) return;
+
+    usedIndices.add(idx);
+
     var card = document.createElement('div');
-    card.className = 'card mb-2 vitima-item';
+    card.className = 'card mb-2 vitima-block';
     card.dataset.index = idx;
     card.innerHTML =
       '<div class="card-body py-2">' +
@@ -109,11 +122,20 @@ document.addEventListener('DOMContentLoaded', function () {
         this.value = v;
       });
     }
+
+    updateVitimaCount();
   };
 
   window.removeVitima = function (btn) {
-    var card = btn.closest('.vitima-item');
-    if (card) card.remove();
+    var card = btn.closest('.vitima-block');
+    if (!card) return;
+    var idx = parseInt(card.dataset.index, 10);
+    // Clear all inputs so removed victim data is not submitted
+    card.querySelectorAll('input').forEach(function (i) { i.value = ''; });
+    card.classList.add('removed');
+    card.style.display = 'none';
+    usedIndices.delete(idx);
+    updateVitimaCount();
   };
 
   // ── Roubo/Furto — relato livre condicional ───────────────────────────────

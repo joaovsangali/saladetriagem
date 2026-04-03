@@ -1,0 +1,87 @@
+/* login.css — Estilos da página de login */
+
+/* Full-viewport overlay — login page covers the entire screen.
+   Since the navbar is only shown when authenticated, there is no overlap. */
+.login-page {
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+    overflow-y: auto;
+    z-index: 10;
+}
+
+.login-card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    padding: 2.5rem;
+    width: 100%;
+    max-width: 420px;
+}
+
+.login-card .login-logo {
+    display: block;
+    margin: 0 auto 1.5rem;
+    max-height: 70px;
+    width: auto;
+}
+
+.login-card h4 {
+    color: #1a1a1a;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+}
+
+.login-card .text-muted {
+    font-size: 0.85rem;
+}
+
+.login-card .form-label {
+    font-weight: 500;
+    color: #333;
+}
+
+.login-card .form-control {
+    border-radius: 8px;
+    padding: 0.65rem 1rem;
+    border: 2px solid #e0e0e0;
+    transition: border-color 0.2s;
+}
+
+.login-card .form-control:focus {
+    border-color: #000;
+    box-shadow: 0 0 0 0.2rem rgba(0, 0, 0, 0.08);
+}
+
+.login-card .btn-primary {
+    background: #000;
+    border: none;
+    border-radius: 8px;
+    padding: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    transition: background 0.2s, transform 0.15s, box-shadow 0.15s;
+}
+
+.login-card .btn-primary:hover {
+    background: #333;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.login-card .btn-primary:active {
+    transform: translateY(0);
+}
+
+.login-card a {
+    color: #000;
+    font-weight: 500;
+}
+
+.login-card a:hover {
+    color: #555;
+}

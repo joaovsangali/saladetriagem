@@ -231,6 +231,35 @@ function loadDetail(sessionId, subId) {
       if (data.address) html += `<tr><td>Endereço</td><td>${data.address}</td></tr>`;
       html += '</table>';
 
+      // Informações PM
+      const pm = data.answers && data.answers._pm_info;
+      if (pm && pm.policial_militar) {
+        html += '<h6>Informações PM</h6>';
+        html += '<table class="table table-sm">';
+        if (pm.pm_re) html += `<tr><td>RE</td><td>${pm.pm_re}</td></tr>`;
+        if (pm.pm_batalhao) html += `<tr><td>Batalhão</td><td>${pm.pm_batalhao}</td></tr>`;
+        if (pm.pm_companhia) html += `<tr><td>Companhia</td><td>${pm.pm_companhia}</td></tr>`;
+        html += '</table>';
+
+        if (pm.vitimas && pm.vitimas.length > 0) {
+          html += `<h6>Vítimas (${pm.vitimas.length})</h6>`;
+          pm.vitimas.forEach(function(v, i) {
+            html += `<div class="border rounded p-2 mb-2 small">`;
+            html += `<strong>Vítima ${i + 1}: ${v.nome || '—'}</strong>`;
+            if (v.data_nascimento) html += `<br>Nascimento: ${v.data_nascimento}`;
+            if (v.rg) html += `<br>RG: ${v.rg}`;
+            if (v.cpf) html += `<br>CPF: ${v.cpf}`;
+            if (v.email) html += `<br>E-mail: ${v.email}`;
+            if (v.endereco) html += `<br>Endereço: ${v.endereco}`;
+            html += `</div>`;
+          });
+        }
+      }
+
+      // Email
+      const email = data.answers && data.answers._email;
+      if (email) html += `<p class="small mb-1"><strong>E-mail:</strong> ${email}</p>`;
+
       if (data.structured && data.structured.length > 0) {
         html += '<h6>Respostas</h6><table class="table table-sm">';
         data.structured.forEach(([label, val]) => {
