@@ -81,7 +81,7 @@ def render_ameaca(submission, crime_label: str) -> str:
     if is_pm and vitimas_text:
         if meio_ameaca:
             complemento.append(f"{vitimas_text} {verbo} de ameaça realizada {meio_ameaca.lower()}")
-        elif vitimas_text:
+        else:
             complemento.append(f"{vitimas_text} {verbo} de ameaça")
         if complemento:
             corpo += " que " + ", ".join(complemento)
