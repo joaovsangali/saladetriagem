@@ -1,4 +1,10 @@
-from app.renderer.common import clean, format_date_br, format_declarant_id
+from app.renderer.common import (
+    clean,
+    format_date_br,
+    format_declarant_id,
+    format_vitimas_text,
+    get_pm_info,
+)
 
 
 def render_violencia_sexual(submission, crime_label: str) -> str:
@@ -6,6 +12,10 @@ def render_violencia_sexual(submission, crime_label: str) -> str:
 
     nome = submission.guest_name or "a parte declarante"
     declarant = format_declarant_id(submission)
+    pm_info = get_pm_info(submission)
+    is_pm = pm_info.get("policial_militar", False)
+    vitimas = pm_info.get("vitimas") or []
+    vitimas_text, verbo = format_vitimas_text(vitimas)
     vitima_crianca = answers.get("vitima_crianca")
     nome_responsavel = clean(answers.get("nome_responsavel"))
     data_fato = clean(answers.get("data_fato"))
@@ -67,9 +77,16 @@ def render_violencia_sexual(submission, crime_label: str) -> str:
     if local_fato:
         contexto.append(f"no local {local_fato}")
 
-    if contexto:
-        corpo += " que " + ", ".join(contexto)
-    corpo += ", ocorreu o fato ora comunicado."
+    if is_pm and vitimas_text:
+        contexto_txt = ", ".join(contexto)
+        if contexto_txt:
+            corpo += f" que {contexto_txt}, {vitimas_text} {verbo} de violência sexual."
+        else:
+            corpo += f" que {vitimas_text} {verbo} de violência sexual."
+    else:
+        if contexto:
+            corpo += " que " + ", ".join(contexto)
+        corpo += ", ocorreu o fato ora comunicado."
 
     if vitima_crianca is True:
         corpo += " Que a vítima é criança ou adolescente (menor de 18 anos)."

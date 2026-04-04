@@ -1,4 +1,10 @@
-from app.renderer.common import clean, format_date_br, format_declarant_id
+from app.renderer.common import (
+    clean,
+    format_date_br,
+    format_declarant_id,
+    format_vitimas_text,
+    get_pm_info,
+)
 
 
 def render_dano(submission, crime_label: str) -> str:
@@ -6,6 +12,10 @@ def render_dano(submission, crime_label: str) -> str:
 
     nome = submission.guest_name or "a parte declarante"
     declarant = format_declarant_id(submission)
+    pm_info = get_pm_info(submission)
+    is_pm = pm_info.get("policial_militar", False)
+    vitimas = pm_info.get("vitimas") or []
+    vitimas_text, verbo = format_vitimas_text(vitimas)
     data_fato = clean(answers.get("data_fato"))
     local_fato = clean(answers.get("local_fato"))
     tipo_patrimonio = clean(answers.get("tipo_patrimonio"))
@@ -85,9 +95,16 @@ def render_dano(submission, crime_label: str) -> str:
     if local_fato:
         contexto_inicial.append(f"no local {local_fato}")
 
-    if contexto_inicial:
-        corpo += " que " + ", ".join(contexto_inicial)
-    corpo += ", ocorreu o crime de dano."
+    if is_pm and vitimas_text:
+        contexto_txt = ", ".join(contexto_inicial)
+        if contexto_txt:
+            corpo += f" que {contexto_txt}, {vitimas_text} {verbo} de dano."
+        else:
+            corpo += f" que {vitimas_text} {verbo} de dano."
+    else:
+        if contexto_inicial:
+            corpo += " que " + ", ".join(contexto_inicial)
+        corpo += ", ocorreu o crime de dano."
 
     if tipo_patrimonio:
         corpo += f" Que o patrimônio atingido é classificado como {tipo_patrimonio.lower()}."
