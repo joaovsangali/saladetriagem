@@ -1,4 +1,10 @@
-from app.renderer.common import clean, format_date_br, format_declarant_id
+from app.renderer.common import (
+    clean,
+    format_date_br,
+    format_declarant_id,
+    format_vitimas_text,
+    get_pm_info,
+)
 
 
 def render_ameaca(submission, crime_label: str) -> str:
@@ -6,6 +12,10 @@ def render_ameaca(submission, crime_label: str) -> str:
 
     nome = submission.guest_name or "a parte declarante"
     declarant = format_declarant_id(submission)
+    pm_info = get_pm_info(submission)
+    is_pm = pm_info.get("policial_militar", False)
+    vitimas = pm_info.get("vitimas") or []
+    vitimas_text, verbo = format_vitimas_text(vitimas)
     data_fato = clean(answers.get("data_fato"))
     meio_ameaca = clean(answers.get("meio_ameaca"))
     conteudo_ameaca = clean(answers.get("conteudo_ameaca"))
@@ -67,12 +77,21 @@ def render_ameaca(submission, crime_label: str) -> str:
 
     if data_fato:
         complemento.append(f"no dia {format_date_br(data_fato)}")
-    if meio_ameaca:
-        complemento.append(f"foi vítima de ameaça realizada {meio_ameaca.lower()}")
 
-    if complemento:
-        corpo += " que " + ", ".join(complemento)
-    corpo += "."
+    if is_pm and vitimas_text:
+        if meio_ameaca:
+            complemento.append(f"{vitimas_text} {verbo} de ameaça realizada {meio_ameaca.lower()}")
+        else:
+            complemento.append(f"{vitimas_text} {verbo} de ameaça")
+        if complemento:
+            corpo += " que " + ", ".join(complemento)
+        corpo += "."
+    else:
+        if meio_ameaca:
+            complemento.append(f"foi vítima de ameaça realizada {meio_ameaca.lower()}")
+        if complemento:
+            corpo += " que " + ", ".join(complemento)
+        corpo += "."
 
     if autores_txt:
         corpo += f" Que a ameaça foi realizada por {autores_txt}"

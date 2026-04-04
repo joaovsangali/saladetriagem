@@ -1,4 +1,10 @@
-from app.renderer.common import clean, format_date_br, format_declarant_id
+from app.renderer.common import (
+    clean,
+    format_date_br,
+    format_declarant_id,
+    format_vitimas_text,
+    get_pm_info,
+)
 
 
 def render_estelionato_golpe(submission, crime_label: str) -> str:
@@ -6,6 +12,10 @@ def render_estelionato_golpe(submission, crime_label: str) -> str:
 
     nome = submission.guest_name or "a parte declarante"
     declarant = format_declarant_id(submission)
+    pm_info = get_pm_info(submission)
+    is_pm = pm_info.get("policial_militar", False)
+    vitimas = pm_info.get("vitimas") or []
+    vitimas_text, verbo = format_vitimas_text(vitimas)
     data_fato = clean(answers.get("data_fato"))
     local_fato = clean(answers.get("local_fato"))
     modalidade = clean(answers.get("modalidade"))
@@ -117,9 +127,16 @@ def render_estelionato_golpe(submission, crime_label: str) -> str:
     if local_fato:
         contexto.append(f"no local {local_fato}")
 
-    if contexto:
-        corpo += " que " + ", ".join(contexto)
-    corpo += ", foi vítima de possível golpe/estelionato."
+    if is_pm and vitimas_text:
+        contexto_txt = ", ".join(contexto)
+        if contexto_txt:
+            corpo += f" que {contexto_txt}, {vitimas_text} {verbo} de possível golpe/estelionato."
+        else:
+            corpo += f" que {vitimas_text} {verbo} de possível golpe/estelionato."
+    else:
+        if contexto:
+            corpo += " que " + ", ".join(contexto)
+        corpo += ", foi vítima de possível golpe/estelionato."
 
     if modalidade_final:
         corpo += f" Que a modalidade do golpe informada foi: {modalidade_final}."
