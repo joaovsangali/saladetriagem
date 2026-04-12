@@ -7,17 +7,19 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/public.css') }}">
     <style>
         body { background-color: #f8f9fa; }
         .navbar-brand { font-weight: bold; }
         .disclaimer { font-size: 0.8rem; color: #6c757d; }
     </style>
+    {% block head %}{% endblock %}
 </head>
 <body>
-{% if current_user.is_authenticated %}
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
   <div class="container">
-    <a class="navbar-brand d-flex align-items-center" href="{{ url_for('dashboard.index') }}">
+    <a class="navbar-brand d-flex align-items-center"
+       href="{{ url_for('dashboard.index') if current_user.is_authenticated else url_for('index') }}">
       <img
         src="{{ url_for('static', filename='logo-navbar.png') }}"
         alt="Sala de Triagem"
@@ -25,19 +27,47 @@
       >
     </a>
 
-    <div class="ms-auto d-flex align-items-center gap-3">
-      <a href="{{ url_for('account.index') }}" class="text-light text-decoration-none d-flex align-items-center gap-1 small">
-        <i class="bi bi-person-circle fs-5"></i>
-        {{ current_user.display_name }}
-      </a>
-      <form action="{{ url_for('auth.logout') }}" method="post" class="d-inline">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button class="btn btn-outline-light btn-sm" type="submit">Sair</button>
-      </form>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain"
+            aria-controls="navbarMain" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="navbarMain">
+      {% if current_user.is_authenticated %}
+      <div class="ms-auto d-flex align-items-center gap-3 flex-wrap">
+        <a href="{{ url_for('account.index') }}" class="text-light text-decoration-none d-flex align-items-center gap-1 small">
+          <i class="bi bi-person-circle fs-5"></i>
+          {{ current_user.display_name }}
+        </a>
+        <form action="{{ url_for('auth.logout') }}" method="post" class="d-inline">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn-outline-light btn-sm" type="submit">Sair</button>
+        </form>
+      </div>
+      {% else %}
+      <ul class="navbar-nav ms-auto align-items-center gap-1 navbar-nav-public">
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('index') }}">Home</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('plans.index') }}">Planos</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('public.about') }}">Sobre</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('public.privacy') }}">Privacidade e Termo de Uso</a>
+        </li>
+        <li class="nav-item ms-2">
+          <a class="btn-nav-login" href="{{ url_for('auth.login') }}">
+            <i class="bi bi-box-arrow-in-right me-1"></i>Login
+          </a>
+        </li>
+      </ul>
+      {% endif %}
     </div>
   </div>
 </nav>
-{% endif %}
 
 <div class="container mt-4">
   {% with messages = get_flashed_messages(with_categories=true) %}
@@ -51,6 +81,7 @@
   
   {% block content %}{% endblock %}
 </div>
+{% block fullwidth_content %}{% endblock %}
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 {% block scripts %}{% endblock %}

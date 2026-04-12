@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+{% block title %}Privacidade e Termo de Uso — Sala de Triagem{% endblock %}
+
+{% block fullwidth_content %}
+<!-- PAGE HERO -->
+<section class="page-hero">
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8">
+        <h1>Privacidade e Termo de Uso</h1>
+        <p class="mb-0">
+          Entenda como tratamos seus dados e quais são as condições de uso da plataforma.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTENT -->
+<section class="public-content-section">
+  <div class="container">
+
+    <!-- NAV TABS -->
+    <ul class="nav nav-tabs mb-4" id="privacyTabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="privacy-tab" data-bs-toggle="tab" data-bs-target="#privacy"
+                type="button" role="tab" aria-controls="privacy" aria-selected="true">
+          <i class="bi bi-shield-check me-1"></i>Política de Privacidade
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="terms-tab" data-bs-toggle="tab" data-bs-target="#terms"
+                type="button" role="tab" aria-controls="terms" aria-selected="false">
+          <i class="bi bi-file-text me-1"></i>Termo de Uso
+        </button>
+      </li>
+    </ul>
+
+    <div class="tab-content" id="privacyTabsContent">
+
+      <!-- PRIVACY POLICY -->
+      <div class="tab-pane fade show active" id="privacy" role="tabpanel" aria-labelledby="privacy-tab">
+        <div class="content-card">
+          <h3><i class="bi bi-shield-check me-2 text-primary"></i>Política de Privacidade</h3>
+          <p class="text-muted" style="font-size:0.8rem;">Última atualização: 2025</p>
+
+          <h4>1. Quais dados coletamos</h4>
+          <p>
+            A Sala de Triagem coleta os seguintes dados dos usuários operadores:
+          </p>
+          <ul>
+            <li>Nome, e-mail e número de telefone (quando fornecido), utilizados para identificação e autenticação.</li>
+            <li>Dados de uso da plataforma: sessões criadas, timestamps de acesso e atividade no dashboard.</li>
+            <li>Endereço IP e dados técnicos de requisição, para fins de segurança e auditoria.</li>
+          </ul>
+          <p>
+            Os dados coletados nas triagens (respostas de formulários, fotos e documentos) são de
+            responsabilidade do operador que criou a sessão. A plataforma processa esses dados
+            tecnicamente, mas não os utiliza para finalidades próprias.
+          </p>
+
+          <h4>2. Como usamos seus dados</h4>
+          <ul>
+            <li>Autenticação e controle de acesso à plataforma.</li>
+            <li>Comunicação operacional relacionada ao uso do serviço.</li>
+            <li>Melhoria e manutenção da plataforma.</li>
+            <li>Cumprimento de obrigações legais e regulatórias.</li>
+          </ul>
+
+          <h4>3. Compartilhamento de dados</h4>
+          <p>
+            Não vendemos, alugamos ou compartilhamos seus dados pessoais com terceiros para fins
+            comerciais. Os dados podem ser compartilhados somente:
+          </p>
+          <ul>
+            <li>Com prestadores de serviço de infraestrutura (hosting, armazenamento) que operam sob
+                acordos de processamento de dados.</li>
+            <li>Quando exigido por lei, ordem judicial ou autoridade competente.</li>
+          </ul>
+
+          <h4>4. Segurança dos dados</h4>
+          <p>
+            Adotamos medidas técnicas e organizacionais para proteger seus dados: criptografia em
+            trânsito (HTTPS), autenticação com hashing seguro de senhas, sessões únicas por usuário,
+            headers de segurança e controles de acesso rigorosos.
+          </p>
+
+          <h4>5. Retenção de dados</h4>
+          <p>
+            Dados de conta são mantidos enquanto a conta estiver ativa. Sessões encerradas e seus
+            registros são arquivados conforme a política de retenção da plataforma. O usuário pode
+            solicitar exclusão de dados mediante contato.
+          </p>
+
+          <h4>6. Seus direitos</h4>
+          <p>
+            Você tem direito a acessar, corrigir e solicitar a exclusão dos seus dados pessoais.
+            Para exercer esses direitos, entre em contato através dos canais disponíveis na plataforma.
+          </p>
+
+          <h4>7. Cookies</h4>
+          <p>
+            A plataforma utiliza cookies de sessão estritamente necessários para o funcionamento
+            da autenticação. Não utilizamos cookies de rastreamento ou publicidade.
+          </p>
+
+          <h4>8. Alterações desta política</h4>
+          <p>
+            Esta política pode ser atualizada periodicamente. Alterações relevantes serão comunicadas
+            por e-mail ou notificação na plataforma. O uso continuado após a notificação constitui
+            aceite das novas condições.
+          </p>
+        </div>
+      </div>
+
+      <!-- TERMS OF USE -->
+      <div class="tab-pane fade" id="terms" role="tabpanel" aria-labelledby="terms-tab">
+        <div class="content-card">
+          <h3><i class="bi bi-file-text me-2 text-primary"></i>Termo de Uso</h3>
+          <p class="text-muted" style="font-size:0.8rem;">Última atualização: 2025</p>
+
+          <h4>1. Aceite dos termos</h4>
+          <p>
+            Ao utilizar a Sala de Triagem, você concorda com estes Termos de Uso. Se não concordar
+            com qualquer parte deste documento, não utilize a plataforma.
+          </p>
+
+          <h4>2. Uso permitido</h4>
+          <p>
+            A plataforma é destinada ao uso por operadores que precisam coletar e organizar
+            informações estruturadas de forma legítima e legal. É permitido:
+          </p>
+          <ul>
+            <li>Criar sessões de triagem para fins operacionais legítimos.</li>
+            <li>Coletar dados com o consentimento dos participantes.</li>
+            <li>Exportar e utilizar os dados coletados para fins relacionados à atividade do operador.</li>
+          </ul>
+
+          <h4>3. Uso proibido</h4>
+          <p>É expressamente proibido:</p>
+          <ul>
+            <li>Utilizar a plataforma para coleta de dados sem consentimento dos participantes.</li>
+            <li>Coletar dados para fins ilegais ou que violem direitos de terceiros.</li>
+            <li>Tentar violar a segurança, integridade ou disponibilidade da plataforma.</li>
+            <li>Compartilhar credenciais de acesso com terceiros não autorizados.</li>
+            <li>Usar a plataforma para envio de spam, desinformação ou conteúdo malicioso.</li>
+          </ul>
+
+          <h4>4. Responsabilidade do operador</h4>
+          <p>
+            O operador é o único responsável pelo conteúdo das triagens que cria, pelos dados
+            coletados e pelo cumprimento das leis aplicáveis à sua atividade, incluindo as
+            normas de proteção de dados (LGPD e equivalentes).
+          </p>
+
+          <h4>5. Disponibilidade do serviço</h4>
+          <p>
+            A Sala de Triagem busca manter alta disponibilidade, mas não garante serviço ininterrupto.
+            Manutenções programadas serão comunicadas com antecedência quando possível.
+          </p>
+
+          <h4>6. Limitação de responsabilidade</h4>
+          <p>
+            A plataforma não se responsabiliza por danos decorrentes do uso indevido do serviço,
+            por decisões tomadas com base nos dados coletados, ou por indisponibilidades fora
+            do controle razoável do sistema.
+          </p>
+
+          <h4>7. Planos e pagamentos</h4>
+          <p>
+            Os planos disponíveis e suas condições estão descritos na página de Planos.
+            Alterações nos planos serão comunicadas com antecedência. Planos gratuitos podem
+            ser alterados ou descontinuados mediante aviso prévio razoável.
+          </p>
+
+          <h4>8. Encerramento de conta</h4>
+          <p>
+            O operador pode encerrar sua conta a qualquer momento. A plataforma reserva-se
+            o direito de suspender ou encerrar contas que violem estes termos.
+          </p>
+
+          <h4>9. Legislação aplicável</h4>
+          <p>
+            Estes termos são regidos pela legislação brasileira. Fica eleito o foro da comarca
+            de São Paulo — SP para dirimir eventuais controvérsias.
+          </p>
+
+          <h4>10. Contato</h4>
+          <p>
+            Dúvidas sobre estes termos ou sobre a política de privacidade podem ser encaminhadas
+            através dos canais de suporte disponíveis na plataforma.
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="public-footer">
+  <div class="container">
+    <div class="row align-items-center gy-3">
+      <div class="col-md-4">
+        <div class="footer-brand">Sala de Triagem</div>
+        <div>Plataforma de triagem estruturada.</div>
+      </div>
+      <div class="col-md-8 d-flex justify-content-md-end gap-4 flex-wrap">
+        <a href="{{ url_for('index') }}">Home</a>
+        <a href="{{ url_for('plans.index') }}">Planos</a>
+        <a href="{{ url_for('public.about') }}">Sobre</a>
+        <a href="{{ url_for('public.privacy') }}">Privacidade e Termo de Uso</a>
+      </div>
+    </div>
+    <hr style="border-color: rgba(255,255,255,0.08); margin: 1.5rem 0 1rem;">
+    <div class="text-center" style="font-size:0.78rem;">
+      &copy; {{ now().year }} Sala de Triagem. Todos os direitos reservados.
+    </div>
+  </div>
+</footer>
+{% endblock %}

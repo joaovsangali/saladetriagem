@@ -1,0 +1,499 @@
+/* public.css — Estilos das páginas públicas do Sala de Triagem */
+
+/* ──────────────────────────────────────────────
+   HERO SECTION
+   ────────────────────────────────────────────── */
+.public-hero {
+    background: #000;
+    color: #fff;
+    padding: 5rem 0 4rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.public-hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(ellipse at 20% 50%, rgba(21, 86, 219, 0.12) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 20%, rgba(21, 86, 219, 0.08) 0%, transparent 50%);
+    pointer-events: none;
+}
+
+.public-hero .hero-badge {
+    display: inline-block;
+    background: rgba(21, 86, 219, 0.18);
+    color: #7cb3ff;
+    border: 1px solid rgba(21, 86, 219, 0.35);
+    border-radius: 20px;
+    padding: 0.3rem 1rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 1.5rem;
+}
+
+.public-hero h1 {
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    margin-bottom: 1.25rem;
+}
+
+.public-hero h1 .accent {
+    color: #4d8bff;
+}
+
+.public-hero .hero-subtitle {
+    font-size: 1.1rem;
+    color: #9ca3af;
+    max-width: 540px;
+    line-height: 1.65;
+    margin-bottom: 2.5rem;
+}
+
+.public-hero .hero-cta-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+    align-items: center;
+}
+
+.btn-hero-primary {
+    background: #1a56db;
+    color: #fff !important;
+    border: none;
+    border-radius: 8px;
+    padding: 0.75rem 1.75rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    text-decoration: none;
+    transition: background 0.2s, transform 0.15s, box-shadow 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-hero-primary:hover {
+    background: #1648c0;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(26, 86, 219, 0.4);
+}
+
+.btn-hero-secondary {
+    background: transparent;
+    color: #e5e7eb !important;
+    border: 1.5px solid rgba(255, 255, 255, 0.25);
+    border-radius: 8px;
+    padding: 0.75rem 1.75rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    text-decoration: none;
+    transition: border-color 0.2s, color 0.2s, background 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-hero-secondary:hover {
+    border-color: rgba(255, 255, 255, 0.6);
+    background: rgba(255, 255, 255, 0.06);
+    color: #fff !important;
+}
+
+.hero-visual {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.hero-dashboard-mockup {
+    background: #111827;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    padding: 1.5rem;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255,255,255,0.04);
+    width: 100%;
+    max-width: 440px;
+}
+
+.mockup-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
+}
+
+.mockup-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.mockup-dot.red { background: #ef4444; }
+.mockup-dot.yellow { background: #f59e0b; }
+.mockup-dot.green { background: #22c55e; }
+
+.mockup-row {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.mockup-card-sm {
+    flex: 1;
+    background: #1f2937;
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 8px;
+    padding: 0.9rem;
+}
+
+.mockup-card-sm .mock-label {
+    font-size: 0.65rem;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 0.3rem;
+}
+
+.mockup-card-sm .mock-value {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #f9fafb;
+}
+
+.mockup-card-sm .mock-value.blue { color: #60a5fa; }
+.mockup-card-sm .mock-value.green { color: #4ade80; }
+
+.mockup-list-item {
+    background: #1f2937;
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 6px;
+    padding: 0.65rem 0.85rem;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.mock-badge {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.mock-badge.active { background: #22c55e; }
+.mock-badge.pending { background: #f59e0b; }
+
+.mock-text {
+    font-size: 0.72rem;
+    color: #9ca3af;
+    flex: 1;
+}
+
+.mock-time {
+    font-size: 0.65rem;
+    color: #4b5563;
+}
+
+/* ──────────────────────────────────────────────
+   FEATURES SECTION
+   ────────────────────────────────────────────── */
+.public-features {
+    padding: 4.5rem 0;
+    background: #f8f9fa;
+}
+
+.section-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #1a56db;
+    margin-bottom: 0.75rem;
+}
+
+.section-title {
+    font-size: clamp(1.6rem, 3.5vw, 2.2rem);
+    font-weight: 800;
+    color: #111827;
+    letter-spacing: -0.02em;
+    margin-bottom: 1rem;
+}
+
+.section-desc {
+    font-size: 1rem;
+    color: #6b7280;
+    max-width: 560px;
+    line-height: 1.7;
+}
+
+.feature-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 1.75rem;
+    height: 100%;
+    transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+}
+
+.feature-card:hover {
+    border-color: #1a56db;
+    box-shadow: 0 8px 30px rgba(26, 86, 219, 0.1);
+    transform: translateY(-3px);
+}
+
+.feature-icon {
+    width: 48px;
+    height: 48px;
+    background: #eff6ff;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+    color: #1a56db;
+    font-size: 1.3rem;
+}
+
+.feature-card h5 {
+    font-weight: 700;
+    color: #111827;
+    margin-bottom: 0.5rem;
+}
+
+.feature-card p {
+    font-size: 0.9rem;
+    color: #6b7280;
+    line-height: 1.6;
+    margin: 0;
+}
+
+/* ──────────────────────────────────────────────
+   HOW IT WORKS
+   ────────────────────────────────────────────── */
+.public-how {
+    padding: 4.5rem 0;
+    background: #fff;
+}
+
+.step-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 1.25rem;
+    margin-bottom: 2.25rem;
+}
+
+.step-number {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    background: #000;
+    color: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 0.9rem;
+    margin-top: 0.15rem;
+}
+
+.step-content h6 {
+    font-weight: 700;
+    color: #111827;
+    margin-bottom: 0.35rem;
+}
+
+.step-content p {
+    font-size: 0.9rem;
+    color: #6b7280;
+    margin: 0;
+    line-height: 1.6;
+}
+
+/* ──────────────────────────────────────────────
+   CTA SECTION
+   ────────────────────────────────────────────── */
+.public-cta {
+    background: #000;
+    color: #fff;
+    padding: 4rem 0;
+    text-align: center;
+}
+
+.public-cta h2 {
+    font-size: clamp(1.7rem, 3.5vw, 2.4rem);
+    font-weight: 800;
+    margin-bottom: 1rem;
+    letter-spacing: -0.02em;
+}
+
+.public-cta p {
+    color: #9ca3af;
+    font-size: 1rem;
+    margin-bottom: 2rem;
+}
+
+/* ──────────────────────────────────────────────
+   PUBLIC NAVBAR ADDITIONS
+   ────────────────────────────────────────────── */
+.navbar-nav-public .nav-link {
+    color: rgba(255, 255, 255, 0.8) !important;
+    font-size: 0.875rem;
+    font-weight: 500;
+    padding: 0.4rem 0.65rem !important;
+    border-radius: 6px;
+    transition: color 0.15s, background 0.15s;
+}
+
+.navbar-nav-public .nav-link:hover {
+    color: #fff !important;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.navbar-nav-public .nav-link.active {
+    color: #fff !important;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.btn-nav-login {
+    background: #1a56db;
+    color: #fff !important;
+    border: none;
+    border-radius: 7px;
+    padding: 0.4rem 1.1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background 0.2s;
+}
+
+.btn-nav-login:hover {
+    background: #1648c0;
+    color: #fff !important;
+}
+
+/* ──────────────────────────────────────────────
+   PUBLIC PAGE HERO (ABOUT / PRIVACY)
+   ────────────────────────────────────────────── */
+.page-hero {
+    background: #000;
+    color: #fff;
+    padding: 3.5rem 0 2.5rem;
+}
+
+.page-hero h1 {
+    font-size: clamp(1.8rem, 4vw, 2.6rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.75rem;
+}
+
+.page-hero p {
+    color: #9ca3af;
+    font-size: 1rem;
+    max-width: 560px;
+}
+
+.public-content-section {
+    padding: 3rem 0 4rem;
+    background: #f8f9fa;
+}
+
+.content-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 2.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.content-card h3 {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #111827;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid #f3f4f6;
+}
+
+.content-card h4 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #374151;
+    margin-top: 1.25rem;
+    margin-bottom: 0.5rem;
+}
+
+.content-card p,
+.content-card li {
+    font-size: 0.92rem;
+    color: #4b5563;
+    line-height: 1.75;
+}
+
+.content-card ul,
+.content-card ol {
+    padding-left: 1.4rem;
+}
+
+/* ──────────────────────────────────────────────
+   FOOTER (public pages)
+   ────────────────────────────────────────────── */
+.public-footer {
+    background: #111827;
+    color: #9ca3af;
+    padding: 2.5rem 0;
+    font-size: 0.85rem;
+}
+
+.public-footer a {
+    color: #9ca3af;
+    text-decoration: none;
+    transition: color 0.15s;
+}
+
+.public-footer a:hover {
+    color: #e5e7eb;
+}
+
+.public-footer .footer-brand {
+    color: #fff;
+    font-weight: 700;
+    font-size: 1rem;
+    margin-bottom: 0.4rem;
+}
+
+/* ──────────────────────────────────────────────
+   RESPONSIVE
+   ────────────────────────────────────────────── */
+@media (max-width: 768px) {
+    .public-hero {
+        padding: 3.5rem 0 3rem;
+    }
+
+    .public-hero .hero-cta-group {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .btn-hero-primary,
+    .btn-hero-secondary {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .hero-visual {
+        margin-top: 2.5rem;
+    }
+
+    .hero-dashboard-mockup {
+        max-width: 100%;
+    }
+}

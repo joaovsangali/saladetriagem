@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% block title %}Sala de Triagem — Plataforma de Triagem Estruturada{% endblock %}
+
+{% block fullwidth_content %}
+<!-- HERO -->
+<section class="public-hero">
+  <div class="container">
+    <div class="row align-items-center gy-5">
+      <div class="col-lg-6">
+        <span class="hero-badge">Plataforma de Triagem Estruturada</span>
+        <h1>
+          Triagem <span class="accent">organizada</span>,<br>
+          coleta de dados ágil
+        </h1>
+        <p class="hero-subtitle">
+          Sala de Triagem é a plataforma que transforma a coleta estruturada de informações
+          em sessões rastreáveis, seguras e eficientes — para qualquer nicho que precisa
+          de triagem organizada.
+        </p>
+        <div class="hero-cta-group">
+          <a href="{{ url_for('auth.login') }}" class="btn-hero-primary">
+            <i class="bi bi-box-arrow-in-right"></i>Acessar Plataforma
+          </a>
+          <a href="{{ url_for('plans.index') }}" class="btn-hero-secondary">
+            <i class="bi bi-grid-3x3-gap"></i>Ver Planos
+          </a>
+        </div>
+      </div>
+      <div class="col-lg-6 hero-visual">
+        <div class="hero-dashboard-mockup">
+          <div class="mockup-bar">
+            <div class="mockup-dot red"></div>
+            <div class="mockup-dot yellow"></div>
+            <div class="mockup-dot green"></div>
+          </div>
+          <div class="mockup-row">
+            <div class="mockup-card-sm">
+              <div class="mock-label">Sessões ativas</div>
+              <div class="mock-value blue">3</div>
+            </div>
+            <div class="mockup-card-sm">
+              <div class="mock-label">Registros hoje</div>
+              <div class="mock-value green">47</div>
+            </div>
+            <div class="mockup-card-sm">
+              <div class="mock-label">Triagens do mês</div>
+              <div class="mock-value">12</div>
+            </div>
+          </div>
+          <div class="mockup-list-item">
+            <div class="mock-badge active"></div>
+            <div class="mock-text">Sessão #12 — Triagem ativa</div>
+            <div class="mock-time">há 5 min</div>
+          </div>
+          <div class="mockup-list-item">
+            <div class="mock-badge active"></div>
+            <div class="mock-text">Sessão #11 — Aguardando registros</div>
+            <div class="mock-time">há 20 min</div>
+          </div>
+          <div class="mockup-list-item">
+            <div class="mock-badge pending"></div>
+            <div class="mock-text">Sessão #10 — Pendente revisão</div>
+            <div class="mock-time">há 1h</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="public-features">
+  <div class="container">
+    <div class="text-center mb-5">
+      <div class="section-label">Por que Sala de Triagem</div>
+      <h2 class="section-title">Tudo que você precisa para triagem estruturada</h2>
+      <p class="section-desc mx-auto">
+        Da criação da sessão à exportação dos dados — uma solução coesa, rastreável
+        e fácil de operar.
+      </p>
+    </div>
+    <div class="row g-4">
+      <div class="col-md-6 col-lg-4">
+        <div class="feature-card">
+          <div class="feature-icon"><i class="bi bi-link-45deg"></i></div>
+          <h5>Links de Triagem por QR Code</h5>
+          <p>Gere links únicos e QR Codes por sessão. Compartilhe com facilidade e controle quem acessa.</p>
+        </div>
+      </div>
+      <div class="col-md-6 col-lg-4">
+        <div class="feature-card">
+          <div class="feature-icon"><i class="bi bi-collection"></i></div>
+          <h5>Coleta Estruturada de Dados</h5>
+          <p>Formulários configuráveis e tipados que garantem consistência e completude nas informações coletadas.</p>
+        </div>
+      </div>
+      <div class="col-md-6 col-lg-4">
+        <div class="feature-card">
+          <div class="feature-icon"><i class="bi bi-clock-history"></i></div>
+          <h5>Sessões com Controle de Tempo</h5>
+          <p>Cada triagem tem tempo de vida definido. Encerramentos automáticos protegem a integridade dos dados.</p>
+        </div>
+      </div>
+      <div class="col-md-6 col-lg-4">
+        <div class="feature-card">
+          <div class="feature-icon"><i class="bi bi-images"></i></div>
+          <h5>Fotos e Arquivos Vinculados</h5>
+          <p>Associe fotos e PDFs a cada registro. Suporte a uploads diretamente no formulário de triagem.</p>
+        </div>
+      </div>
+      <div class="col-md-6 col-lg-4">
+        <div class="feature-card">
+          <div class="feature-icon"><i class="bi bi-journal-text"></i></div>
+          <h5>Log Auditável de Registros</h5>
+          <p>Histórico completo de cada sessão — quem enviou, quando e o quê. Rastreabilidade total.</p>
+        </div>
+      </div>
+      <div class="col-md-6 col-lg-4">
+        <div class="feature-card">
+          <div class="feature-icon"><i class="bi bi-shield-check"></i></div>
+          <h5>Segurança e Controle de Acesso</h5>
+          <p>Autenticação robusta, sessões únicas e proteções de infraestrutura para dados sensíveis.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="public-how">
+  <div class="container">
+    <div class="row align-items-center gy-5">
+      <div class="col-lg-5">
+        <div class="section-label">Como funciona</div>
+        <h2 class="section-title">Simples do início ao fim</h2>
+        <p class="section-desc">
+          Você cria uma sessão, compartilha o link e os registros chegam em tempo real.
+          Tudo centralizado em um dashboard limpo.
+        </p>
+      </div>
+      <div class="col-lg-6 offset-lg-1">
+        <div class="step-item">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <h6>Crie uma sessão de triagem</h6>
+            <p>No dashboard, abra uma nova sessão. O sistema gera automaticamente um link único e um QR Code para ela.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <h6>Compartilhe o link ou QR Code</h6>
+            <p>Distribua para quem precisa preencher o formulário. Acesso direto pelo celular, sem instalação.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <h6>Acompanhe os registros em tempo real</h6>
+            <p>Cada submissão aparece no seu dashboard imediatamente, com fotos, dados e metadados organizados.</p>
+          </div>
+        </div>
+        <div class="step-item mb-0">
+          <div class="step-number">4</div>
+          <div class="step-content">
+            <h6>Encerre e arquive com segurança</h6>
+            <p>Quando a triagem termina, encerre a sessão. Todos os dados ficam armazenados e auditáveis.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="public-cta">
+  <div class="container">
+    <h2>Pronto para começar?</h2>
+    <p>Crie sua conta gratuitamente e experimente a plataforma agora.</p>
+    <div class="d-flex justify-content-center gap-3 flex-wrap">
+      <a href="{{ url_for('auth.login') }}" class="btn-hero-primary">
+        <i class="bi bi-box-arrow-in-right"></i>Acessar a Plataforma
+      </a>
+      <a href="{{ url_for('plans.index') }}" class="btn-hero-secondary">
+        <i class="bi bi-grid-3x3-gap"></i>Conhecer os Planos
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="public-footer">
+  <div class="container">
+    <div class="row align-items-center gy-3">
+      <div class="col-md-4">
+        <div class="footer-brand">Sala de Triagem</div>
+        <div>Plataforma de triagem estruturada.</div>
+      </div>
+      <div class="col-md-8 d-flex justify-content-md-end gap-4 flex-wrap">
+        <a href="{{ url_for('plans.index') }}">Planos</a>
+        <a href="{{ url_for('public.about') }}">Sobre</a>
+        <a href="{{ url_for('public.privacy') }}">Privacidade e Termo de Uso</a>
+        <a href="{{ url_for('auth.login') }}">Login</a>
+      </div>
+    </div>
+    <hr style="border-color: rgba(255,255,255,0.08); margin: 1.5rem 0 1rem;">
+    <div class="text-center" style="font-size:0.78rem;">
+      &copy; {{ now().year }} Sala de Triagem. Todos os direitos reservados.
+    </div>
+  </div>
+</footer>
+{% endblock %}

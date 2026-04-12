@@ -73,6 +73,8 @@ def create_app(config_class=Config):
         )
 
     app.jinja_env.filters["datefmt"] = _datefmt
+    from datetime import datetime as _datetime
+    app.jinja_env.globals["now"] = _datetime.now
 
     # Structured logging with PII sanitization (non-debug mode)
     if not app.debug:
@@ -104,6 +106,7 @@ def create_app(config_class=Config):
     from app.intake import intake_bp
     from app.account import account_bp
     from app.plans_page import plans_page_bp
+    from app.public import public_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
@@ -111,6 +114,7 @@ def create_app(config_class=Config):
     app.register_blueprint(intake_bp)
     app.register_blueprint(account_bp)
     app.register_blueprint(plans_page_bp)
+    app.register_blueprint(public_bp)
 
     # Session validation: enforce single active session per user
     from flask import request as _request, session as _session
@@ -127,7 +131,8 @@ def create_app(config_class=Config):
             or _request.endpoint in ('auth.login', 'auth.logout', 'auth.register',
                                      'auth.confirm_email', 'auth.resend_confirmation',
                                      'auth.verify_phone', 'auth.verify_phone_submit',
-                                     'auth.resend_sms', 'health', 'index')
+                                     'auth.resend_sms', 'health', 'index',
+                                     'public.about', 'public.privacy', 'plans.index')
         ):
             return None
         token = _session.get('user_session_token')
@@ -149,12 +154,15 @@ def create_app(config_class=Config):
         db.session.commit()
         return None
     
-    # Root redirect
-    from flask import jsonify, redirect, url_for
+    # Root route — home page for guests, dashboard for authenticated users
+    from flask import render_template, jsonify, redirect, url_for
 
     @app.route("/")
     def index():
-        return redirect(url_for("auth.login"))
+        from flask_login import current_user as _index_user
+        if _index_user.is_authenticated:
+            return redirect(url_for("dashboard.index"))
+        return render_template("public/index.html")
 
     @app.route("/health")
     def health():
