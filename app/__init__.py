@@ -73,6 +73,8 @@ def create_app(config_class=Config):
         )
 
     app.jinja_env.filters["datefmt"] = _datefmt
+    from datetime import datetime as _datetime
+    app.jinja_env.globals["now"] = _datetime.now
 
     # Structured logging with PII sanitization (non-debug mode)
     if not app.debug:
