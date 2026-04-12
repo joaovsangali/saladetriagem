@@ -1,4 +1,10 @@
-from app.renderer.common import clean, format_date_br, format_declarant_id
+from app.renderer.common import (
+    clean,
+    format_date_br,
+    format_declarant_id,
+    format_vitimas_text,
+    get_pm_info,
+)
 
 
 def render_calunia_difamacao_injuria(submission, crime_label: str) -> str:
@@ -6,6 +12,10 @@ def render_calunia_difamacao_injuria(submission, crime_label: str) -> str:
 
     nome = submission.guest_name or "a parte declarante"
     declarant = format_declarant_id(submission)
+    pm_info = get_pm_info(submission)
+    is_pm = pm_info.get("policial_militar", False)
+    vitimas = pm_info.get("vitimas") or []
+    vitimas_text, verbo = format_vitimas_text(vitimas)
     data_fato = clean(answers.get("data_fato"))
     meio = clean(answers.get("meio"))
     conteudo = clean(answers.get("conteudo"))
@@ -68,9 +78,17 @@ def render_calunia_difamacao_injuria(submission, crime_label: str) -> str:
     if meio:
         contexto_inicial.append(f"que a ofensa foi praticada por meio de {meio}")
 
-    if contexto_inicial:
-        corpo += " que " + ", ".join(contexto_inicial)
-    corpo += "."
+    if is_pm and vitimas_text:
+        corpo += f" que {vitimas_text} {verbo} de calúnia, difamação ou injúria"
+        if data_fato:
+            corpo += f" ocorrida no dia {format_date_br(data_fato)}"
+        if meio:
+            corpo += f", praticada por meio de {meio}"
+        corpo += "."
+    else:
+        if contexto_inicial:
+            corpo += " que " + ", ".join(contexto_inicial)
+        corpo += "."
 
     if autores_txt:
         corpo += f" Que os fatos teriam sido praticados por {autores_txt}."

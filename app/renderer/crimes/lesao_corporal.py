@@ -1,4 +1,10 @@
-from app.renderer.common import clean, format_date_br, format_declarant_id
+from app.renderer.common import (
+    clean,
+    format_date_br,
+    format_declarant_id,
+    format_vitimas_text,
+    get_pm_info,
+)
 
 
 def render_lesao_corporal(submission, crime_label: str) -> str:
@@ -6,6 +12,10 @@ def render_lesao_corporal(submission, crime_label: str) -> str:
 
     nome = submission.guest_name or "a parte declarante"
     declarant = format_declarant_id(submission)
+    pm_info = get_pm_info(submission)
+    is_pm = pm_info.get("policial_militar", False)
+    vitimas = pm_info.get("vitimas") or []
+    vitimas_text, verbo = format_vitimas_text(vitimas)
     data_fato = clean(answers.get("data_fato"))
     hora_fato = clean(answers.get("hora_fato"))
     local_fato = clean(answers.get("local_fato"))
@@ -77,9 +87,16 @@ def render_lesao_corporal(submission, crime_label: str) -> str:
     if local_fato:
         contexto.append(f"no local {local_fato}")
 
-    if contexto:
-        corpo += " que " + ", ".join(contexto)
-    corpo += ", foi vítima de lesão corporal."
+    if is_pm and vitimas_text:
+        contexto_txt = ", ".join(contexto)
+        if contexto_txt:
+            corpo += f" que {contexto_txt}, {vitimas_text} {verbo} de lesão corporal."
+        else:
+            corpo += f" que {vitimas_text} {verbo} de lesão corporal."
+    else:
+        if contexto:
+            corpo += " que " + ", ".join(contexto)
+        corpo += ", foi vítima de lesão corporal."
 
     if autores_txt:
         corpo += f" Que o(s) autor(es) informado(s) é(são): {autores_txt}."

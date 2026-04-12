@@ -119,6 +119,66 @@ def format_person_block(submission) -> str:
     return result
 
 
+def format_vitimas_text(vitimas: list):
+    """Returns (names_text, verb) for victim listing in narrative text.
+
+    Examples:
+        1 victim  → ("Maria da Silva", "foi vítima")
+        2 victims → ("Maria e João", "foram vítimas")
+        3+ victims → ("Maria, João e Ana", "foram vítimas")
+    Returns (None, None) when no victims with names are found.
+    """
+    if not vitimas:
+        return None, None
+    nomes = [v.get("nome") for v in vitimas if isinstance(v, dict) and v.get("nome")]
+    if not nomes:
+        return None, None
+    if len(nomes) == 1:
+        return nomes[0], "foi vítima"
+    elif len(nomes) == 2:
+        return f"{nomes[0]} e {nomes[1]}", "foram vítimas"
+    else:
+        return f"{', '.join(nomes[:-1])} e {nomes[-1]}", "foram vítimas"
+
+
+def get_subject_genitive(submission) -> str:
+    """Returns the genitive subject phrase for narrative text.
+
+    Non-PM: 'da declarante'
+    PM with 1 victim: 'da vítima {nome}'
+    PM with 2+ victims: 'de uma das vítimas'
+    """
+    pm_info = get_pm_info(submission)
+    if not pm_info.get("policial_militar"):
+        return "da declarante"
+    vitimas = pm_info.get("vitimas") or []
+    if len(vitimas) == 1:
+        nome = vitimas[0].get("nome") if isinstance(vitimas[0], dict) else None
+        return f"da vítima {nome}" if nome else "da vítima"
+    elif len(vitimas) > 1:
+        return "de uma das vítimas"
+    return "da declarante"
+
+
+def get_subject_nominative(submission) -> str:
+    """Returns the nominative subject phrase for narrative text.
+
+    Non-PM: 'a declarante'
+    PM with 1 victim: 'a vítima {nome}'
+    PM with 2+ victims: 'uma das vítimas'
+    """
+    pm_info = get_pm_info(submission)
+    if not pm_info.get("policial_militar"):
+        return "a declarante"
+    vitimas = pm_info.get("vitimas") or []
+    if len(vitimas) == 1:
+        nome = vitimas[0].get("nome") if isinstance(vitimas[0], dict) else None
+        return f"a vítima {nome}" if nome else "a vítima"
+    elif len(vitimas) > 1:
+        return "uma das vítimas"
+    return "a declarante"
+
+
 def format_group_people(items: list, singular="pessoa", plural="pessoas") -> str:
     if not items:
         return ""

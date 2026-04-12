@@ -170,7 +170,7 @@ CRIME_SCHEMAS = {
                 {"id": "endereco", "label": "Endereço", "type": "text", "required": False, "maxlength": 400},
             ],
             },
-            {"id": "conteudo_ameaca", "label": "Como o(a) autor(a) lhe ameaçou?", "type": "text", "required": False},
+            {"id": "conteudo_ameaca", "label": "Qual o Conteúdo da ameaça", "type": "text", "required": False},
             {"id": "relacao_autor", "label": "Relação com o autor da ameaça", "type": "text", "required": False},
             {"id": "medida_protetiva", "label": "Já possui medida protetiva?", "type": "boolean", "required": False},
             {
