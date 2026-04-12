@@ -1,76 +1,119 @@
 /* login.css — Estilos da página de login */
 
-/* Full-viewport overlay — login page covers the entire screen.
-   Since the navbar is only shown when authenticated, there is no overlap. */
-.login-page {
-    position: fixed;
-    inset: 0;
-    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+/* The login page renders inside base.html's container.
+   We use a wrapper that fills remaining viewport height. */
+.login-wrapper {
     display: flex;
     align-items: center;
     justify-content: center;
+    min-height: calc(100vh - 80px);
     padding: 2rem 1rem;
-    overflow-y: auto;
-    z-index: 10;
 }
 
 .login-card {
     background: #fff;
-    border-radius: 12px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-    padding: 2.5rem;
+    border-radius: 16px;
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0,0,0,0.04);
+    padding: 0;
     width: 100%;
     max-width: 420px;
+    overflow: hidden;
 }
 
-.login-card .login-logo {
+/* Top logo area — dark band matching the navbar */
+.login-logo-area {
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.75rem 2rem;
+    position: relative;
+}
+
+.login-logo-area::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #1a56db 0%, #4d8bff 50%, #1a56db 100%);
+}
+
+.login-logo-area .login-logo {
     display: block;
-    margin: 0 auto 1.5rem;
-    max-height: 70px;
+    max-height: 72px;
     width: auto;
 }
 
+/* Form area */
+.login-card h4,
+.login-card p,
+.login-card form,
+.login-card > p {
+    padding-left: 2.5rem;
+    padding-right: 2.5rem;
+}
+
 .login-card h4 {
-    color: #1a1a1a;
+    color: #111827;
     font-weight: 700;
-    margin-bottom: 0.25rem;
+    margin-top: 1.75rem;
+    margin-bottom: 0;
+    padding-left: 2.5rem;
+    padding-right: 2.5rem;
 }
 
 .login-card .text-muted {
     font-size: 0.85rem;
+    padding-left: 2.5rem;
+    padding-right: 2.5rem;
+}
+
+.login-card form {
+    padding-bottom: 0;
+}
+
+.login-card > p.text-center {
+    padding-left: 2.5rem;
+    padding-right: 2.5rem;
+    padding-bottom: 1.75rem;
 }
 
 .login-card .form-label {
     font-weight: 500;
-    color: #333;
+    color: #374151;
+    font-size: 0.875rem;
 }
 
 .login-card .form-control {
     border-radius: 8px;
     padding: 0.65rem 1rem;
-    border: 2px solid #e0e0e0;
-    transition: border-color 0.2s;
+    border: 1.5px solid #e5e7eb;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    font-size: 0.95rem;
 }
 
 .login-card .form-control:focus {
-    border-color: #000;
-    box-shadow: 0 0 0 0.2rem rgba(0, 0, 0, 0.08);
+    border-color: #1a56db;
+    box-shadow: 0 0 0 3px rgba(26, 86, 219, 0.1);
 }
 
 .login-card .btn-primary {
     background: #000;
     border: none;
     border-radius: 8px;
-    padding: 0.7rem;
+    padding: 0.75rem;
     font-weight: 600;
     letter-spacing: 0.02em;
+    font-size: 0.95rem;
     transition: background 0.2s, transform 0.15s, box-shadow 0.15s;
 }
 
 .login-card .btn-primary:hover {
-    background: #333;
+    background: #1a1a1a;
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
 }
 
 .login-card .btn-primary:active {
@@ -78,10 +121,10 @@
 }
 
 .login-card a {
-    color: #000;
+    color: #1a56db;
     font-weight: 500;
 }
 
 .login-card a:hover {
-    color: #555;
+    color: #1648c0;
 }

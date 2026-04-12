@@ -1,15 +1,20 @@
 {% extends "base.html" %}
 {% block title %}Login — Sala de Triagem{% endblock %}
 
-{% block content %}
+{% block head %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
-<div class="login-page">
+{% endblock %}
+
+{% block content %}
+<div class="login-wrapper">
   <div class="login-card">
-    <img
-      src="{{ url_for('static', filename='logo-navbar.png') }}"
-      alt="Sala de Triagem"
-      class="login-logo"
-    >
+    <div class="login-logo-area">
+      <img
+        src="{{ url_for('static', filename='logo-navbar.png') }}"
+        alt="Sala de Triagem"
+        class="login-logo"
+      >
+    </div>
     <h4 class="text-center mb-1">Sala de Triagem</h4>
     <p class="text-center text-muted mb-4">Acesso restrito a usuários cadastrados</p>
     <form method="post" action="{{ url_for('auth.login') }}">

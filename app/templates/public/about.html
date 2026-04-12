@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% block title %}Sobre — Sala de Triagem{% endblock %}
+
+{% block fullwidth_content %}
+<!-- PAGE HERO -->
+<section class="page-hero">
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8">
+        <h1>Sobre a Plataforma</h1>
+        <p class="mb-0">
+          Entenda o propósito, a proposta e a visão por trás da Sala de Triagem.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTENT -->
+<section class="public-content-section">
+  <div class="container">
+    <div class="row gy-4">
+      <div class="col-lg-8">
+
+        <div class="content-card">
+          <h3><i class="bi bi-info-circle me-2 text-primary"></i>O que é a Sala de Triagem</h3>
+          <p>
+            Sala de Triagem é uma plataforma SaaS focada em triagem estruturada de dados e registros.
+            O sistema foi concebido para operadores que precisam coletar, organizar e rastrear
+            informações de forma controlada — seja em campo, em atendimento ou em fluxos de trabalho
+            com múltiplos colaboradores.
+          </p>
+          <p>
+            A plataforma permite que o operador crie sessões de triagem com tempo de vida definido,
+            compartilhe links únicos e QR Codes para coleta, e acompanhe em tempo real cada registro
+            recebido — com suporte a fotos, PDFs e dados estruturados.
+          </p>
+        </div>
+
+        <div class="content-card">
+          <h3><i class="bi bi-bullseye me-2 text-primary"></i>Propósito e Proposta</h3>
+          <p>
+            Nossa proposta é simples: <strong>transformar processos de triagem manual e fragmentado
+            em fluxos digitais, rastreáveis e seguros</strong>.
+          </p>
+          <p>
+            Muitas operações ainda dependem de planilhas, aplicativos de mensagem ou formulários
+            desconexos para coletar dados críticos. Isso gera perda de informação, falta de
+            rastreabilidade e dificuldade na análise posterior.
+          </p>
+          <p>
+            Sala de Triagem resolve isso com uma estrutura clara: sessão → link único → coleta
+            estruturada → dashboard → histórico auditável.
+          </p>
+        </div>
+
+        <div class="content-card">
+          <h3><i class="bi bi-layers me-2 text-primary"></i>Arquitetura e Expansão</h3>
+          <p>
+            A plataforma foi projetada com uma arquitetura de multi-nichos em mente. O núcleo de
+            triagem é genérico e extensível — os formulários e renderers são configuráveis para
+            se adaptar a diferentes contextos operacionais.
+          </p>
+          <p>
+            A visão de longo prazo é que Sala de Triagem possa atender a diferentes setores que
+            demandam triagem estruturada: saúde, segurança, logística, eventos, processos
+            administrativos e muito mais.
+          </p>
+        </div>
+
+        <div class="content-card">
+          <h3><i class="bi bi-shield-lock me-2 text-primary"></i>Segurança e Responsabilidade</h3>
+          <p>
+            Dados coletados em triagens podem ser sensíveis. Por isso, a plataforma adota práticas
+            rigorosas de segurança: autenticação com sessões únicas, proteção CSRF, headers de
+            segurança em todas as respostas, e controles de acesso granulares.
+          </p>
+          <p>
+            Nenhum dado coletado é compartilhado com terceiros sem consentimento explícito.
+            O operador é o responsável pelos dados que coleta, e a plataforma oferece as
+            ferramentas para que essa responsabilidade seja exercida com clareza.
+          </p>
+        </div>
+
+      </div>
+
+      <!-- SIDEBAR -->
+      <div class="col-lg-4">
+        <div class="content-card" style="position: sticky; top: 1.5rem;">
+          <h3><i class="bi bi-grid me-2 text-primary"></i>Em Resumo</h3>
+          <ul class="list-unstyled mb-0">
+            <li class="mb-3 d-flex gap-2">
+              <i class="bi bi-check-circle-fill text-success mt-1 flex-shrink-0"></i>
+              <span>Plataforma SaaS para triagem estruturada</span>
+            </li>
+            <li class="mb-3 d-flex gap-2">
+              <i class="bi bi-check-circle-fill text-success mt-1 flex-shrink-0"></i>
+              <span>Sessões com links únicos e QR Codes</span>
+            </li>
+            <li class="mb-3 d-flex gap-2">
+              <i class="bi bi-check-circle-fill text-success mt-1 flex-shrink-0"></i>
+              <span>Coleta de dados, fotos e documentos</span>
+            </li>
+            <li class="mb-3 d-flex gap-2">
+              <i class="bi bi-check-circle-fill text-success mt-1 flex-shrink-0"></i>
+              <span>Dashboard em tempo real</span>
+            </li>
+            <li class="mb-3 d-flex gap-2">
+              <i class="bi bi-check-circle-fill text-success mt-1 flex-shrink-0"></i>
+              <span>Histórico auditável completo</span>
+            </li>
+            <li class="mb-3 d-flex gap-2">
+              <i class="bi bi-check-circle-fill text-success mt-1 flex-shrink-0"></i>
+              <span>Arquitetura expansível para multinichos</span>
+            </li>
+          </ul>
+          <hr>
+          <div class="d-grid gap-2">
+            <a href="{{ url_for('auth.login') }}" class="btn btn-dark btn-sm">
+              <i class="bi bi-box-arrow-in-right me-1"></i>Acessar a Plataforma
+            </a>
+            <a href="{{ url_for('plans.index') }}" class="btn btn-outline-secondary btn-sm">
+              <i class="bi bi-grid-3x3-gap me-1"></i>Ver Planos
+            </a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="public-footer">
+  <div class="container">
+    <div class="row align-items-center gy-3">
+      <div class="col-md-4">
+        <div class="footer-brand">Sala de Triagem</div>
+        <div>Plataforma de triagem estruturada.</div>
+      </div>
+      <div class="col-md-8 d-flex justify-content-md-end gap-4 flex-wrap">
+        <a href="{{ url_for('index') }}">Home</a>
+        <a href="{{ url_for('plans.index') }}">Planos</a>
+        <a href="{{ url_for('public.about') }}">Sobre</a>
+        <a href="{{ url_for('public.privacy') }}">Privacidade e Termo de Uso</a>
+      </div>
+    </div>
+    <hr style="border-color: rgba(255,255,255,0.08); margin: 1.5rem 0 1rem;">
+    <div class="text-center" style="font-size:0.78rem;">
+      &copy; {{ 2025 }} Sala de Triagem. Todos os direitos reservados.
+    </div>
+  </div>
+</footer>
+{% endblock %}
