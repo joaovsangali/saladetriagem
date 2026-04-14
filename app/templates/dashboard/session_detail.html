@@ -229,7 +229,21 @@ function loadDetail(sessionId, subId) {
       if (data.cpf) html += `<tr><td>CPF</td><td>${data.cpf}</td></tr>`;
       if (data.phone) html += `<tr><td>Telefone</td><td>${data.phone}</td></tr>`;  // <-- ADICIONE ESTA LINHA
       if (data.address) html += `<tr><td>Endereço</td><td>${data.address}</td></tr>`;
+      if (data.email) html += `<tr><td>E-mail</td><td>${data.email}</td></tr>`;
       html += '</table>';
+
+      // Email
+      const email = data.answers && data.answers._email;
+      if (email) html += `<p class="small mb-1"><strong>E-mail:</strong> ${email}</p>`;
+
+      if (data.structured && data.structured.length > 0) {
+        html += '<h6>Respostas</h6><table class="table table-sm">';
+        data.structured.forEach(([label, val]) => {
+          html += `<tr><td>${label}</td><td style="white-space: pre-wrap;">${val}</td></tr>`;
+        });
+        html += '</table>';
+      }
+
 
       // Informações PM
       const pm = data.answers && data.answers._pm_info;
@@ -256,17 +270,7 @@ function loadDetail(sessionId, subId) {
         }
       }
 
-      // Email
-      const email = data.answers && data.answers._email;
-      if (email) html += `<p class="small mb-1"><strong>E-mail:</strong> ${email}</p>`;
 
-      if (data.structured && data.structured.length > 0) {
-        html += '<h6>Respostas</h6><table class="table table-sm">';
-        data.structured.forEach(([label, val]) => {
-          html += `<tr><td>${label}</td><td style="white-space: pre-wrap;">${val}</td></tr>`;
-        });
-        html += '</table>';
-      }
 
       if (data.narrative) {
         html += `<h6>Relato</h6><p class="small">${data.narrative}</p>`;
