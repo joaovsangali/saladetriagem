@@ -3,16 +3,36 @@
 import io
 import re
 import secrets
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import qrcode
 import qrcode.image.svg
-from flask import render_template, redirect, url_for, flash, request, abort, Response
+from flask import render_template, redirect, url_for, flash, request, abort, Response, jsonify
 from flask_login import login_required, current_user
 from app.dashboard import dashboard_bp
 from app.extensions import db
-from app.models import DashboardSession, IntakeLink, MinimalLogEntry, AccessLog
+from app.models import DashboardSession, IntakeLink, MinimalLogEntry, AccessLog, SessionCollaborator
 from app.store import submission_store
 from app.schemas.crime_types import DEFAULT_FORM_SCHEMA
+
+
+def _can_access_session(user, session) -> tuple:
+    """
+    Returns (can_access: bool, role: str | None).
+    role can be: 'owner', 'editor', 'viewer', or None.
+    """
+    if session.user_id == user.id:
+        return True, 'owner'
+
+    collab = SessionCollaborator.query.filter_by(
+        dashboard_id=session.id,
+        user_id=user.id,
+        is_active=True,
+    ).first()
+
+    if collab:
+        return True, collab.access_level
+
+    return False, None
 
 
 def _persist_pending_submissions(session: DashboardSession, *, status: str = "received") -> int:
@@ -114,7 +134,27 @@ def index():
         police_user_id=current_user.id
     ).order_by(MinimalLogEntry.received_at.desc()).limit(20).all()
 
-    return render_template("dashboard/index.html", sessions=sessions, recent_logs=recent_logs)
+    # Shared sessions where current user is a collaborator
+    shared_collabs = SessionCollaborator.query.filter_by(
+        user_id=current_user.id,
+        is_active=True,
+    ).all()
+    shared_sessions = []
+    for collab in shared_collabs:
+        s = collab.session
+        if s and s.user_id != current_user.id:
+            pending = submission_store.count_for_dashboard(s.id) if s.is_active else 0
+            closed = s.logs.count()
+            s.total_records = pending + closed
+            s.collab_role = collab.access_level
+            shared_sessions.append(s)
+
+    return render_template(
+        "dashboard/index.html",
+        sessions=sessions,
+        recent_logs=recent_logs,
+        shared_sessions=shared_sessions,
+    )
 
 
 @dashboard_bp.route("/sessions/new", methods=["POST"])
@@ -193,9 +233,10 @@ def new_session():
 @dashboard_bp.route("/sessions/<int:session_id>")
 @login_required
 def session_detail(session_id):
-    session = DashboardSession.query.filter_by(
-        id=session_id, user_id=current_user.id
-    ).first_or_404()
+    session = DashboardSession.query.get_or_404(session_id)
+    can_access, role = _can_access_session(current_user, session)
+    if not can_access:
+        abort(403)
 
     _expire_session_if_needed(session)
 
@@ -209,6 +250,12 @@ def session_detail(session_id):
     submissions = submission_store.list_for_dashboard(session.id) if session.is_active else []
     logs = session.logs.order_by(MinimalLogEntry.received_at.desc()).all()
 
+    collaborators = []
+    if role == 'owner':
+        collaborators = SessionCollaborator.query.filter_by(
+            dashboard_id=session_id, is_active=True
+        ).all()
+
     return render_template(
         "dashboard/session_detail.html",
         session=session,
@@ -217,14 +264,17 @@ def session_detail(session_id):
         intake_url=intake_url,
         submissions=submissions,
         logs=logs,
+        role=role,
+        collaborators=collaborators,
     )
 
 @dashboard_bp.route("/sessions/<int:session_id>/close", methods=["POST"])
 @login_required
 def close_session(session_id):
-    session = DashboardSession.query.filter_by(
-        id=session_id, user_id=current_user.id
-    ).first_or_404()
+    session = DashboardSession.query.get_or_404(session_id)
+    can_access, role = _can_access_session(current_user, session)
+    if not can_access or role not in ('owner',):
+        abort(403)
 
     _expire_session_if_needed(session)
 
@@ -248,9 +298,10 @@ def close_session(session_id):
 @dashboard_bp.route("/sessions/<int:session_id>/links/new", methods=["POST"])
 @login_required
 def new_link(session_id):
-    session = DashboardSession.query.filter_by(
-        id=session_id, user_id=current_user.id
-    ).first_or_404()
+    session = DashboardSession.query.get_or_404(session_id)
+    can_access, role = _can_access_session(current_user, session)
+    if not can_access or role not in ('owner',):
+        abort(403)
 
     _expire_session_if_needed(session)
 
@@ -271,9 +322,10 @@ def new_link(session_id):
 @dashboard_bp.route("/sessions/<int:session_id>/purge", methods=["POST"])
 @login_required
 def purge_session(session_id):
-    session = DashboardSession.query.filter_by(
-        id=session_id, user_id=current_user.id
-    ).first_or_404()
+    session = DashboardSession.query.get_or_404(session_id)
+    can_access, role = _can_access_session(current_user, session)
+    if not can_access or role not in ('owner',):
+        abort(403)
     submission_store.purge_dashboard(session.id)
     flash("Dados sensíveis apagados.", "info")
     return redirect(url_for("dashboard.session_detail", session_id=session.id))
@@ -286,6 +338,7 @@ def delete_closed_sessions():
         user_id=current_user.id, is_active=False
     ).all()
     for s in closed:
+        SessionCollaborator.query.filter_by(dashboard_id=s.id).delete()
         MinimalLogEntry.query.filter_by(dashboard_id=s.id).delete()
         IntakeLink.query.filter_by(dashboard_id=s.id).delete()
         db.session.delete(s)
@@ -297,14 +350,15 @@ def delete_closed_sessions():
 @dashboard_bp.route("/sessions/<int:session_id>/delete", methods=["POST"])
 @login_required
 def delete_session(session_id):
-    session = DashboardSession.query.filter_by(
-        id=session_id, user_id=current_user.id
-    ).first_or_404()
+    session = DashboardSession.query.get_or_404(session_id)
+    if session.user_id != current_user.id:
+        abort(403)
 
     if session.is_active:
         flash("Feche a triagem antes de deletar.", "warning")
         return redirect(url_for("dashboard.session_detail", session_id=session.id))
 
+    SessionCollaborator.query.filter_by(dashboard_id=session.id).delete()
     MinimalLogEntry.query.filter_by(dashboard_id=session.id).delete()
     IntakeLink.query.filter_by(dashboard_id=session.id).delete()
     db.session.delete(session)
@@ -317,9 +371,10 @@ def delete_session(session_id):
 @dashboard_bp.route("/sessions/<int:session_id>/print-qr")
 @login_required
 def print_qr(session_id):
-    session = DashboardSession.query.filter_by(
-        id=session_id, user_id=current_user.id
-    ).first_or_404()
+    session = DashboardSession.query.get_or_404(session_id)
+    can_access, role = _can_access_session(current_user, session)
+    if not can_access:
+        abort(403)
 
     _expire_session_if_needed(session)
 
@@ -349,6 +404,126 @@ def my_audit_log():
         .all()
     )
     return render_template("dashboard/audit_log.html", logs=logs)
+
+
+@dashboard_bp.route("/sessions/<int:session_id>/share/generate", methods=["POST"])
+@login_required
+def generate_share_code(session_id):
+    """Generate a unique 8-character share code for a session."""
+    session = DashboardSession.query.get_or_404(session_id)
+    if session.user_id != current_user.id:
+        abort(403)
+
+    code = secrets.token_urlsafe(6)[:8].upper()
+    session.share_code = code
+    session.share_code_expires_at = datetime.now(timezone.utc) + timedelta(hours=24)
+    db.session.commit()
+
+    return jsonify({"share_code": code})
+
+
+@dashboard_bp.route("/sessions/join", methods=["GET", "POST"])
+@login_required
+def join_session():
+    """Allow a user to join a shared session via share code."""
+    if request.method == "POST":
+        share_code = request.form.get("share_code", "").strip().upper()
+
+        session = DashboardSession.query.filter_by(
+            share_code=share_code, is_active=True
+        ).first()
+
+        if not session:
+            flash("Código inválido ou triagem não encontrada.", "danger")
+            return redirect(url_for("dashboard.join_session"))
+
+        # Check code expiration
+        if session.share_code_expires_at:
+            expires = session.share_code_expires_at
+            if expires.tzinfo is None:
+                expires = expires.replace(tzinfo=timezone.utc)
+            if datetime.now(timezone.utc) > expires:
+                flash("Código de compartilhamento expirado.", "danger")
+                return redirect(url_for("dashboard.join_session"))
+
+        # Prevent self-invitation
+        if session.user_id == current_user.id:
+            flash("Esta é uma triagem sua. Você já tem acesso como proprietário.", "warning")
+            return redirect(url_for("dashboard.session_detail", session_id=session.id))
+
+        # Check collaborator limit
+        current_count = SessionCollaborator.query.filter_by(
+            dashboard_id=session.id, is_active=True
+        ).count()
+        limits = session.owner.get_current_plan_limits()
+        if current_count >= limits.get('max_collaborators_per_session', 5):
+            flash("Limite de colaboradores atingido para esta triagem.", "warning")
+            return redirect(url_for("dashboard.join_session"))
+
+        # Check if already a collaborator
+        existing = SessionCollaborator.query.filter_by(
+            dashboard_id=session.id, user_id=current_user.id
+        ).first()
+        if existing:
+            if not existing.is_active:
+                existing.is_active = True
+                db.session.commit()
+                flash("Você retornou à triagem compartilhada.", "success")
+            else:
+                flash("Você já é colaborador desta triagem.", "info")
+            return redirect(url_for("dashboard.session_detail", session_id=session.id))
+
+        collab = SessionCollaborator(
+            dashboard_id=session.id,
+            user_id=current_user.id,
+            invited_by=current_user.id,
+        )
+        db.session.add(collab)
+        db.session.commit()
+
+        flash("Você entrou na triagem compartilhada com sucesso.", "success")
+        return redirect(url_for("dashboard.session_detail", session_id=session.id))
+
+    return render_template("dashboard/join_session.html")
+
+
+@dashboard_bp.route("/sessions/<int:session_id>/collaborators")
+@login_required
+def list_collaborators(session_id):
+    """List all active collaborators for a session."""
+    session = DashboardSession.query.get_or_404(session_id)
+    can_access, role = _can_access_session(current_user, session)
+    if not can_access:
+        abort(403)
+
+    collaborators = SessionCollaborator.query.filter_by(
+        dashboard_id=session_id, is_active=True
+    ).all()
+
+    return jsonify([{
+        "user_id": c.user_id,
+        "display_name": c.collaborator.display_name,
+        "access_level": c.access_level,
+        "invited_at": c.invited_at.isoformat() if c.invited_at else None,
+    } for c in collaborators])
+
+
+@dashboard_bp.route("/sessions/<int:session_id>/collaborators/<int:collab_user_id>", methods=["DELETE"])
+@login_required
+def remove_collaborator(session_id, collab_user_id):
+    """Remove a collaborator (owner only)."""
+    session = DashboardSession.query.get_or_404(session_id)
+    if session.user_id != current_user.id:
+        abort(403)
+
+    collab = SessionCollaborator.query.filter_by(
+        dashboard_id=session_id, user_id=collab_user_id, is_active=True
+    ).first_or_404()
+
+    collab.is_active = False
+    db.session.commit()
+
+    return jsonify({"status": "ok"})
 
 
 def _generate_qr_svg(url: str) -> str:

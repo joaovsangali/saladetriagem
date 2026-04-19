@@ -85,10 +85,14 @@ class DashboardSession(db.Model):
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     expires_at = db.Column(db.DateTime, nullable=False)
     is_active = db.Column(db.Boolean, default=True)
-    
+    share_code = db.Column(db.String(8), unique=True, nullable=True)
+    share_code_expires_at = db.Column(db.DateTime, nullable=True)
+
     links = db.relationship("IntakeLink", backref="session", lazy="dynamic")
     logs = db.relationship("MinimalLogEntry", backref="session", lazy="dynamic")
-    
+    collaborators = db.relationship("SessionCollaborator", backref="session", lazy="dynamic",
+                                    foreign_keys="SessionCollaborator.dashboard_id")
+
     @staticmethod
     def make_expires_at():
         return datetime.now(timezone.utc) + timedelta(hours=12)
@@ -208,6 +212,29 @@ class PlanUsage(db.Model):
 
     def __repr__(self):
         return f"<PlanUsage user={self.user_id} month={self.month}>"
+
+
+class SessionCollaborator(db.Model):
+    """Links a police user to a shared DashboardSession."""
+
+    __tablename__ = "session_collaborators"
+    id = db.Column(db.Integer, primary_key=True)
+    dashboard_id = db.Column(db.Integer, db.ForeignKey("dashboard_sessions.id"), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("police_users.id"), nullable=False)
+    invited_by = db.Column(db.Integer, db.ForeignKey("police_users.id"), nullable=False)
+    invited_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    access_level = db.Column(db.String(20), default="viewer")  # viewer, editor
+    is_active = db.Column(db.Boolean, default=True)
+
+    collaborator = db.relationship("PoliceUser", foreign_keys=[user_id], backref="collaborated_sessions")
+    inviter = db.relationship("PoliceUser", foreign_keys=[invited_by])
+
+    __table_args__ = (
+        db.UniqueConstraint('dashboard_id', 'user_id', name='uq_session_collaborator'),
+    )
+
+    def __repr__(self):
+        return f"<SessionCollaborator session={self.dashboard_id} user={self.user_id} level={self.access_level}>"
 
 
 class GlobalSMSCounter(db.Model):

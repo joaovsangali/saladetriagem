@@ -10,6 +10,7 @@ PLANS = {
         'can_view_pdfs': False,
         'max_photos_per_submission': 3,
         'max_users': 1,
+        'max_collaborators_per_session': 5,
     },
     'premium': {
         'name': 'Premium',
@@ -20,6 +21,7 @@ PLANS = {
         'can_view_pdfs': True,
         'max_photos_per_submission': 3,
         'max_users': 1,
+        'max_collaborators_per_session': 20,
     },
 }
 

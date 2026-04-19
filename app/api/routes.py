@@ -5,21 +5,27 @@ from flask import jsonify, abort, request, Response, redirect, current_app
 from flask_login import login_required, current_user
 from app.api import api_bp
 from app.extensions import db
-from app.models import DashboardSession, MinimalLogEntry
+from app.models import DashboardSession, MinimalLogEntry, SessionCollaborator
 from app.store import submission_store
 from app.renderer.text import TextRenderer
 from app.schemas.crime_types import CRIME_SCHEMAS
 from app.audit import log_access
 
-def _get_owned_session(session_id):
-    return DashboardSession.query.filter_by(
-        id=session_id, user_id=current_user.id
-    ).first_or_404()
+def _get_accessible_session(session_id, require_editor=False):
+    """Return the session if current_user can access it, else 404/403."""
+    from app.dashboard.routes import _can_access_session
+    session = DashboardSession.query.get_or_404(session_id)
+    can_access, role = _can_access_session(current_user, session)
+    if not can_access:
+        abort(403)
+    if require_editor and role not in ('owner', 'editor'):
+        abort(403)
+    return session, role
 
 @api_bp.route("/sessions/<int:session_id>/submissions")
 @login_required
 def list_submissions(session_id):
-    _get_owned_session(session_id)
+    _get_accessible_session(session_id)
     subs = submission_store.list_for_dashboard(session_id)
     return jsonify([{
         "id": s.submission_id,
@@ -31,7 +37,7 @@ def list_submissions(session_id):
 @api_bp.route("/sessions/<int:session_id>/submissions/<submission_id>")
 @login_required
 def get_submission(session_id, submission_id):
-    session = _get_owned_session(session_id)
+    session, role = _get_accessible_session(session_id)
     sub = submission_store.get(submission_id)
     if not sub or sub.dashboard_id != session_id:
         abort(404)
@@ -66,7 +72,7 @@ def get_submission(session_id, submission_id):
 @api_bp.route("/sessions/<int:session_id>/submissions/<submission_id>/close", methods=["POST"])
 @login_required
 def close_submission(session_id, submission_id):
-    session = _get_owned_session(session_id)
+    session, role = _get_accessible_session(session_id, require_editor=True)
     sub = submission_store.get(submission_id)
     if not sub or sub.dashboard_id != session_id:
         abort(404)
@@ -98,7 +104,7 @@ def close_submission(session_id, submission_id):
 @api_bp.route("/sessions/<int:session_id>/submissions/<submission_id>/discard", methods=["POST"])
 @login_required
 def discard_submission(session_id, submission_id):
-    session = _get_owned_session(session_id)
+    session, role = _get_accessible_session(session_id, require_editor=True)
     sub = submission_store.get(submission_id)
     if not sub or sub.dashboard_id != session_id:
         abort(404)
@@ -134,7 +140,7 @@ def get_photo(session_id, submission_id, index):
     if not current_user.get_current_plan_limits().get('can_view_photos'):
         abort(403)
 
-    session = _get_owned_session(session_id)
+    session, role = _get_accessible_session(session_id)
     sub = submission_store.get(submission_id)
     if not sub or sub.dashboard_id != session_id:
         abort(404)

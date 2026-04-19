@@ -5,6 +5,9 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h4 class="mb-0">Minhas Triagens</h4>
   <div class="d-flex gap-2">
+    <a href="{{ url_for('dashboard.join_session') }}" class="btn btn-outline-primary btn-sm">
+      <i class="bi bi-people"></i> Entrar em Triagem Compartilhada
+    </a>
     <form action="{{ url_for('dashboard.delete_closed_sessions') }}" method="post" class="d-inline">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button class="btn btn-outline-danger btn-sm" onclick="return confirm('Apagar todas as triagens encerradas e seus registros?')">
@@ -56,6 +59,35 @@
   {% endfor %}
 </div>
 
+{% if shared_sessions %}
+<hr class="my-4">
+<h5 class="mb-3"><i class="bi bi-people"></i> Triagens Compartilhadas Comigo</h5>
+<div class="row">
+  {% for s in shared_sessions %}
+  <div class="col-md-6 col-lg-4 mb-3">
+    <div class="card {% if s.is_active and not s.is_expired %}border-info{% else %}border-secondary{% endif %}">
+      <div class="card-body">
+        <h6 class="card-title">{{ s.label }}</h6>
+        <p class="card-text small text-muted">
+          Proprietário: <strong>{{ s.owner.display_name }}</strong><br>
+          Criado: {{ s.created_at|datefmt }}<br>
+          Registros: <strong>{{ s.total_records }}</strong><br>
+          Status:
+          {% if s.is_active and not s.is_expired %}
+            <span class="badge bg-success">Ativo</span>
+          {% else %}
+            <span class="badge bg-secondary">Encerrado</span>
+          {% endif %}
+          <span class="badge bg-info text-dark ms-1">{{ s.collab_role }}</span>
+        </p>
+        <a href="{{ url_for('dashboard.session_detail', session_id=s.id) }}" class="btn btn-outline-info btn-sm">Ver</a>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
 
 <!-- New Session Modal -->
 <div class="modal fade" id="newSessionModal" tabindex="-1">
@@ -100,3 +132,4 @@
   </div>
 </div>
 {% endblock %}
+
