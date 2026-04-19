@@ -476,7 +476,7 @@ def join_session():
         collab = SessionCollaborator(
             dashboard_id=session.id,
             user_id=current_user.id,
-            invited_by=current_user.id,
+            invited_by=session.user_id,
         )
         db.session.add(collab)
         db.session.commit()
