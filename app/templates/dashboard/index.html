@@ -11,6 +11,9 @@
         Apagar triagens encerradas
       </button>
     </form>
+    <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#joinSessionModal">
+      <i class="bi bi-box-arrow-in-right"></i> Entrar em Sessão
+    </button>
     <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#newSessionModal">
       <i class="bi bi-plus-circle"></i> Nova Triagem
     </button>
@@ -100,3 +103,29 @@
   </div>
 </div>
 {% endblock %}
+
+<!-- Join Session Modal -->
+<div class="modal fade" id="joinSessionModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Entrar em Sessão Compartilhada</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post" action="{{ url_for('dashboard.join_session') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Código de Acesso</label>
+            <input type="text" name="code" class="form-control" placeholder="Ex: ABC123XYZ" required>
+            <div class="form-text">Digite o código fornecido pelo criador da sessão.</div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Entrar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

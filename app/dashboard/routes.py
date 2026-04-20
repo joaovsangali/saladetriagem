@@ -10,9 +10,30 @@ from flask import render_template, redirect, url_for, flash, request, abort, Res
 from flask_login import login_required, current_user
 from app.dashboard import dashboard_bp
 from app.extensions import db
-from app.models import DashboardSession, IntakeLink, MinimalLogEntry, AccessLog
+from app.models import DashboardSession, IntakeLink, MinimalLogEntry, AccessLog, SharedSessionAccess
 from app.store import submission_store
 from app.schemas.crime_types import DEFAULT_FORM_SCHEMA
+from app.audit import log_access
+
+
+def _get_accessible_session(session_id):
+    """Return session if current user is owner OR has active shared access."""
+    from flask_login import current_user
+    session = DashboardSession.query.get_or_404(session_id)
+
+    if session.user_id == current_user.id:
+        return session
+
+    shared = SharedSessionAccess.query.filter_by(
+        session_id=session_id,
+        user_id=current_user.id,
+        is_active=True,
+    ).first()
+
+    if shared and session.is_active and not session.is_expired:
+        return session
+
+    abort(403)
 
 
 def _persist_pending_submissions(session: DashboardSession, *, status: str = "received") -> int:
@@ -171,9 +192,18 @@ def new_session():
         user_id=current_user.id,
         label=label,
         expires_at=datetime.now(timezone.utc) + timedelta(hours=duration_hours),
+        share_code=secrets.token_urlsafe(8),
     )
     db.session.add(session)
     db.session.commit()
+
+    # Automatically add creator as admin in shared access
+    admin_access = SharedSessionAccess(
+        session_id=session.id,
+        user_id=current_user.id,
+        role='admin',
+    )
+    db.session.add(admin_access)
 
     # auto-create one intake link
     link = IntakeLink(
@@ -193,9 +223,8 @@ def new_session():
 @dashboard_bp.route("/sessions/<int:session_id>")
 @login_required
 def session_detail(session_id):
-    session = DashboardSession.query.filter_by(
-        id=session_id, user_id=current_user.id
-    ).first_or_404()
+    session = _get_accessible_session(session_id)
+    is_owner = (session.user_id == current_user.id)
 
     _expire_session_if_needed(session)
 
@@ -217,7 +246,92 @@ def session_detail(session_id):
         intake_url=intake_url,
         submissions=submissions,
         logs=logs,
+        is_owner=is_owner,
     )
+
+@dashboard_bp.route("/join_session", methods=["POST"])
+@login_required
+def join_session():
+    code = request.form.get("code", "").strip()
+    if not code:
+        flash("Informe o código de acesso.", "warning")
+        return redirect(url_for("dashboard.index"))
+
+    session = DashboardSession.query.filter_by(share_code=code).first()
+
+    if not session:
+        flash("Código inválido ou sessão não encontrada.", "danger")
+        return redirect(url_for("dashboard.index"))
+
+    if not session.is_active or session.is_expired:
+        flash("Esta sessão já foi encerrada ou expirou.", "warning")
+        return redirect(url_for("dashboard.index"))
+
+    if session.user_id == current_user.id:
+        flash("Você já é o criador desta sessão.", "info")
+        return redirect(url_for("dashboard.session_detail", session_id=session.id))
+
+    if current_user.plan_type == 'free':
+        flash(
+            "Usuários do plano Free não podem participar de sessões compartilhadas. "
+            "Faça upgrade para Trial ou Premium.",
+            "warning",
+        )
+        return redirect(url_for("plans.index"))
+
+    existing = SharedSessionAccess.query.filter_by(
+        session_id=session.id,
+        user_id=current_user.id,
+    ).first()
+
+    if existing:
+        if existing.is_active:
+            flash("Você já participa desta sessão.", "info")
+        else:
+            existing.is_active = True
+            db.session.commit()
+            flash("Acesso reativado à sessão.", "success")
+        return redirect(url_for("dashboard.session_detail", session_id=session.id))
+
+    access = SharedSessionAccess(
+        session_id=session.id,
+        user_id=current_user.id,
+        role='viewer',
+    )
+    db.session.add(access)
+    db.session.commit()
+
+    log_access(current_user, None, "shared_session_access")
+
+    flash(f"Você agora está participando da sessão: {session.label}", "success")
+    return redirect(url_for("dashboard.session_detail", session_id=session.id))
+
+
+@dashboard_bp.route("/sessions/<int:session_id>/remove_user/<int:user_id>", methods=["POST"])
+@login_required
+def remove_shared_user(session_id, user_id):
+    session = DashboardSession.query.filter_by(
+        id=session_id, user_id=current_user.id
+    ).first_or_404()
+
+    if user_id == current_user.id:
+        flash("Você não pode remover seu próprio acesso.", "warning")
+        return redirect(url_for("dashboard.session_detail", session_id=session.id))
+
+    access = SharedSessionAccess.query.filter_by(
+        session_id=session_id,
+        user_id=user_id,
+    ).first()
+
+    if access:
+        access.is_active = False
+        db.session.commit()
+        flash("Usuário removido da sessão.", "success")
+    else:
+        flash("Usuário não encontrado nesta sessão.", "warning")
+
+    return redirect(url_for("dashboard.session_detail", session_id=session.id))
+
 
 @dashboard_bp.route("/sessions/<int:session_id>/close", methods=["POST"])
 @login_required

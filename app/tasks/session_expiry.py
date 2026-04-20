@@ -46,6 +46,12 @@ def expire_sessions_task():
                         )
                     )
 
+            # Revoke all shared accesses when session expires
+            from app.models import SharedSessionAccess
+            SharedSessionAccess.query.filter_by(session_id=session.id).update(
+                {"is_active": False}
+            )
+
             session.is_active = False
             submission_store.purge_dashboard(session.id)
             logger.info("Expired dashboard session %s", session.id)

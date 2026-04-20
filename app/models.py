@@ -5,6 +5,10 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from app.extensions import db
 
 
+def _generate_share_code():
+    return secrets.token_urlsafe(8)
+
+
 class PoliceUser(UserMixin, db.Model):
     __tablename__ = "police_users"
     id = db.Column(db.Integer, primary_key=True)
@@ -85,7 +89,8 @@ class DashboardSession(db.Model):
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     expires_at = db.Column(db.DateTime, nullable=False)
     is_active = db.Column(db.Boolean, default=True)
-    
+    share_code = db.Column(db.String(16), unique=True, nullable=True, index=True)
+
     links = db.relationship("IntakeLink", backref="session", lazy="dynamic")
     logs = db.relationship("MinimalLogEntry", backref="session", lazy="dynamic")
     
@@ -99,6 +104,28 @@ class DashboardSession(db.Model):
         if expires.tzinfo is None:
             expires = expires.replace(tzinfo=timezone.utc)
         return datetime.now(timezone.utc) >= expires
+
+
+class SharedSessionAccess(db.Model):
+    """Controls shared access to triage sessions."""
+    __tablename__ = "shared_session_access"
+
+    id = db.Column(db.Integer, primary_key=True)
+    session_id = db.Column(db.Integer, db.ForeignKey("dashboard_sessions.id"), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("police_users.id"), nullable=False)
+    role = db.Column(db.String(20), nullable=False, default='viewer')  # 'admin' | 'viewer'
+    joined_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    is_active = db.Column(db.Boolean, default=True)
+
+    __table_args__ = (
+        db.UniqueConstraint('session_id', 'user_id', name='uq_shared_session_user'),
+    )
+
+    session = db.relationship("DashboardSession", backref="shared_access")
+    user = db.relationship("PoliceUser", backref="shared_sessions")
+
+    def __repr__(self):
+        return f"<SharedSessionAccess session={self.session_id} user={self.user_id} role={self.role}>"
 
 
 class IntakeLink(db.Model):
