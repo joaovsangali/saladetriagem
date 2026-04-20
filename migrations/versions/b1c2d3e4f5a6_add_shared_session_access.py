@@ -52,7 +52,7 @@ def upgrade():
     conn.execute(
         sa.text(
             "INSERT INTO shared_session_access (session_id, user_id, role, is_active) "
-            "SELECT id, user_id, 'admin', 1 FROM dashboard_sessions"
+            "SELECT id, user_id, 'admin', true FROM dashboard_sessions"
         )
     )
 
