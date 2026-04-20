@@ -195,7 +195,7 @@ def test_join_with_invalid_code(app, client):
         follow_redirects=True,
     )
     assert resp.status_code == 200
-    assert b"inv" in resp.data.lower() or b"n" in resp.data  # flash message contains invalid
+    assert b"nv" in resp.data.lower()  # "inválido" or "invalid" in flash message
 
 
 # ─── Test 6: Expired session → access denied ──────────────────────────────────
@@ -245,9 +245,10 @@ def test_owner_cannot_join_own_session(app, client):
     assert resp.status_code == 200
 
     with app.app_context():
-        # Only admin entry exists, no duplicate
-        accesses = SharedSessionAccess.query.filter_by(session_id=session_id).all()
-        assert len(accesses) == 0  # no SharedSessionAccess since session was created directly
+        # The owner should not have gotten a second/duplicate access entry
+        accesses = SharedSessionAccess.query.filter_by(session_id=session_id, user_id=owner_id).all()
+        # At most 0 entries (session created directly without using new_session route)
+        assert len(accesses) == 0
 
 
 # ─── Test 8: Admin can remove viewer ──────────────────────────────────────────
@@ -298,7 +299,7 @@ def test_admin_cannot_remove_self(app, client):
         follow_redirects=True,
     )
     assert resp.status_code == 200
-    assert b"n" in resp.data  # warning message returned
+    assert b"pr" in resp.data.lower()  # "próprio" in warning message
 
 
 # ─── Test 10: Viewer can access /api/sessions/<id>/submissions ────────────────

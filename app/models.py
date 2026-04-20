@@ -5,10 +5,6 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from app.extensions import db
 
 
-def _generate_share_code():
-    return secrets.token_urlsafe(8)
-
-
 class PoliceUser(UserMixin, db.Model):
     __tablename__ = "police_users"
     id = db.Column(db.Integer, primary_key=True)
