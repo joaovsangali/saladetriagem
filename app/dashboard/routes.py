@@ -6,13 +6,14 @@ import secrets
 from datetime import datetime, timezone
 import qrcode
 import qrcode.image.svg
-from flask import render_template, redirect, url_for, flash, request, abort, Response
+from flask import render_template, redirect, url_for, flash, request, abort, Response, jsonify
 from flask_login import login_required, current_user
 from app.dashboard import dashboard_bp
 from app.extensions import db
-from app.models import DashboardSession, IntakeLink, MinimalLogEntry, AccessLog
+from app.models import DashboardSession, IntakeLink, MinimalLogEntry, AccessLog, SessionCollaborator
 from app.store import submission_store
 from app.schemas.crime_types import DEFAULT_FORM_SCHEMA
+from app.utils.access_control import can_access_session
 
 
 def _persist_pending_submissions(session: DashboardSession, *, status: str = "received") -> int:
@@ -193,9 +194,12 @@ def new_session():
 @dashboard_bp.route("/sessions/<int:session_id>")
 @login_required
 def session_detail(session_id):
-    session = DashboardSession.query.filter_by(
-        id=session_id, user_id=current_user.id
-    ).first_or_404()
+    session = DashboardSession.query.get_or_404(session_id)
+
+    # Verify access (owner or collaborator)
+    can_access, role = can_access_session(current_user, session)
+    if not can_access:
+        abort(403)
 
     _expire_session_if_needed(session)
 
@@ -209,10 +213,15 @@ def session_detail(session_id):
     submissions = submission_store.list_for_dashboard(session.id) if session.is_active else []
     logs = session.logs.order_by(MinimalLogEntry.received_at.desc()).all()
 
+    # Build list of links for template compatibility
+    links = session.links.all()
+
     return render_template(
         "dashboard/session_detail.html",
         session=session,
+        role=role,
         link=link,
+        links=links,
         qr_svg=qr_svg,
         intake_url=intake_url,
         submissions=submissions,
@@ -349,6 +358,124 @@ def my_audit_log():
         .all()
     )
     return render_template("dashboard/audit_log.html", logs=logs)
+
+
+@dashboard_bp.route("/sessions/join", methods=["GET", "POST"])
+@login_required
+def join_session():
+    """Permite usuário Premium/Trial entrar em sessão via join_code."""
+    if request.method == "POST":
+        code = request.form.get("join_code", "").strip().upper()
+
+        # Validar plano (FREE não pode)
+        if current_user.plan_type == 'free':
+            flash(
+                "Usuários do plano Free não podem participar de triagens compartilhadas. "
+                "Faça upgrade para Trial ou Premium.",
+                "warning"
+            )
+            return redirect(url_for("plans.index"))
+
+        # Buscar sessão por join_code
+        session = DashboardSession.query.filter_by(join_code=code).first()
+
+        if not session:
+            flash("Código inválido.", "danger")
+            return redirect(url_for("dashboard.index"))
+
+        if not session.is_active or session.is_expired:
+            flash("Esta triagem já foi encerrada ou expirou.", "warning")
+            return redirect(url_for("dashboard.index"))
+
+        # Não pode entrar na própria sessão
+        if session.user_id == current_user.id:
+            flash("Você já é o criador desta triagem.", "info")
+            return redirect(url_for("dashboard.session_detail", session_id=session.id))
+
+        # Verificar se já é colaborador
+        existing = SessionCollaborator.query.filter_by(
+            session_id=session.id,
+            user_id=current_user.id
+        ).first()
+
+        if existing:
+            flash("Você já está participando desta triagem.", "info")
+            return redirect(url_for("dashboard.session_detail", session_id=session.id))
+
+        # Criar colaborador
+        collab = SessionCollaborator(
+            session_id=session.id,
+            user_id=current_user.id
+        )
+        db.session.add(collab)
+        db.session.commit()
+
+        flash(f"Você entrou na triagem '{session.label}' como convidado.", "success")
+        return redirect(url_for("dashboard.session_detail", session_id=session.id))
+
+    return render_template("dashboard/join_session.html")
+
+
+@dashboard_bp.route("/sessions/<int:session_id>/generate-code", methods=["POST"])
+@login_required
+def generate_join_code(session_id):
+    """Gera (ou regenera) join_code único de 6 caracteres. OWNER ONLY."""
+    session = DashboardSession.query.get_or_404(session_id)
+
+    if session.user_id != current_user.id:
+        abort(403)
+
+    if current_user.plan_type not in ['trial', 'premium']:
+        return jsonify({"error": "Apenas usuários Premium podem compartilhar triagens"}), 403
+
+    max_attempts = 10
+    for _ in range(max_attempts):
+        code = secrets.token_hex(3).upper()
+        if not DashboardSession.query.filter_by(join_code=code).first():
+            session.join_code = code
+            db.session.commit()
+            return jsonify({"join_code": code})
+
+    return jsonify({"error": "Falha ao gerar código único"}), 500
+
+
+@dashboard_bp.route("/sessions/<int:session_id>/collaborators")
+@login_required
+def list_collaborators(session_id):
+    """Lista todos os colaboradores de uma sessão. OWNER ONLY."""
+    session = DashboardSession.query.get_or_404(session_id)
+
+    if session.user_id != current_user.id:
+        abort(403)
+
+    collabs = SessionCollaborator.query.filter_by(session_id=session_id).all()
+
+    return jsonify([{
+        "user_id": c.user_id,
+        "display_name": c.user.display_name,
+        "joined_at": c.joined_at.isoformat()
+    } for c in collabs])
+
+
+@dashboard_bp.route("/sessions/<int:session_id>/collaborators/<int:user_id>", methods=["DELETE"])
+@login_required
+def remove_collaborator(session_id, user_id):
+    """Remove um colaborador da sessão. OWNER ONLY."""
+    session = DashboardSession.query.get_or_404(session_id)
+
+    if session.user_id != current_user.id:
+        abort(403)
+
+    deleted = SessionCollaborator.query.filter_by(
+        session_id=session_id,
+        user_id=user_id
+    ).delete()
+
+    db.session.commit()
+
+    if deleted:
+        return jsonify({"status": "removed"})
+    return jsonify({"error": "Colaborador não encontrado"}), 404
 
 
 def _generate_qr_svg(url: str) -> str:

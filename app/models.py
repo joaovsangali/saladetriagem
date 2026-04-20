@@ -85,7 +85,8 @@ class DashboardSession(db.Model):
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     expires_at = db.Column(db.DateTime, nullable=False)
     is_active = db.Column(db.Boolean, default=True)
-    
+    join_code = db.Column(db.String(6), unique=True, nullable=True, index=True)
+
     links = db.relationship("IntakeLink", backref="session", lazy="dynamic")
     logs = db.relationship("MinimalLogEntry", backref="session", lazy="dynamic")
     
@@ -208,6 +209,27 @@ class PlanUsage(db.Model):
 
     def __repr__(self):
         return f"<PlanUsage user={self.user_id} month={self.month}>"
+
+
+class SessionCollaborator(db.Model):
+    """Vincula usuários convidados a sessões compartilhadas."""
+
+    __tablename__ = "session_collaborators"
+
+    id = db.Column(db.Integer, primary_key=True)
+    session_id = db.Column(db.Integer, db.ForeignKey("dashboard_sessions.id"), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("police_users.id"), nullable=False)
+    joined_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    __table_args__ = (
+        db.UniqueConstraint('session_id', 'user_id', name='uq_session_collaborator'),
+    )
+
+    session = db.relationship("DashboardSession", backref="collaborators")
+    user = db.relationship("PoliceUser")
+
+    def __repr__(self):
+        return f"<SessionCollaborator session={self.session_id} user={self.user_id}>"
 
 
 class GlobalSMSCounter(db.Model):

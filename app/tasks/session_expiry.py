@@ -18,7 +18,7 @@ def _get_celery_app():
 def expire_sessions_task():
     """Core expiry logic shared by both Celery task and threading fallback."""
     from app.extensions import db
-    from app.models import DashboardSession, MinimalLogEntry
+    from app.models import DashboardSession, MinimalLogEntry, SessionCollaborator
     from app.store import submission_store
 
     now = datetime.now(timezone.utc)
@@ -45,6 +45,9 @@ def expire_sessions_task():
                             status="received",
                         )
                     )
+
+            # Clean up collaborators before marking inactive
+            SessionCollaborator.query.filter_by(session_id=session.id).delete()
 
             session.is_active = False
             submission_store.purge_dashboard(session.id)

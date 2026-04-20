@@ -14,6 +14,9 @@
     <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#newSessionModal">
       <i class="bi bi-plus-circle"></i> Nova Triagem
     </button>
+    <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#joinSessionModal">
+      <i class="bi bi-box-arrow-in-right"></i> Entrar em Triagem
+    </button>
   </div>
 </div>
 
@@ -97,6 +100,34 @@
         </div>
       </form>
     </div>
+  </div>
+</div>
+
+<!-- Join Session Modal -->
+<div class="modal fade" id="joinSessionModal" tabindex="-1">
+  <div class="modal-dialog">
+    <form method="POST" action="{{ url_for('dashboard.join_session') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-box-arrow-in-right"></i> Entrar em Triagem Compartilhada</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Código de Acesso (6 caracteres)</label>
+            <input type="text" name="join_code" class="form-control form-control-lg text-center"
+                   placeholder="A3F9B2" maxlength="6"
+                   style="letter-spacing: 0.3em; font-weight: bold; text-transform: uppercase;" required>
+            <div class="form-text text-muted">Peça o código ao criador da triagem</div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Entrar</button>
+        </div>
+      </div>
+    </form>
   </div>
 </div>
 {% endblock %}

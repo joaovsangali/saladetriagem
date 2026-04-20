@@ -2,6 +2,17 @@
 {% block title %}{{ session.label }} — Sala de Triagem{% endblock %}
 
 {% block content %}
+
+{% if role == 'collaborator' %}
+<div class="alert alert-info d-flex align-items-center mb-3">
+  <i class="bi bi-people-fill me-2"></i>
+  <div>
+    <strong>Modo Convidado</strong> — Você está visualizando esta triagem como colaborador.
+    <br>Criador: <strong>{{ session.owner.display_name }}</strong>
+  </div>
+</div>
+{% endif %}
+
 <div class="d-flex justify-content-between align-items-center mb-3">
   <div>
     <a href="{{ url_for('dashboard.index') }}" class="text-decoration-none text-muted small">← Voltar</a>
@@ -16,7 +27,7 @@
     </span>
   </div>
   <div class="d-flex gap-2">
-    {% if session.is_active %}
+    {% if session.is_active and role == 'owner' %}
     <form action="{{ url_for('dashboard.close_session', session_id=session.id) }}" method="post" class="d-inline">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button class="btn btn-danger btn-sm" onclick="return confirm('Encerrar triagem e apagar dados?')">
@@ -52,7 +63,7 @@
           {% endif %}
         {% else %}
           <p class="text-muted small">Triagem inativa ou sem link.</p>
-          {% if session.is_active %}
+          {% if session.is_active and role == 'owner' %}
           <form action="{{ url_for('dashboard.new_link', session_id=session.id) }}" method="post">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button class="btn btn-primary btn-sm">Gerar Novo Link</button>
@@ -64,6 +75,41 @@
   </div>
 
   <div class="col-md-6">
+    {% if role == 'owner' and current_user.plan_type in ['trial', 'premium'] and session.is_active %}
+    <div class="card mb-3">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="bi bi-share"></i> Compartilhamento</h5>
+        <button class="btn btn-sm btn-primary" onclick="generateJoinCode()">
+          <i class="bi bi-key"></i> Gerar Código
+        </button>
+      </div>
+      <div class="card-body">
+        <div id="join-code-display" style="display:none;">
+          <div class="alert alert-success mb-2">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <strong>Código de Acesso:</strong><br>
+                <span id="join-code-text" class="fs-3 font-monospace" style="letter-spacing: 0.3em;"></span>
+              </div>
+              <button class="btn btn-outline-secondary btn-sm" onclick="copyJoinCode()">
+                <i class="bi bi-clipboard"></i> Copiar
+              </button>
+            </div>
+            <small class="text-muted d-block mt-2">
+              Compartilhe este código com outros policiais para colaborarem nesta triagem.
+            </small>
+          </div>
+        </div>
+        <h6 class="mt-2 mb-2">
+          <i class="bi bi-people"></i> Colaboradores Ativos
+          <span class="badge bg-secondary" id="collaborators-count">0</span>
+        </h6>
+        <ul id="collaborators-list" class="list-group list-group-flush">
+          <li class="list-group-item text-muted text-center small">Nenhum colaborador ainda</li>
+        </ul>
+      </div>
+    </div>
+    {% else %}
     <div class="card">
       <div class="card-header">Resumo</div>
       <div class="card-body">
@@ -77,8 +123,21 @@
         {% endif %}
       </div>
     </div>
+    {% endif %}
   </div>
 </div>
+
+{% if role == 'owner' and current_user.plan_type in ['trial', 'premium'] and session.is_active %}
+<div class="mb-2">
+  <p class="mb-1 small"><strong>Triagens pendentes:</strong> <span id="pending-count">{{ submissions|length }}</span></p>
+  <p class="mb-1 small d-inline"><strong>Registros finalizados:</strong> {{ logs|length }}</p>
+  {% if session.is_active %}
+  <button class="btn btn-outline-primary btn-sm ms-2" type="button" onclick="refreshSubmissions()">
+    <i class="bi bi-arrow-clockwise"></i> Atualizar
+  </button>
+  {% endif %}
+</div>
+{% endif %}
 
 <!-- Submissions -->
 <h5>Triagens Pendentes</h5>
@@ -86,6 +145,26 @@
   {% for sub in submissions %}
   <div class="card mb-2" id="sub-{{ sub.submission_id }}">
     <div class="card-body py-2 px-3">
+
+      <!-- Assignment checkbox -->
+      <div class="form-check mb-1">
+        <input class="form-check-input" type="checkbox"
+               id="assign-{{ sub.submission_id }}"
+               data-sub-id="{{ sub.submission_id }}"
+               {% if sub.assigned_to_user_id == current_user.id %}checked{% endif %}
+               {% if sub.assigned_to_user_id and sub.assigned_to_user_id != current_user.id %}disabled{% endif %}
+               onchange="toggleAssign('{{ sub.submission_id }}', this)">
+        <label class="form-check-label" for="assign-{{ sub.submission_id }}">
+          {% if sub.assigned_to_user_id %}
+            <span class="badge bg-info">
+              <i class="bi bi-person-check"></i> {{ sub.assigned_to_name }}
+            </span>
+          {% else %}
+            <span class="text-muted small">Marcar como em atendimento</span>
+          {% endif %}
+        </label>
+      </div>
+
       <div class="d-flex justify-content-between align-items-center">
         <div>
           <strong>{{ sub.guest_name }}</strong>
@@ -103,6 +182,7 @@
             <i class="bi bi-eye"></i> Ver detalhes
           </button>
 
+          {% if role == 'owner' %}
           <button
             class="btn btn-outline-success btn-sm"
             type="button"
@@ -116,6 +196,7 @@
             onclick="discardSubmission('{{ session.id }}', '{{ sub.submission_id }}');">
             <i class="bi bi-x-circle"></i> Descartar
           </button>
+          {% endif %}
         </div>
       </div>
     </div>
@@ -155,6 +236,7 @@
 {% block scripts %}
 <script>
 const CSRF_TOKEN = "{{ csrf_token() }}";
+const SESSION_ID = {{ session.id | tojson }};
 
 function _setBtnState(btnEl, label, addClass, removeClass) {
   if (!btnEl) return;
@@ -171,7 +253,6 @@ async function copyUrl(btnEl) {
     if (navigator.clipboard && window.isSecureContext) {
       await navigator.clipboard.writeText(text);
     } else {
-      // fallback para ambientes não seguros (HTTP / IP LAN)
       input.focus();
       input.select();
       input.setSelectionRange(0, 99999);
@@ -205,7 +286,6 @@ function toggleDetail(sessionId, subId) {
   container.classList.remove('d-none');
   if (btn) btn.innerHTML = '<i class="bi bi-eye-slash"></i> Ocultar detalhes';
 
-  // carrega apenas na primeira vez
   if (!container.dataset.loaded) {
     loadDetail(sessionId, subId);
   }
@@ -227,12 +307,11 @@ function loadDetail(sessionId, subId) {
       if (data.dob) html += `<tr><td>Nascimento</td><td>${data.dob}</td></tr>`;
       if (data.rg) html += `<tr><td>RG</td><td>${data.rg}</td></tr>`;
       if (data.cpf) html += `<tr><td>CPF</td><td>${data.cpf}</td></tr>`;
-      if (data.phone) html += `<tr><td>Telefone</td><td>${data.phone}</td></tr>`;  // <-- ADICIONE ESTA LINHA
+      if (data.phone) html += `<tr><td>Telefone</td><td>${data.phone}</td></tr>`;
       if (data.address) html += `<tr><td>Endereço</td><td>${data.address}</td></tr>`;
       if (data.email) html += `<tr><td>E-mail</td><td>${data.email}</td></tr>`;
       html += '</table>';
 
-      // Email
       const email = data.answers && data.answers._email;
       if (email) html += `<p class="small mb-1"><strong>E-mail:</strong> ${email}</p>`;
 
@@ -244,8 +323,6 @@ function loadDetail(sessionId, subId) {
         html += '</table>';
       }
 
-
-      // Informações PM
       const pm = data.answers && data.answers._pm_info;
       if (pm && pm.policial_militar) {
         html += '<h6>Informações PM</h6>';
@@ -270,8 +347,6 @@ function loadDetail(sessionId, subId) {
         }
       }
 
-
-
       if (data.narrative) {
         html += `<h6>Relato</h6><p class="small">${data.narrative}</p>`;
       }
@@ -280,7 +355,8 @@ function loadDetail(sessionId, subId) {
 
       html += '<div class="col-md-6">';
       html += '<h6>Texto para Cópia</h6>';
-      html += `<textarea class="form-control font-monospace small" rows="12" id="text-${subId}">${data.text}</textarea>`;      html += `<button class="btn btn-outline-primary btn-sm mt-2" type="button" onclick="copyText('${subId}', this)"><i class="bi bi-clipboard"></i> Copiar Texto</button>`;
+      html += `<textarea class="form-control font-monospace small" rows="12" id="text-${subId}">${data.text}</textarea>`;
+      html += `<button class="btn btn-outline-primary btn-sm mt-2" type="button" onclick="copyText('${subId}', this)"><i class="bi bi-clipboard"></i> Copiar Texto</button>`;
       html += `<button class="btn btn-outline-success btn-sm mt-2 ms-2" type="button" onclick="shareWhatsApp('${subId}')"><i class="bi bi-whatsapp"></i> WhatsApp</button>`;
       if (data.photo_count > 0) {
         html += `<h6 class="mt-3">Fotos (${data.photo_count})</h6><div class="d-flex gap-2 flex-wrap align-items-start">`;
@@ -336,7 +412,6 @@ async function copyText(subId, btnEl) {
   }
 }
 
-
 function shareWhatsApp(subId) {
   const ta = document.getElementById(`text-${subId}`);
   const text = ta?.value || '';
@@ -378,13 +453,12 @@ function discardSubmission(sessionId, subId) {
 }
 
 function refreshSubmissions() {
-  const sessionId = {{ session.id | tojson }};
-  fetch(`/api/sessions/${sessionId}/submissions`)
+  fetch(`/api/sessions/${SESSION_ID}/submissions`)
     .then(r => r.json())
     .then(subs => {
-      document.getElementById('pending-count').textContent = subs.length;
+      const pendingEl = document.getElementById('pending-count');
+      if (pendingEl) pendingEl.textContent = subs.length;
 
-      // Se zerou, mostra mensagem (opcional, sem mexer no backend)
       const container = document.getElementById('submissions-container');
       const noMsg = document.getElementById('no-submissions');
       if (subs.length === 0 && !noMsg) {
@@ -398,8 +472,128 @@ function refreshSubmissions() {
     .catch(err => console.error('Erro ao atualizar pendentes:', err));
 }
 
+// ===== COLABORADORES =====
+async function generateJoinCode() {
+  try {
+    const res = await fetch(`/dashboard/sessions/${SESSION_ID}/generate-code`, {
+      method: 'POST',
+      headers: {'X-CSRFToken': CSRF_TOKEN}
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      alert('Erro ao gerar código: ' + (err.error || res.statusText));
+      return;
+    }
+
+    const data = await res.json();
+    document.getElementById('join-code-text').textContent = data.join_code;
+    document.getElementById('join-code-display').style.display = 'block';
+
+    loadCollaborators();
+  } catch (err) {
+    alert('Erro ao gerar código: ' + err.message);
+  }
+}
+
+async function copyJoinCode() {
+  const code = document.getElementById('join-code-text').textContent;
+  try {
+    await navigator.clipboard.writeText(code);
+    alert('Código copiado!');
+  } catch (err) {
+    prompt('Copie este código:', code);
+  }
+}
+
+async function loadCollaborators() {
+  try {
+    const res = await fetch(`/dashboard/sessions/${SESSION_ID}/collaborators`);
+    const collabs = await res.json();
+
+    const list = document.getElementById('collaborators-list');
+    const count = document.getElementById('collaborators-count');
+    if (!list) return;
+
+    if (count) count.textContent = collabs.length;
+
+    if (collabs.length === 0) {
+      list.innerHTML = '<li class="list-group-item text-muted text-center small">Nenhum colaborador ainda</li>';
+      return;
+    }
+
+    list.innerHTML = collabs.map(c => `
+      <li class="list-group-item d-flex justify-content-between align-items-center">
+        <div>
+          <i class="bi bi-person"></i> ${c.display_name}
+          <br><small class="text-muted">Entrou em ${new Date(c.joined_at).toLocaleString('pt-BR')}</small>
+        </div>
+        <button class="btn btn-sm btn-danger" onclick="removeCollab(${c.user_id})">
+          <i class="bi bi-x-lg"></i> Remover
+        </button>
+      </li>
+    `).join('');
+  } catch (err) {
+    console.error('Erro ao carregar colaboradores:', err);
+  }
+}
+
+async function removeCollab(userId) {
+  if (!confirm('Remover este colaborador?')) return;
+
+  try {
+    const res = await fetch(`/dashboard/sessions/${SESSION_ID}/collaborators/${userId}`, {
+      method: 'DELETE',
+      headers: {'X-CSRFToken': CSRF_TOKEN}
+    });
+
+    if (res.ok) {
+      loadCollaborators();
+    }
+  } catch (err) {
+    alert('Erro ao remover colaborador');
+  }
+}
+
+// ===== ATRIBUIÇÃO DE SUBMISSÕES =====
+async function toggleAssign(subId, checkbox) {
+  try {
+    const res = await fetch(`/api/sessions/${SESSION_ID}/submissions/${subId}/assign`, {
+      method: 'POST',
+      headers: {'X-CSRFToken': CSRF_TOKEN}
+    });
+
+    const data = await res.json();
+
+    const label = checkbox.nextElementSibling;
+    if (data.status === 'assigned') {
+      label.innerHTML = `<span class="badge bg-info"><i class="bi bi-person-check"></i> ${data.assigned_to_name}</span>`;
+      checkbox.checked = true;
+    } else {
+      label.innerHTML = '<span class="text-muted small">Marcar como em atendimento</span>';
+      checkbox.checked = false;
+    }
+
+    refreshSubmissions();
+  } catch (err) {
+    console.error('Erro ao marcar submissão:', err);
+    checkbox.checked = !checkbox.checked;
+  }
+}
+
 {% if session.is_active %}
 setInterval(refreshSubmissions, 30000);
+{% endif %}
+
+{% if role == 'owner' and session.join_code %}
+document.addEventListener('DOMContentLoaded', () => {
+  const el = document.getElementById('join-code-text');
+  if (el) {
+    el.textContent = "{{ session.join_code }}";
+    document.getElementById('join-code-display').style.display = 'block';
+    loadCollaborators();
+  }
+});
 {% endif %}
 </script>
 {% endblock %}

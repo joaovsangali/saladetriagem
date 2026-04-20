@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Entrar em Triagem — Sala de Triagem{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+  <div class="col-md-5">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-box-arrow-in-right"></i> Entrar em Triagem Compartilhada</h5>
+      </div>
+      <form method="POST" action="{{ url_for('dashboard.join_session') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="card-body">
+          <div class="mb-3">
+            <label class="form-label">Código de Acesso (6 caracteres)</label>
+            <input type="text" name="join_code" class="form-control form-control-lg text-center"
+                   placeholder="A3F9B2" maxlength="6"
+                   style="letter-spacing: 0.3em; font-weight: bold; text-transform: uppercase;" required>
+            <div class="form-text text-muted">Peça o código ao criador da triagem</div>
+          </div>
+        </div>
+        <div class="card-footer d-flex justify-content-between">
+          <a href="{{ url_for('dashboard.index') }}" class="btn btn-secondary">Cancelar</a>
+          <button type="submit" class="btn btn-primary">Entrar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
