@@ -124,7 +124,16 @@ def submit(token):
                 return redirect(url_for("intake.form", token=token))
             answers[field_id] = value if value else None
 
-        guest_name = answers.get("name") or answers.get("nome") or "Anônimo"
+        guest_name = answers.get("name") or answers.get("nome")
+        if not guest_name:
+            # Fall back to the first required text/email field value
+            for field in schema.get("fields", []):
+                if field.get("required") and field.get("type") in ("text", "email"):
+                    guest_name = answers.get(field["id"])
+                    if guest_name:
+                        break
+        if not guest_name:
+            guest_name = "Anônimo"
 
         sub = Submission(
             submission_id=str(uuid.uuid4()),

@@ -29,7 +29,7 @@ def validate_custom_intake_schema(schema):
         if field["type"] not in ALLOWED_FIELD_TYPES:
             return False, f"Tipo '{field['type']}' não permitido"
 
-        if re.search(r'<[^>]+>', str(field["label"])):
+        if re.search(r'<[^>]{0,200}>', str(field["label"])):
             return False, "Labels não podem conter HTML"
 
         if field["type"] == "select":
