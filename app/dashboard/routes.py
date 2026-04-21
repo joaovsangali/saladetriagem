@@ -10,7 +10,10 @@ from flask import render_template, redirect, url_for, flash, request, abort, Res
 from flask_login import login_required, current_user
 from app.dashboard import dashboard_bp
 from app.extensions import db
-from app.models import DashboardSession, IntakeLink, MinimalLogEntry, AccessLog, SessionCollaborator
+from app.models import (
+    DashboardSession, IntakeLink, MinimalLogEntry, AccessLog,
+    SessionCollaborator, CustomIntakeTemplate,
+)
 from app.store import submission_store
 from app.schemas.crime_types import DEFAULT_FORM_SCHEMA
 from app.utils.access_control import can_access_session
@@ -168,10 +171,37 @@ def new_session():
     duration_hours = max(1, min(duration_hours, max_hours))
 
     from datetime import timedelta
+    intake_type = request.form.get("intake_type", "police")
+    custom_template_id = None
+
+    if intake_type == "custom":
+        if current_user.plan_type not in ('premium', 'trial'):
+            flash("Templates personalizados são exclusivos para usuários Premium.", "warning")
+            return redirect(url_for("dashboard.index"))
+        raw_template_id = request.form.get("custom_template_id", "").strip()
+        if not raw_template_id:
+            flash("Selecione um template personalizado.", "warning")
+            return redirect(url_for("dashboard.index"))
+        try:
+            custom_template_id = int(raw_template_id)
+        except (ValueError, TypeError):
+            flash("Template inválido.", "warning")
+            return redirect(url_for("dashboard.index"))
+        template = CustomIntakeTemplate.query.filter_by(
+            id=custom_template_id, user_id=current_user.id, is_active=True
+        ).first()
+        if not template:
+            flash("Template não encontrado.", "warning")
+            return redirect(url_for("dashboard.index"))
+    else:
+        intake_type = "police"
+
     session = DashboardSession(
         user_id=current_user.id,
         label=label,
         expires_at=datetime.now(timezone.utc) + timedelta(hours=duration_hours),
+        intake_type=intake_type,
+        custom_template_id=custom_template_id,
     )
     db.session.add(session)
     db.session.commit()
@@ -216,6 +246,11 @@ def session_detail(session_id):
     # Build list of links for template compatibility
     links = session.links.all()
 
+    # Determine schema for custom intake rendering
+    schema = None
+    if session.intake_type == "custom" and session.custom_template:
+        schema = session.custom_template.schema
+
     return render_template(
         "dashboard/session_detail.html",
         session=session,
@@ -226,6 +261,7 @@ def session_detail(session_id):
         intake_url=intake_url,
         submissions=submissions,
         logs=logs,
+        schema=schema,
     )
 
 @dashboard_bp.route("/sessions/<int:session_id>/close", methods=["POST"])
@@ -476,6 +512,74 @@ def remove_collaborator(session_id, user_id):
     if deleted:
         return jsonify({"status": "removed"})
     return jsonify({"error": "Colaborador não encontrado"}), 404
+
+
+@dashboard_bp.route("/custom-templates")
+@login_required
+def list_custom_templates():
+    if current_user.plan_type not in ('premium', 'trial'):
+        flash("Modelos personalizados são exclusivos para usuários Premium.", "warning")
+        return redirect(url_for("dashboard.index"))
+    templates = CustomIntakeTemplate.query.filter_by(
+        user_id=current_user.id, is_active=True
+    ).order_by(CustomIntakeTemplate.created_at.desc()).all()
+    return render_template("dashboard/custom_templates_list.html", templates=templates)
+
+
+@dashboard_bp.route("/custom-templates/create", methods=["GET", "POST"])
+@login_required
+def create_custom_template():
+    from app.decorators import can_create_custom_template
+    from app.utils.schema_validator import validate_custom_intake_schema
+    import json
+
+    allowed, error = can_create_custom_template(current_user)
+    if not allowed:
+        flash(error, "warning")
+        return redirect(url_for("dashboard.list_custom_templates"))
+
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        if not name:
+            flash("Informe um nome para o template.", "warning")
+            return render_template("dashboard/custom_template_create.html")
+
+        schema_json = request.form.get("schema_json", "").strip()
+        try:
+            schema = json.loads(schema_json)
+        except (ValueError, TypeError):
+            flash("Schema inválido (JSON malformado).", "danger")
+            return render_template("dashboard/custom_template_create.html")
+
+        valid, err = validate_custom_intake_schema(schema)
+        if not valid:
+            flash(f"Schema inválido: {err}", "danger")
+            return render_template("dashboard/custom_template_create.html")
+
+        template = CustomIntakeTemplate(
+            user_id=current_user.id,
+            name=name,
+            schema=schema,
+        )
+        db.session.add(template)
+        db.session.commit()
+
+        flash(f"Template '{name}' criado com sucesso.", "success")
+        return redirect(url_for("dashboard.list_custom_templates"))
+
+    return render_template("dashboard/custom_template_create.html")
+
+
+@dashboard_bp.route("/custom-templates/<int:template_id>/delete", methods=["POST"])
+@login_required
+def delete_custom_template(template_id):
+    template = CustomIntakeTemplate.query.filter_by(
+        id=template_id, user_id=current_user.id
+    ).first_or_404()
+    template.is_active = False
+    db.session.commit()
+    flash("Template removido.", "info")
+    return redirect(url_for("dashboard.list_custom_templates"))
 
 
 def _generate_qr_svg(url: str) -> str:

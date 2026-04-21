@@ -140,7 +140,13 @@
 {% endif %}
 
 <!-- Submissions -->
-<h5>Triagens Pendentes</h5>
+<h5>Triagens Pendentes
+  {% if session.intake_type == 'custom' and session.custom_template %}
+  <span class="badge bg-secondary ms-2" title="Template: {{ session.custom_template.name }}">
+    <i class="bi bi-layout-text-window-reverse"></i> Personalizado
+  </span>
+  {% endif %}
+</h5>
 <div id="submissions-container">
   {% for sub in submissions %}
   <div class="card mb-2" id="sub-{{ sub.submission_id }}">
@@ -168,12 +174,17 @@
       <div class="d-flex justify-content-between align-items-center">
         <div>
           <strong>{{ sub.guest_name }}</strong>
+          {% if schema %}
+          <span class="badge bg-secondary text-white ms-2">Personalizado</span>
+          {% else %}
           <span class="badge bg-info text-dark ms-2">{{ sub.crime_type }}</span>
+          {% endif %}
           <span class="text-muted small ms-2">{{ sub.received_at|datefmt('dd/mm HH:MM') }}</span>
         </div>
 
         <!-- Ações inline (toggle + concluir + descartar) -->
         <div class="d-flex gap-2">
+          {% if not schema %}
           <button
             class="btn btn-outline-secondary btn-sm"
             type="button"
@@ -181,6 +192,15 @@
             onclick="toggleDetail('{{ session.id }}', '{{ sub.submission_id }}');">
             <i class="bi bi-eye"></i> Ver detalhes
           </button>
+          {% else %}
+          <button
+            class="btn btn-outline-secondary btn-sm"
+            type="button"
+            id="toggle-detail-btn-{{ sub.submission_id }}"
+            onclick="toggleCustomDetail('{{ sub.submission_id }}');">
+            <i class="bi bi-eye"></i> Ver detalhes
+          </button>
+          {% endif %}
 
           {% if role == 'owner' %}
           <button
@@ -199,10 +219,26 @@
           {% endif %}
         </div>
       </div>
+
+      {% if schema %}
+      <!-- Custom schema inline details (hidden by default) -->
+      <div class="mt-2 d-none" id="custom-detail-{{ sub.submission_id }}">
+        <table class="table table-sm mb-0">
+          {% for field in schema.get('fields', []) %}
+          <tr>
+            <td class="text-muted small" style="width:40%">{{ field.label }}</td>
+            <td class="small">{{ sub.answers.get(field.id, '—') if sub.answers else '—' }}</td>
+          </tr>
+          {% endfor %}
+        </table>
+      </div>
+      {% endif %}
     </div>
 
-    <!-- área de detalhes (colapsável) -->
+    {% if not schema %}
+    <!-- área de detalhes (colapsável) - somente para triagem policial -->
     <div class="card-footer bg-white p-0 d-none" id="sub-detail-{{ sub.submission_id }}"></div>
+    {% endif %}
   </div>
   {% else %}
   <p class="text-muted" id="no-submissions">Nenhuma triagem pendente.</p>
@@ -288,6 +324,20 @@ function toggleDetail(sessionId, subId) {
 
   if (!container.dataset.loaded) {
     loadDetail(sessionId, subId);
+  }
+}
+
+function toggleCustomDetail(subId) {
+  const container = document.getElementById(`custom-detail-${subId}`);
+  const btn = document.getElementById(`toggle-detail-btn-${subId}`);
+  if (!container) return;
+  const isOpen = !container.classList.contains('d-none');
+  if (isOpen) {
+    container.classList.add('d-none');
+    if (btn) btn.innerHTML = '<i class="bi bi-eye"></i> Ver detalhes';
+  } else {
+    container.classList.remove('d-none');
+    if (btn) btn.innerHTML = '<i class="bi bi-eye-slash"></i> Ocultar detalhes';
   }
 }
 

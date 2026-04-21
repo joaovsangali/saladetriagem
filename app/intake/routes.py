@@ -42,6 +42,17 @@ def form(token):
     if not session or not session.is_active or session.is_expired:
         return render_template("intake/expired.html")
 
+    if session.intake_type == "custom":
+        template = session.custom_template
+        if not template or not template.is_active:
+            return render_template("intake/expired.html")
+        return render_template(
+            "intake/custom_form.html",
+            token=token,
+            schema=template.schema,
+            session=session,
+        )
+
     schema = link.form_schema or {}
 
     # Defaults "future-proof" (não quebra nada hoje)
@@ -94,6 +105,67 @@ def submit(token):
         current_count = submission_store.count_for_dashboard(session.id)
         if current_count >= limits['max_submissions_per_session']:
             return render_template("intake/expired.html")
+
+    if session.intake_type == "custom":
+        template = session.custom_template
+        if not template or not template.is_active:
+            return render_template("intake/expired.html")
+
+        schema = template.schema
+        answers = {}
+        for field in schema.get("fields", []):
+            field_id = field.get("id")
+            if not field_id:
+                continue
+            required = field.get("required", False)
+            value = request.form.get(f"field_{field_id}", "").strip()
+            if required and not value:
+                flash(f"{field.get('label', field_id)} é obrigatório.", "danger")
+                return redirect(url_for("intake.form", token=token))
+            answers[field_id] = value if value else None
+
+        guest_name = answers.get("name") or answers.get("nome")
+        if not guest_name:
+            # Fall back to the first required text/email field value
+            for field in schema.get("fields", []):
+                if field.get("required") and field.get("type") in ("text", "email"):
+                    guest_name = answers.get(field["id"])
+                    if guest_name:
+                        break
+        if not guest_name:
+            guest_name = "Anônimo"
+
+        sub = Submission(
+            submission_id=str(uuid.uuid4()),
+            dashboard_id=session.id,
+            guest_name=guest_name,
+            dob=None,
+            rg=None,
+            cpf=None,
+            phone=None,
+            address=None,
+            answers=answers,
+            narrative=None,
+            crime_type="custom",
+            photos=[],
+            received_at=datetime.now(timezone.utc),
+        )
+
+        if submission_store.is_duplicate(sub):
+            flash(
+                "Já existe um registro com esse nome nesta triagem. "
+                "Se necessário, informe o responsável.",
+                "warning",
+            )
+            return redirect(url_for("intake.form", token=token))
+
+        submission_store.add(sub)
+
+        if owner:
+            from app.decorators import increment_submissions
+            increment_submissions(owner.id)
+
+        return redirect(url_for("intake.ok", token=token))
 
     schema = link.form_schema or {}
 

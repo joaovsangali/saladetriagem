@@ -5,6 +5,11 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h4 class="mb-0">Minhas Triagens</h4>
   <div class="d-flex gap-2">
+    {% if current_user.plan_type in ['premium', 'trial'] %}
+    <a href="{{ url_for('dashboard.list_custom_templates') }}" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-layout-text-window-reverse"></i> Modelos Personalizados
+    </a>
+    {% endif %}
     <form action="{{ url_for('dashboard.delete_closed_sessions') }}" method="post" class="d-inline">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button class="btn btn-outline-danger btn-sm" onclick="return confirm('Apagar todas as triagens encerradas e seus registros?')">
@@ -87,12 +92,31 @@
           </div>
           <div class="mb-3">
             <label class="form-label">Tipo de triagem</label>
-            <select class="form-select" disabled>
-              <option selected>Triagem Policial</option>
+            <select class="form-select" name="intake_type" id="intake_type" onchange="toggleCustomTemplate()">
+              <option value="police" selected>Triagem Policial</option>
+              {% if current_user.plan_type in ['premium', 'trial'] %}
+              <option value="custom">Triagem Personalizada</option>
+              {% endif %}
             </select>
-            <input type="hidden" name="triagem_type" value="policial">
-            <div class="form-text text-muted">Outros tipos de triagem em breve.</div>
+            {% if current_user.plan_type not in ['premium', 'trial'] %}
+            <div class="form-text text-muted">Outros tipos de triagem disponíveis no plano Premium.</div>
+            {% endif %}
           </div>
+          {% if current_user.plan_type in ['premium', 'trial'] %}
+          <div class="mb-3" id="custom-template-select" style="display:none;">
+            <label class="form-label">Modelo Personalizado</label>
+            <select class="form-select" name="custom_template_id" id="custom_template_id">
+              {% if current_user.custom_templates %}
+                {% for tpl in current_user.custom_templates if tpl.is_active %}
+                <option value="{{ tpl.id }}">{{ tpl.name }}</option>
+                {% endfor %}
+              {% endif %}
+            </select>
+            <div class="form-text">
+              <a href="{{ url_for('dashboard.list_custom_templates') }}" target="_blank">Gerenciar modelos</a>
+            </div>
+          </div>
+          {% endif %}
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -130,4 +154,15 @@
     </form>
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleCustomTemplate() {
+  var intakeType = document.getElementById('intake_type');
+  var customSelect = document.getElementById('custom-template-select');
+  if (!intakeType || !customSelect) return;
+  customSelect.style.display = intakeType.value === 'custom' ? '' : 'none';
+}
+</script>
 {% endblock %}

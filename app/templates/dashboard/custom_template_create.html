@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+{% block title %}Criar Modelo Personalizado — Sala de Triagem{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0">Criar Modelo Personalizado</h4>
+  <a href="{{ url_for('dashboard.list_custom_templates') }}" class="btn btn-outline-secondary btn-sm">← Voltar</a>
+</div>
+
+<form id="template-form" method="POST" action="{{ url_for('dashboard.create_custom_template') }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" name="schema_json" id="schema_json">
+
+  <div class="mb-3">
+    <label class="form-label fw-bold">Nome do Modelo</label>
+    <input type="text" name="name" id="template-name" class="form-control" placeholder="Ex: Triagem Clínica, Atendimento Geral" required>
+  </div>
+
+  <h5 class="mt-4">Campos do Formulário</h5>
+  <p class="text-muted small">Mínimo de 2 campos. Os primeiros dois campos devem ser Nome e E-mail.</p>
+
+  <div id="fields-container">
+    <!-- Initial required fields -->
+    <div class="card mb-2 field-card" data-index="0">
+      <div class="card-body py-2 px-3">
+        <div class="row g-2 align-items-center">
+          <div class="col-md-4">
+            <input type="text" class="form-control form-control-sm field-label" value="Nome" placeholder="Nome do campo" required>
+          </div>
+          <div class="col-md-2">
+            <select class="form-select form-select-sm field-type">
+              <option value="text" selected>Texto</option>
+              <option value="email">E-mail</option>
+              <option value="textarea">Área de texto</option>
+              <option value="select">Seleção</option>
+              <option value="number">Número</option>
+              <option value="date">Data</option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <div class="form-check">
+              <input class="form-check-input field-required" type="checkbox" checked>
+              <label class="form-check-label small">Obrigatório</label>
+            </div>
+          </div>
+          <div class="col-md-3 field-options-col" style="display:none;">
+            <input type="text" class="form-control form-control-sm field-options"
+                   placeholder="Opções separadas por vírgula">
+          </div>
+          <div class="col-md-1 text-end">
+            <button type="button" class="btn btn-outline-danger btn-sm remove-field" disabled title="Campo obrigatório">
+              <i class="bi bi-x"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card mb-2 field-card" data-index="1">
+      <div class="card-body py-2 px-3">
+        <div class="row g-2 align-items-center">
+          <div class="col-md-4">
+            <input type="text" class="form-control form-control-sm field-label" value="E-mail" placeholder="Nome do campo" required>
+          </div>
+          <div class="col-md-2">
+            <select class="form-select form-select-sm field-type">
+              <option value="text">Texto</option>
+              <option value="email" selected>E-mail</option>
+              <option value="textarea">Área de texto</option>
+              <option value="select">Seleção</option>
+              <option value="number">Número</option>
+              <option value="date">Data</option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <div class="form-check">
+              <input class="form-check-input field-required" type="checkbox" checked>
+              <label class="form-check-label small">Obrigatório</label>
+            </div>
+          </div>
+          <div class="col-md-3 field-options-col" style="display:none;">
+            <input type="text" class="form-control form-control-sm field-options"
+                   placeholder="Opções separadas por vírgula">
+          </div>
+          <div class="col-md-1 text-end">
+            <button type="button" class="btn btn-outline-danger btn-sm remove-field" disabled title="Campo obrigatório">
+              <i class="bi bi-x"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <button type="button" class="btn btn-outline-secondary btn-sm mb-3" id="add-field-btn">
+    <i class="bi bi-plus"></i> Adicionar Campo
+  </button>
+
+  <div class="mt-3">
+    <button type="submit" class="btn btn-primary" id="save-btn">
+      <i class="bi bi-save"></i> Salvar Modelo
+    </button>
+  </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let fieldCount = 2;
+
+function slugify(text) {
+  return text.toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_|_$/g, '')
+    || 'campo_' + fieldCount;
+}
+
+function addField() {
+  const container = document.getElementById('fields-container');
+  const idx = fieldCount++;
+  const div = document.createElement('div');
+  div.className = 'card mb-2 field-card';
+  div.dataset.index = idx;
+  div.innerHTML = `
+    <div class="card-body py-2 px-3">
+      <div class="row g-2 align-items-center">
+        <div class="col-md-4">
+          <input type="text" class="form-control form-control-sm field-label" placeholder="Nome do campo" required>
+        </div>
+        <div class="col-md-2">
+          <select class="form-select form-select-sm field-type" onchange="toggleOptions(this)">
+            <option value="text" selected>Texto</option>
+            <option value="email">E-mail</option>
+            <option value="textarea">Área de texto</option>
+            <option value="select">Seleção</option>
+            <option value="number">Número</option>
+            <option value="date">Data</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <div class="form-check">
+            <input class="form-check-input field-required" type="checkbox">
+            <label class="form-check-label small">Obrigatório</label>
+          </div>
+        </div>
+        <div class="col-md-3 field-options-col" style="display:none;">
+          <input type="text" class="form-control form-control-sm field-options"
+                 placeholder="Opções separadas por vírgula">
+        </div>
+        <div class="col-md-1 text-end">
+          <button type="button" class="btn btn-outline-danger btn-sm remove-field">
+            <i class="bi bi-x"></i>
+          </button>
+        </div>
+      </div>
+    </div>`;
+  container.appendChild(div);
+  div.querySelector('.remove-field').addEventListener('click', function() {
+    div.remove();
+  });
+}
+
+document.getElementById('add-field-btn').addEventListener('click', addField);
+
+// Toggle options field for select type
+document.getElementById('fields-container').addEventListener('change', function(e) {
+  if (e.target.classList.contains('field-type')) {
+    toggleOptions(e.target);
+  }
+});
+
+function toggleOptions(selectEl) {
+  const card = selectEl.closest('.field-card');
+  const optionsCol = card.querySelector('.field-options-col');
+  if (selectEl.value === 'select') {
+    optionsCol.style.display = '';
+  } else {
+    optionsCol.style.display = 'none';
+  }
+}
+
+document.getElementById('template-form').addEventListener('submit', function(e) {
+  e.preventDefault();
+  const cards = document.querySelectorAll('.field-card');
+  const fields = [];
+  let valid = true;
+
+  cards.forEach(function(card) {
+    const label = card.querySelector('.field-label').value.trim();
+    const type = card.querySelector('.field-type').value;
+    const required = card.querySelector('.field-required').checked;
+    const optionsInput = card.querySelector('.field-options');
+
+    if (!label) { valid = false; return; }
+
+    const field = {
+      id: slugify(label) + '_' + card.dataset.index,
+      label: label,
+      type: type,
+      required: required,
+    };
+
+    if (type === 'select' && optionsInput) {
+      field.options = optionsInput.value.split(',').map(s => s.trim()).filter(Boolean);
+    }
+
+    fields.push(field);
+  });
+
+  if (!valid || fields.length < 2) {
+    alert('Preencha todos os campos e certifique-se de ter pelo menos 2.');
+    return;
+  }
+
+  document.getElementById('schema_json').value = JSON.stringify({ fields: fields });
+  this.submit();
+});
+</script>
+{% endblock %}
