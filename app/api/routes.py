@@ -10,6 +10,7 @@ from app.store import submission_store
 from app.renderer.text import TextRenderer
 from app.schemas.crime_types import CRIME_SCHEMAS
 from app.audit import log_access
+from app.utils.access_control import can_access_session
 
 def _get_owned_session(session_id):
     return DashboardSession.query.filter_by(
@@ -19,19 +20,27 @@ def _get_owned_session(session_id):
 @api_bp.route("/sessions/<int:session_id>/submissions")
 @login_required
 def list_submissions(session_id):
-    _get_owned_session(session_id)
+    session = DashboardSession.query.get_or_404(session_id)
+    can_access, role = can_access_session(current_user, session)
+    if not can_access:
+        abort(403)
     subs = submission_store.list_for_dashboard(session_id)
     return jsonify([{
         "id": s.submission_id,
         "guest_name": s.guest_name,
         "crime_type": s.crime_type,
         "received_at": s.received_at.isoformat(),
+        "assigned_to_user_id": s.assigned_to_user_id,
+        "assigned_to_name": s.assigned_to_name,
     } for s in subs])
 
 @api_bp.route("/sessions/<int:session_id>/submissions/<submission_id>")
 @login_required
 def get_submission(session_id, submission_id):
-    session = _get_owned_session(session_id)
+    session = DashboardSession.query.get_or_404(session_id)
+    can_access, role = can_access_session(current_user, session)
+    if not can_access:
+        abort(403)
     sub = submission_store.get(submission_id)
     if not sub or sub.dashboard_id != session_id:
         abort(404)
@@ -61,6 +70,9 @@ def get_submission(session_id, submission_id):
         "photo_count": len(photo_keys) + len(sub.photos),
         "structured": structured,
         "text": text,
+        "assigned_to_user_id": sub.assigned_to_user_id,
+        "assigned_to_name": sub.assigned_to_name,
+        "assigned_at": sub.assigned_at.isoformat() if sub.assigned_at else None,
     })
 
 @api_bp.route("/sessions/<int:session_id>/submissions/<submission_id>/close", methods=["POST"])
@@ -134,7 +146,10 @@ def get_photo(session_id, submission_id, index):
     if not current_user.get_current_plan_limits().get('can_view_photos'):
         abort(403)
 
-    session = _get_owned_session(session_id)
+    session = DashboardSession.query.get_or_404(session_id)
+    can_access, role = can_access_session(current_user, session)
+    if not can_access:
+        abort(403)
     sub = submission_store.get(submission_id)
     if not sub or sub.dashboard_id != session_id:
         abort(404)
@@ -170,3 +185,39 @@ def get_photo(session_id, submission_id, index):
         mimetype="image/jpeg",
         headers={"Cache-Control": "no-store"},
     )
+
+
+@api_bp.route("/sessions/<int:session_id>/submissions/<submission_id>/assign", methods=["POST"])
+@login_required
+def assign_submission(session_id, submission_id):
+    """Marca/desmarca submissão como 'em atendimento' pelo usuário atual."""
+    session = DashboardSession.query.get_or_404(session_id)
+
+    can_access, role = can_access_session(current_user, session)
+    if not can_access:
+        abort(403)
+
+    sub = submission_store.get(submission_id)
+    if not sub or sub.dashboard_id != session_id:
+        abort(404)
+
+    # Toggle: se já está atribuído ao current_user, remove
+    if sub.assigned_to_user_id == current_user.id:
+        sub.assigned_to_user_id = None
+        sub.assigned_to_name = None
+        sub.assigned_at = None
+        status = "unassigned"
+    else:
+        # Atribuir ao current_user (sobrescreve atribuição anterior)
+        sub.assigned_to_user_id = current_user.id
+        sub.assigned_to_name = current_user.display_name
+        sub.assigned_at = datetime.now(timezone.utc)
+        status = "assigned"
+
+    submission_store.save(sub)
+
+    return jsonify({
+        "status": status,
+        "assigned_to_name": sub.assigned_to_name,
+        "assigned_to_user_id": sub.assigned_to_user_id
+    })

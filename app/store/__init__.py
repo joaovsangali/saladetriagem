@@ -40,6 +40,9 @@ class Submission:
     # When set, photos bytes are not kept in memory.  Defaults to empty list
     # for backward compatibility with existing in-memory submissions.
     photo_keys: List[str] = field(default_factory=list)
+    assigned_to_user_id: Optional[int] = None
+    assigned_to_name: Optional[str] = None
+    assigned_at: Optional[datetime] = None
 
 
 class SubmissionStore:
@@ -97,6 +100,12 @@ class SubmissionStore:
                 ids = self._dashboard_index.get(sub.dashboard_id, [])
                 if submission_id in ids:
                     ids.remove(submission_id)
+
+    def save(self, submission: Submission):
+        """Update an existing submission in-place (e.g. to persist assignment changes)."""
+        with self._lock:
+            if submission.submission_id in self._store:
+                self._store[submission.submission_id] = submission
     
     def purge_dashboard(self, dashboard_id: int):
         with self._lock:
