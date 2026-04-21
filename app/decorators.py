@@ -84,3 +84,22 @@ def increment_submissions(user_id: int):
     usage = _get_or_create_plan_usage(user_id, month)
     usage.total_submissions += 1
     db.session.commit()
+
+
+def can_create_custom_template(user):
+    """Check if user can create a custom template.
+
+    Returns (allowed: bool, error_message: str | None).
+    """
+    if user.plan_type not in ('premium', 'trial'):
+        return False, "Recurso disponível apenas para usuários Premium"
+
+    from app.models import CustomIntakeTemplate
+    count = CustomIntakeTemplate.query.filter_by(
+        user_id=user.id, is_active=True
+    ).count()
+
+    if count >= 5:
+        return False, "Limite de 5 templates personalizados atingido"
+
+    return True, None

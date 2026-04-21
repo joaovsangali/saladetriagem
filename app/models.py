@@ -77,6 +77,18 @@ class PoliceUser(UserMixin, db.Model):
         }
 
 
+class CustomIntakeTemplate(db.Model):
+    __tablename__ = "custom_intake_templates"
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("police_users.id"), nullable=False)
+    name = db.Column(db.String(200), nullable=False)
+    schema = db.Column(db.JSON, nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    is_active = db.Column(db.Boolean, default=True)
+
+    user = db.relationship("PoliceUser", backref="custom_templates")
+
+
 class DashboardSession(db.Model):
     __tablename__ = "dashboard_sessions"
     id = db.Column(db.Integer, primary_key=True)
@@ -86,9 +98,14 @@ class DashboardSession(db.Model):
     expires_at = db.Column(db.DateTime, nullable=False)
     is_active = db.Column(db.Boolean, default=True)
     join_code = db.Column(db.String(6), unique=True, nullable=True, index=True)
+    intake_type = db.Column(db.String(20), default="police")  # "police" or "custom"
+    custom_template_id = db.Column(
+        db.Integer, db.ForeignKey("custom_intake_templates.id"), nullable=True
+    )
 
     links = db.relationship("IntakeLink", backref="session", lazy="dynamic")
     logs = db.relationship("MinimalLogEntry", backref="session", lazy="dynamic")
+    custom_template = db.relationship("CustomIntakeTemplate")
     
     @staticmethod
     def make_expires_at():
