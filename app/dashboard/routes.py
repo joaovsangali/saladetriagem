@@ -1,6 +1,7 @@
 # app/dashboard/routes.py
 
 import io
+import logging
 import re
 import secrets
 from datetime import datetime, timezone
@@ -18,6 +19,8 @@ from app.store import submission_store
 from app.schemas.crime_types import DEFAULT_FORM_SCHEMA
 from app.utils.access_control import can_access_session
 from app.utils.plan_helpers import can_share_session, can_join_shared_session, can_create_custom_schema
+
+logger = logging.getLogger(__name__)
 
 
 def _persist_pending_submissions(session: DashboardSession, *, status: str = "received") -> int:
@@ -223,6 +226,11 @@ def new_session():
                 session.join_code = code
                 db.session.commit()
                 break
+        else:
+            logger.warning(
+                "Failed to generate unique join_code for session %s (user %s) after 10 attempts",
+                session.id, current_user.id,
+            )
 
     # Track usage
     increment_sessions_created(current_user.id)

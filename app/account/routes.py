@@ -22,6 +22,7 @@ def index():
     month = datetime.now(timezone.utc).strftime('%Y-%m')
     usage = PlanUsage.query.filter_by(user_id=current_user.id, month=month).first()
     sessions_used = usage.sessions_created if usage else 0
+    sessions_remaining = max(limits['max_sessions_per_month'] - sessions_used, 0)
 
     # Active sessions for this user
     active_sessions = (
@@ -39,6 +40,7 @@ def index():
         active_sessions=active_sessions,
         current_token=current_token,
         sessions_used=sessions_used,
+        sessions_remaining=sessions_remaining,
     )
 
 

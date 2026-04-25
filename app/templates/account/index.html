@@ -43,7 +43,7 @@
         <div class="mt-3 p-2 bg-light rounded">
           <span class="small fw-semibold">Triagens restantes este mês:</span>
           <span class="small ms-1">
-            {{ [limits.max_sessions_per_month - sessions_used, 0]|max }} / {{ limits.max_sessions_per_month }}
+            {{ sessions_remaining }} / {{ limits.max_sessions_per_month }}
           </span>
           <div class="progress mt-1" style="height: 6px;">
             {% set pct = [(sessions_used / limits.max_sessions_per_month * 100)|int, 100]|min %}

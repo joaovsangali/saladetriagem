@@ -515,6 +515,7 @@ async function copyJoinCode() {
     if (navigator.clipboard && window.isSecureContext) {
       await navigator.clipboard.writeText(code);
     } else {
+      // Legacy fallback for non-secure contexts (deprecated but still supported)
       const ta = document.createElement('textarea');
       ta.value = code;
       document.body.appendChild(ta);
