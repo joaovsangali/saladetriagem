@@ -16,11 +16,13 @@
           <div class="alert alert-{{ trial_info.warning_level }} py-2 small mb-2">
             Seu trial expira em {{ trial_info.ends_at|datefmt }}.
           </div>
+        {% elif current_user.plan_type == 'enterprise' %}
+          <p><span class="badge bg-dark">Enterprise</span></p>
         {% elif current_user.plan_type == 'premium' %}
           <p><span class="badge bg-success">Premium</span></p>
         {% else %}
           <p><span class="badge bg-secondary">Grátis</span></p>
-          <p class="small text-muted">Faça upgrade para Premium para acesso ilimitado às fotos e mais triagens.</p>
+          <p class="small text-muted">Faça upgrade para Premium ou Enterprise para mais triagens e recursos.</p>
         {% endif %}
         <p class="small">Plano atual: <strong>{{ current_user.plan_type|upper }}</strong>
           <a href="{{ url_for('plans.index') }}" class="ms-2">Ver planos</a>
@@ -33,8 +35,22 @@
             <tr><td>Duração máx. triagem</td><td>{{ limits.max_session_duration_hours }}h</td></tr>
             <tr><td>Submissões/triagem</td><td>{{ limits.max_submissions_per_session }}</td></tr>
             <tr><td>Visualizar fotos</td><td>{% if limits.can_view_photos %}✅{% else %}❌{% endif %}</td></tr>
+            <tr><td>Compartilhamento</td><td>{% if limits.can_share_session %}✅{% elif limits.can_join_shared_session %}Entrar apenas{% else %}❌{% endif %}</td></tr>
+            <tr><td>Modelos personalizados</td><td>{% if limits.can_create_custom_schema %}✅{% else %}❌{% endif %}</td></tr>
           </tbody>
         </table>
+
+        <div class="mt-3 p-2 bg-light rounded">
+          <span class="small fw-semibold">Triagens restantes este mês:</span>
+          <span class="small ms-1">
+            {{ sessions_remaining }} / {{ limits.max_sessions_per_month }}
+          </span>
+          <div class="progress mt-1" style="height: 6px;">
+            {% set pct = [(sessions_used / limits.max_sessions_per_month * 100)|int, 100]|min %}
+            <div class="progress-bar {% if pct >= 90 %}bg-danger{% elif pct >= 70 %}bg-warning{% else %}bg-success{% endif %}"
+                 style="width: {{ pct }}%"></div>
+          </div>
+        </div>
       </div>
     </div>
   </div>

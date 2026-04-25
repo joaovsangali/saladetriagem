@@ -75,32 +75,22 @@
   </div>
 
   <div class="col-md-6">
-    {% if role == 'owner' and current_user.plan_type in ['trial', 'premium'] and session.is_active %}
+    {% if role == 'owner' and session.is_active %}
+    {% if user_can_share %}
     <div class="card mb-3">
       <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="mb-0"><i class="bi bi-share"></i> Compartilhamento</h5>
-        <button class="btn btn-sm btn-primary" onclick="generateJoinCode()">
-          <i class="bi bi-key"></i> Gerar Código
-        </button>
+        <span><i class="bi bi-share"></i> Compartilhamento</span>
+        {% if session.join_code %}
+        <div class="d-flex align-items-center gap-2">
+          <span id="join-code-text" class="font-monospace fw-bold" style="letter-spacing: 0.2em;">{{ session.join_code }}</span>
+          <button class="btn btn-sm btn-outline-secondary" type="button" onclick="copyJoinCode()">
+            <i class="bi bi-clipboard"></i> Copiar
+          </button>
+        </div>
+        {% endif %}
       </div>
       <div class="card-body">
-        <div id="join-code-display" style="display:none;">
-          <div class="alert alert-success mb-2">
-            <div class="d-flex justify-content-between align-items-center">
-              <div>
-                <strong>Código de Acesso:</strong><br>
-                <span id="join-code-text" class="fs-3 font-monospace" style="letter-spacing: 0.3em;"></span>
-              </div>
-              <button class="btn btn-outline-secondary btn-sm" onclick="copyJoinCode()">
-                <i class="bi bi-clipboard"></i> Copiar
-              </button>
-            </div>
-            <small class="text-muted d-block mt-2">
-              Compartilhe este código com outros policiais para colaborarem nesta triagem.
-            </small>
-          </div>
-        </div>
-        <h6 class="mt-2 mb-2">
+        <h6 class="mb-2">
           <i class="bi bi-people"></i> Colaboradores Ativos
           <span class="badge bg-secondary" id="collaborators-count">0</span>
         </h6>
@@ -109,6 +99,20 @@
         </ul>
       </div>
     </div>
+    {% else %}
+    <div class="card mb-3">
+      <div class="card-header">
+        <span><i class="bi bi-share"></i> Compartilhamento</span>
+      </div>
+      <div class="card-body">
+        <p class="text-muted small mb-0">
+          <i class="bi bi-lock-fill me-1"></i>
+          Disponível no plano Enterprise.
+          <a href="{{ url_for('plans.index') }}" class="ms-1">Ver planos</a>
+        </p>
+      </div>
+    </div>
+    {% endif %}
     {% else %}
     <div class="card">
       <div class="card-header">Resumo</div>
@@ -127,7 +131,7 @@
   </div>
 </div>
 
-{% if role == 'owner' and current_user.plan_type in ['trial', 'premium'] and session.is_active %}
+{% if role == 'owner' and user_can_share and session.is_active %}
 <div class="mb-2">
   <p class="mb-1 small"><strong>Triagens pendentes:</strong> <span id="pending-count">{{ submissions|length }}</span></p>
   <p class="mb-1 small d-inline"><strong>Registros finalizados:</strong> {{ logs|length }}</p>
@@ -151,25 +155,6 @@
   {% for sub in submissions %}
   <div class="card mb-2" id="sub-{{ sub.submission_id }}">
     <div class="card-body py-2 px-3">
-
-      <!-- Assignment checkbox -->
-      <div class="form-check mb-1">
-        <input class="form-check-input" type="checkbox"
-               id="assign-{{ sub.submission_id }}"
-               data-sub-id="{{ sub.submission_id }}"
-               {% if sub.assigned_to_user_id == current_user.id %}checked{% endif %}
-               {% if sub.assigned_to_user_id and sub.assigned_to_user_id != current_user.id %}disabled{% endif %}
-               onchange="toggleAssign('{{ sub.submission_id }}', this)">
-        <label class="form-check-label" for="assign-{{ sub.submission_id }}">
-          {% if sub.assigned_to_user_id %}
-            <span class="badge bg-info">
-              <i class="bi bi-person-check"></i> {{ sub.assigned_to_name }}
-            </span>
-          {% else %}
-            <span class="text-muted small">Marcar como em atendimento</span>
-          {% endif %}
-        </label>
-      </div>
 
       <div class="d-flex justify-content-between align-items-center">
         <div>
@@ -523,33 +508,21 @@ function refreshSubmissions() {
 }
 
 // ===== COLABORADORES =====
-async function generateJoinCode() {
-  try {
-    const res = await fetch(`/dashboard/sessions/${SESSION_ID}/generate-code`, {
-      method: 'POST',
-      headers: {'X-CSRFToken': CSRF_TOKEN}
-    });
-
-    if (!res.ok) {
-      const err = await res.json();
-      alert('Erro ao gerar código: ' + (err.error || res.statusText));
-      return;
-    }
-
-    const data = await res.json();
-    document.getElementById('join-code-text').textContent = data.join_code;
-    document.getElementById('join-code-display').style.display = 'block';
-
-    loadCollaborators();
-  } catch (err) {
-    alert('Erro ao gerar código: ' + err.message);
-  }
-}
-
 async function copyJoinCode() {
-  const code = document.getElementById('join-code-text').textContent;
+  const el = document.getElementById('join-code-text');
+  const code = el ? el.textContent.trim() : '';
   try {
-    await navigator.clipboard.writeText(code);
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(code);
+    } else {
+      // Legacy fallback for non-secure contexts (deprecated but still supported)
+      const ta = document.createElement('textarea');
+      ta.value = code;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    }
     alert('Código copiado!');
   } catch (err) {
     prompt('Copie este código:', code);
@@ -605,44 +578,13 @@ async function removeCollab(userId) {
   }
 }
 
-// ===== ATRIBUIÇÃO DE SUBMISSÕES =====
-async function toggleAssign(subId, checkbox) {
-  try {
-    const res = await fetch(`/api/sessions/${SESSION_ID}/submissions/${subId}/assign`, {
-      method: 'POST',
-      headers: {'X-CSRFToken': CSRF_TOKEN}
-    });
-
-    const data = await res.json();
-
-    const label = checkbox.nextElementSibling;
-    if (data.status === 'assigned') {
-      label.innerHTML = `<span class="badge bg-info"><i class="bi bi-person-check"></i> ${data.assigned_to_name}</span>`;
-      checkbox.checked = true;
-    } else {
-      label.innerHTML = '<span class="text-muted small">Marcar como em atendimento</span>';
-      checkbox.checked = false;
-    }
-
-    refreshSubmissions();
-  } catch (err) {
-    console.error('Erro ao marcar submissão:', err);
-    checkbox.checked = !checkbox.checked;
-  }
-}
-
 {% if session.is_active %}
 setInterval(refreshSubmissions, 30000);
 {% endif %}
 
-{% if role == 'owner' and session.join_code %}
+{% if role == 'owner' and user_can_share and session.join_code %}
 document.addEventListener('DOMContentLoaded', () => {
-  const el = document.getElementById('join-code-text');
-  if (el) {
-    el.textContent = "{{ session.join_code }}";
-    document.getElementById('join-code-display').style.display = 'block';
-    loadCollaborators();
-  }
+  loadCollaborators();
 });
 {% endif %}
 </script>

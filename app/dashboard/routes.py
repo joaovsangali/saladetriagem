@@ -1,6 +1,7 @@
 # app/dashboard/routes.py
 
 import io
+import logging
 import re
 import secrets
 from datetime import datetime, timezone
@@ -17,6 +18,9 @@ from app.models import (
 from app.store import submission_store
 from app.schemas.crime_types import DEFAULT_FORM_SCHEMA
 from app.utils.access_control import can_access_session
+from app.utils.plan_helpers import can_share_session, can_join_shared_session, can_create_custom_schema
+
+logger = logging.getLogger(__name__)
 
 
 def _persist_pending_submissions(session: DashboardSession, *, status: str = "received") -> int:
@@ -175,8 +179,8 @@ def new_session():
     custom_template_id = None
 
     if intake_type == "custom":
-        if current_user.plan_type not in ('premium', 'trial'):
-            flash("Templates personalizados são exclusivos para usuários Premium.", "warning")
+        if not can_create_custom_schema(current_user):
+            flash("Templates personalizados são exclusivos para usuários Enterprise.", "warning")
             return redirect(url_for("dashboard.index"))
         raw_template_id = request.form.get("custom_template_id", "").strip()
         if not raw_template_id:
@@ -213,6 +217,20 @@ def new_session():
     )
     db.session.add(link)
     db.session.commit()
+
+    # Auto-generate join_code for Enterprise users
+    if can_share_session(current_user):
+        for _ in range(10):
+            code = secrets.token_hex(3).upper()
+            if not DashboardSession.query.filter_by(join_code=code).first():
+                session.join_code = code
+                db.session.commit()
+                break
+        else:
+            logger.warning(
+                "Failed to generate unique join_code for session %s (user %s) after 10 attempts",
+                session.id, current_user.id,
+            )
 
     # Track usage
     increment_sessions_created(current_user.id)
@@ -262,6 +280,8 @@ def session_detail(session_id):
         submissions=submissions,
         logs=logs,
         schema=schema,
+        user_can_share=can_share_session(current_user),
+        user_can_join=can_join_shared_session(current_user),
     )
 
 @dashboard_bp.route("/sessions/<int:session_id>/close", methods=["POST"])
@@ -399,15 +419,15 @@ def my_audit_log():
 @dashboard_bp.route("/sessions/join", methods=["GET", "POST"])
 @login_required
 def join_session():
-    """Permite usuário Premium/Trial entrar em sessão via join_code."""
+    """Permite usuário Premium/Enterprise entrar em sessão via join_code."""
     if request.method == "POST":
         code = request.form.get("join_code", "").strip().upper()
 
         # Validar plano (FREE não pode)
-        if current_user.plan_type == 'free':
+        if not can_join_shared_session(current_user):
             flash(
                 "Usuários do plano Free não podem participar de triagens compartilhadas. "
-                "Faça upgrade para Trial ou Premium.",
+                "Faça upgrade para Premium ou Enterprise.",
                 "warning"
             )
             return redirect(url_for("plans.index"))
@@ -455,14 +475,14 @@ def join_session():
 @dashboard_bp.route("/sessions/<int:session_id>/generate-code", methods=["POST"])
 @login_required
 def generate_join_code(session_id):
-    """Gera (ou regenera) join_code único de 6 caracteres. OWNER ONLY."""
+    """Gera (ou regenera) join_code único de 6 caracteres. OWNER ONLY. Enterprise apenas."""
     session = DashboardSession.query.get_or_404(session_id)
 
     if session.user_id != current_user.id:
         abort(403)
 
-    if current_user.plan_type not in ['trial', 'premium']:
-        return jsonify({"error": "Apenas usuários Premium podem compartilhar triagens"}), 403
+    if not can_share_session(current_user):
+        return jsonify({"error": "Apenas usuários Enterprise podem compartilhar triagens"}), 403
 
     max_attempts = 10
     for _ in range(max_attempts):
@@ -517,8 +537,8 @@ def remove_collaborator(session_id, user_id):
 @dashboard_bp.route("/custom-templates")
 @login_required
 def list_custom_templates():
-    if current_user.plan_type not in ('premium', 'trial'):
-        flash("Modelos personalizados são exclusivos para usuários Premium.", "warning")
+    if not can_create_custom_schema(current_user):
+        flash("Modelos personalizados são exclusivos para usuários Enterprise.", "warning")
         return redirect(url_for("dashboard.index"))
     templates = CustomIntakeTemplate.query.filter_by(
         user_id=current_user.id, is_active=True

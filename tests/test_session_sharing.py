@@ -199,9 +199,9 @@ def test_collaborator_cannot_close_session(app, client):
 
 
 def test_owner_can_generate_join_code(app, client):
-    """Owner pode gerar um join_code para sua sessão."""
+    """Enterprise owner pode gerar um join_code para sua sessão."""
     with app.app_context():
-        owner = _make_user("owner6@test.com", "Owner6", plan_type="premium")
+        owner = _make_user("owner6@test.com", "Owner6", plan_type="enterprise")
         sess = _make_session(owner.id)
         sess_id = sess.id
 
@@ -211,6 +211,18 @@ def test_owner_can_generate_join_code(app, client):
     data = response.get_json()
     assert "join_code" in data
     assert len(data["join_code"]) == 6
+
+
+def test_premium_cannot_generate_join_code(app, client):
+    """Premium user não pode gerar join_code (apenas Enterprise)."""
+    with app.app_context():
+        owner = _make_user("ownerprem@test.com", "OwnerPrem", plan_type="premium")
+        sess = _make_session(owner.id)
+        sess_id = sess.id
+
+    _login(client, "ownerprem@test.com")
+    response = client.post(f"/dashboard/sessions/{sess_id}/generate-code")
+    assert response.status_code == 403
 
 
 def test_owner_can_remove_collaborator(app, client):
@@ -242,8 +254,8 @@ def test_owner_can_remove_collaborator(app, client):
         assert SessionCollaborator.query.get(collab_id) is None
 
 
-def test_collaborator_can_assign_submission(app, client):
-    """Colaborador pode marcar submissão como em atendimento."""
+def test_assign_submission_endpoint_removed(app, client):
+    """O endpoint de atribuição de submissão foi removido (feature removida)."""
     with app.app_context():
         owner = _make_user("owner8@test.com", "Owner8", plan_type="premium")
         collab_user = _make_user("collab5@test.com", "Collab5", plan_type="premium")
@@ -278,9 +290,7 @@ def test_collaborator_can_assign_submission(app, client):
     response = client.post(
         f"/api/sessions/{sess_id}/submissions/test-assign-001/assign"
     )
-    assert response.status_code == 200
-    data = response.get_json()
-    assert data["status"] == "assigned"
-    assert data["assigned_to_name"] == "Collab5"
+    # Endpoint has been removed — should return 404 or 405
+    assert response.status_code in (404, 405)
 
     submission_store.delete("test-assign-001")
