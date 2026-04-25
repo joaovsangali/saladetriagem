@@ -5,7 +5,7 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h4 class="mb-0">Minhas Triagens</h4>
   <div class="d-flex gap-2">
-    {% if current_user.plan_type in ['premium', 'trial'] %}
+    {% if current_user.plan_type == 'enterprise' %}
     <a href="{{ url_for('dashboard.list_custom_templates') }}" class="btn btn-outline-secondary btn-sm">
       <i class="bi bi-layout-text-window-reverse"></i> Modelos Personalizados
     </a>
@@ -94,15 +94,15 @@
             <label class="form-label">Tipo de triagem</label>
             <select class="form-select" name="intake_type" id="intake_type" onchange="toggleCustomTemplate()">
               <option value="police" selected>Triagem Policial</option>
-              {% if current_user.plan_type in ['premium', 'trial'] %}
+              {% if current_user.plan_type == 'enterprise' %}
               <option value="custom">Triagem Personalizada</option>
               {% endif %}
             </select>
-            {% if current_user.plan_type not in ['premium', 'trial'] %}
-            <div class="form-text text-muted">Outros tipos de triagem disponíveis no plano Premium.</div>
+            {% if current_user.plan_type != 'enterprise' %}
+            <div class="form-text text-muted">Tipos personalizados de triagem disponíveis no plano Enterprise.</div>
             {% endif %}
           </div>
-          {% if current_user.plan_type in ['premium', 'trial'] %}
+          {% if current_user.plan_type == 'enterprise' %}
           <div class="mb-3" id="custom-template-select" style="display:none;">
             <label class="form-label">Modelo Personalizado</label>
             <select class="form-select" name="custom_template_id" id="custom_template_id">

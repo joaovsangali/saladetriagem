@@ -30,8 +30,6 @@ def list_submissions(session_id):
         "guest_name": s.guest_name,
         "crime_type": s.crime_type,
         "received_at": s.received_at.isoformat(),
-        "assigned_to_user_id": s.assigned_to_user_id,
-        "assigned_to_name": s.assigned_to_name,
     } for s in subs])
 
 @api_bp.route("/sessions/<int:session_id>/submissions/<submission_id>")
@@ -70,9 +68,6 @@ def get_submission(session_id, submission_id):
         "photo_count": len(photo_keys) + len(sub.photos),
         "structured": structured,
         "text": text,
-        "assigned_to_user_id": sub.assigned_to_user_id,
-        "assigned_to_name": sub.assigned_to_name,
-        "assigned_at": sub.assigned_at.isoformat() if sub.assigned_at else None,
     })
 
 @api_bp.route("/sessions/<int:session_id>/submissions/<submission_id>/close", methods=["POST"])
@@ -187,37 +182,3 @@ def get_photo(session_id, submission_id, index):
     )
 
 
-@api_bp.route("/sessions/<int:session_id>/submissions/<submission_id>/assign", methods=["POST"])
-@login_required
-def assign_submission(session_id, submission_id):
-    """Marca/desmarca submissão como 'em atendimento' pelo usuário atual."""
-    session = DashboardSession.query.get_or_404(session_id)
-
-    can_access, role = can_access_session(current_user, session)
-    if not can_access:
-        abort(403)
-
-    sub = submission_store.get(submission_id)
-    if not sub or sub.dashboard_id != session_id:
-        abort(404)
-
-    # Toggle: se já está atribuído ao current_user, remove
-    if sub.assigned_to_user_id == current_user.id:
-        sub.assigned_to_user_id = None
-        sub.assigned_to_name = None
-        sub.assigned_at = None
-        status = "unassigned"
-    else:
-        # Atribuir ao current_user (sobrescreve atribuição anterior)
-        sub.assigned_to_user_id = current_user.id
-        sub.assigned_to_name = current_user.display_name
-        sub.assigned_at = datetime.now(timezone.utc)
-        status = "assigned"
-
-    submission_store.save(sub)
-
-    return jsonify({
-        "status": status,
-        "assigned_to_name": sub.assigned_to_name,
-        "assigned_to_user_id": sub.assigned_to_user_id
-    })

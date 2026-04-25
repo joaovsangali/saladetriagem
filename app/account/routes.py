@@ -8,7 +8,7 @@ from flask_login import login_required, current_user
 from app.account import account_bp
 from app.account.forms import ChangePasswordForm
 from app.extensions import db
-from app.models import UserSession
+from app.models import UserSession, PlanUsage
 from app.plans import PLANS
 
 
@@ -17,6 +17,11 @@ from app.plans import PLANS
 def index():
     limits = current_user.get_current_plan_limits()
     trial_info = current_user.get_trial_info()
+
+    # Monthly usage counter
+    month = datetime.now(timezone.utc).strftime('%Y-%m')
+    usage = PlanUsage.query.filter_by(user_id=current_user.id, month=month).first()
+    sessions_used = usage.sessions_created if usage else 0
 
     # Active sessions for this user
     active_sessions = (
@@ -33,6 +38,7 @@ def index():
         plans=PLANS,
         active_sessions=active_sessions,
         current_token=current_token,
+        sessions_used=sessions_used,
     )
 
 

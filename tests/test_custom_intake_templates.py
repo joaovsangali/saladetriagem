@@ -203,12 +203,22 @@ def test_can_create_blocked_for_free_user(app):
         from app.decorators import can_create_custom_template
         allowed, msg = can_create_custom_template(user)
         assert allowed is False
-        assert "Premium" in msg
+        assert "Enterprise" in msg
 
 
-def test_can_create_allowed_for_premium(app):
+def test_can_create_blocked_for_premium_user(app):
+    """Premium users cannot create custom templates — Enterprise only."""
     with app.app_context():
         user = _make_user("prem@test.com", "Prem", plan_type="premium")
+        from app.decorators import can_create_custom_template
+        allowed, msg = can_create_custom_template(user)
+        assert allowed is False
+        assert "Enterprise" in msg
+
+
+def test_can_create_allowed_for_enterprise(app):
+    with app.app_context():
+        user = _make_user("ent@test.com", "Ent", plan_type="enterprise")
         from app.decorators import can_create_custom_template
         allowed, msg = can_create_custom_template(user)
         assert allowed is True
@@ -217,7 +227,7 @@ def test_can_create_allowed_for_premium(app):
 
 def test_can_create_blocked_when_limit_reached(app):
     with app.app_context():
-        user = _make_user("lim@test.com", "Lim", plan_type="premium")
+        user = _make_user("lim@test.com", "Lim", plan_type="enterprise")
         for i in range(5):
             tpl = CustomIntakeTemplate(
                 user_id=user.id, name=f"T{i}", schema=_VALID_SCHEMA
@@ -235,26 +245,35 @@ def test_can_create_blocked_when_limit_reached(app):
 # Route tests (list, create, delete)
 # ---------------------------------------------------------------------------
 
-def test_list_custom_templates_requires_premium(app, client):
+def test_list_custom_templates_requires_enterprise(app, client):
     with app.app_context():
         _make_user("free2@test.com", "Free2", plan_type="free")
     _login(client, "free2@test.com")
     resp = client.get("/dashboard/custom-templates", follow_redirects=True)
-    assert b"Premium" in resp.data
+    assert b"Enterprise" in resp.data
 
 
-def test_list_custom_templates_premium_user(app, client):
+def test_list_custom_templates_premium_user_blocked(app, client):
+    """Premium users are redirected away from custom templates (Enterprise only)."""
     with app.app_context():
         _make_user("prem2@test.com", "Prem2", plan_type="premium")
     _login(client, "prem2@test.com")
+    resp = client.get("/dashboard/custom-templates", follow_redirects=True)
+    assert b"Enterprise" in resp.data
+
+
+def test_list_custom_templates_enterprise_user(app, client):
+    with app.app_context():
+        _make_user("ent2@test.com", "Ent2", plan_type="enterprise")
+    _login(client, "ent2@test.com")
     resp = client.get("/dashboard/custom-templates")
     assert resp.status_code == 200
 
 
 def test_create_template_get(app, client):
     with app.app_context():
-        _make_user("prem3@test.com", "Prem3", plan_type="premium")
-    _login(client, "prem3@test.com")
+        _make_user("ent3@test.com", "Ent3", plan_type="enterprise")
+    _login(client, "ent3@test.com")
     resp = client.get("/dashboard/custom-templates/create")
     assert resp.status_code == 200
 
@@ -262,8 +281,8 @@ def test_create_template_get(app, client):
 def test_create_template_post_valid(app, client):
     import json
     with app.app_context():
-        _make_user("prem4@test.com", "Prem4", plan_type="premium")
-    _login(client, "prem4@test.com")
+        _make_user("ent4@test.com", "Ent4", plan_type="enterprise")
+    _login(client, "ent4@test.com")
     resp = client.post(
         "/dashboard/custom-templates/create",
         data={
@@ -279,8 +298,8 @@ def test_create_template_post_valid(app, client):
 def test_create_template_post_invalid_schema(app, client):
     import json
     with app.app_context():
-        _make_user("prem5@test.com", "Prem5", plan_type="premium")
-    _login(client, "prem5@test.com")
+        _make_user("ent5@test.com", "Ent5", plan_type="enterprise")
+    _login(client, "ent5@test.com")
     bad_schema = {"fields": [{"id": "x", "label": "X", "type": "text"}]}
     resp = client.post(
         "/dashboard/custom-templates/create",
@@ -297,7 +316,7 @@ def test_create_template_post_invalid_schema(app, client):
 def test_delete_template(app, client):
     import json
     with app.app_context():
-        user = _make_user("prem6@test.com", "Prem6", plan_type="premium")
+        user = _make_user("ent6@test.com", "Ent6", plan_type="enterprise")
         tpl = CustomIntakeTemplate(
             user_id=user.id, name="ToDelete", schema=_VALID_SCHEMA
         )
@@ -305,7 +324,7 @@ def test_delete_template(app, client):
         _db.session.commit()
         tpl_id = tpl.id
 
-    _login(client, "prem6@test.com")
+    _login(client, "ent6@test.com")
     resp = client.post(
         f"/dashboard/custom-templates/{tpl_id}/delete",
         follow_redirects=True,
@@ -427,7 +446,7 @@ def test_custom_intake_submit_required_field_missing(app, client):
 def test_new_session_with_custom_template(app, client):
     import json
     with app.app_context():
-        user = _make_user("prem10@test.com", "Prem10", plan_type="premium")
+        user = _make_user("ent10@test.com", "Ent10", plan_type="enterprise")
         tpl = CustomIntakeTemplate(
             user_id=user.id, name="Custom Tpl", schema=_VALID_SCHEMA
         )
@@ -435,7 +454,7 @@ def test_new_session_with_custom_template(app, client):
         _db.session.commit()
         tpl_id = tpl.id
 
-    _login(client, "prem10@test.com")
+    _login(client, "ent10@test.com")
     resp = client.post(
         "/dashboard/sessions/new",
         data={

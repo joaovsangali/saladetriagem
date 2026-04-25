@@ -91,8 +91,9 @@ def can_create_custom_template(user):
 
     Returns (allowed: bool, error_message: str | None).
     """
-    if user.plan_type not in ('premium', 'trial'):
-        return False, "Recurso disponível apenas para usuários Premium"
+    from app.utils.plan_helpers import can_create_custom_schema
+    if not can_create_custom_schema(user):
+        return False, "Recurso disponível apenas para usuários Enterprise"
 
     from app.models import CustomIntakeTemplate
     count = CustomIntakeTemplate.query.filter_by(
