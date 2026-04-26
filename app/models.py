@@ -95,8 +95,9 @@ class DashboardSession(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("police_users.id"), nullable=False)
     label = db.Column(db.String(200), nullable=False)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
-    expires_at = db.Column(db.DateTime, nullable=False)
+    expires_at = db.Column(db.DateTime, nullable=True)
     is_active = db.Column(db.Boolean, default=True)
+    is_infinite = db.Column(db.Boolean, default=False)
     join_code = db.Column(db.String(6), unique=True, nullable=True, index=True)
     intake_type = db.Column(db.String(20), default="police")  # "police" or "custom"
     custom_template_id = db.Column(
@@ -113,7 +114,11 @@ class DashboardSession(db.Model):
     
     @property
     def is_expired(self):
+        if self.is_infinite:
+            return False
         expires = self.expires_at
+        if expires is None:
+            return False  # safeguard
         if expires.tzinfo is None:
             expires = expires.replace(tzinfo=timezone.utc)
         return datetime.now(timezone.utc) >= expires

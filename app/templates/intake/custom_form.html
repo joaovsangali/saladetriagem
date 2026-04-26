@@ -7,7 +7,7 @@
       <div class="card-body">
         <h4 class="card-title mb-4">Triagem</h4>
 
-        <form method="POST" action="{{ url_for('intake.submit', token=token) }}">
+        <form method="POST" action="{{ url_for('intake.submit', token=token) }}" enctype="multipart/form-data">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
           {% for field in schema.get('fields', []) %}
@@ -47,6 +47,17 @@
           </div>
           {% endfor %}
 
+          {% if schema.get('allow_attachments', False) %}
+          <div class="mb-3">
+            <label class="form-label">Anexar imagens/documentos (opcional)</label>
+            <input type="file" name="photos" class="form-control" multiple
+                   accept="image/*,application/pdf"
+                   data-max-files="{{ max_uploads }}"
+                   onchange="validateFileCount(this, {{ max_uploads }})">
+            <div class="form-text text-muted">Máximo: {{ max_uploads }} arquivo(s). Formatos aceitos: imagens e PDF.</div>
+          </div>
+          {% endif %}
+
           <div class="d-grid mt-4">
             <button type="submit" class="btn btn-primary btn-lg">Enviar</button>
           </div>
@@ -55,4 +66,15 @@
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function validateFileCount(input, max) {
+  if (input.files.length > max) {
+    alert('Máximo de ' + max + ' arquivo(s) permitido(s).');
+    input.value = '';
+  }
+}
+</script>
 {% endblock %}

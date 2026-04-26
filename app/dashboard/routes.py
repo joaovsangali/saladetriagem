@@ -18,7 +18,7 @@ from app.models import (
 from app.store import submission_store
 from app.schemas.crime_types import DEFAULT_FORM_SCHEMA
 from app.utils.access_control import can_access_session
-from app.utils.plan_helpers import can_share_session, can_join_shared_session, can_create_custom_schema
+from app.utils.plan_helpers import can_share_session, can_join_shared_session, can_create_custom_schema, can_use_infinite_sessions
 
 logger = logging.getLogger(__name__)
 
@@ -163,17 +163,6 @@ def new_session():
 
     # Use duration from form, capped by plan limit
     max_hours = limits.get('max_session_duration_hours', 12)
-    try:
-        duration_hours = int(request.form.get('duration_hours', max_hours))
-    except (ValueError, TypeError):
-        duration_hours = max_hours
-
-    if duration_hours > max_hours:
-        flash(f'Duração excede o limite do seu plano ({max_hours}h).', 'danger')
-        return redirect(url_for("dashboard.index"))
-
-    duration_hours = max(1, min(duration_hours, max_hours))
-
     from datetime import timedelta
     intake_type = request.form.get("intake_type", "police")
     custom_template_id = None
@@ -200,10 +189,30 @@ def new_session():
     else:
         intake_type = "police"
 
+    # Handle infinite sessions: only Enterprise + Custom intake
+    is_infinite = False
+    expires_at = None
+    if can_use_infinite_sessions(current_user, intake_type) and request.form.get('is_infinite') == 'true':
+        is_infinite = True
+        expires_at = None
+    else:
+        try:
+            duration_hours = int(request.form.get('duration_hours', max_hours))
+        except (ValueError, TypeError):
+            duration_hours = max_hours
+
+        if duration_hours > max_hours:
+            flash(f'Duração excede o limite do seu plano ({max_hours}h).', 'danger')
+            return redirect(url_for("dashboard.index"))
+
+        duration_hours = max(1, min(duration_hours, max_hours))
+        expires_at = datetime.now(timezone.utc) + timedelta(hours=duration_hours)
+
     session = DashboardSession(
         user_id=current_user.id,
         label=label,
-        expires_at=datetime.now(timezone.utc) + timedelta(hours=duration_hours),
+        expires_at=expires_at,
+        is_infinite=is_infinite,
         intake_type=intake_type,
         custom_template_id=custom_template_id,
     )
@@ -575,6 +584,10 @@ def create_custom_template():
         if not valid:
             flash(f"Schema inválido: {err}", "danger")
             return render_template("dashboard/custom_template_create.html")
+
+        # Add allow_attachments flag to schema
+        allow_attachments = request.form.get("allow_attachments") == "true"
+        schema['allow_attachments'] = allow_attachments
 
         template = CustomIntakeTemplate(
             user_id=current_user.id,

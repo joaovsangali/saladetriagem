@@ -46,11 +46,15 @@ def form(token):
         template = session.custom_template
         if not template or not template.is_active:
             return render_template("intake/expired.html")
+        from app.utils.plan_helpers import get_max_uploads
+        owner = session.owner
+        max_uploads = get_max_uploads(owner) if owner else 3
         return render_template(
             "intake/custom_form.html",
             token=token,
             schema=template.schema,
             session=session,
+            max_uploads=max_uploads,
         )
 
     schema = link.form_schema or {}
@@ -135,6 +139,49 @@ def submit(token):
         if not guest_name:
             guest_name = "Anônimo"
 
+        # Handle file attachments for custom forms
+        custom_photos = []
+        custom_photo_keys = []
+        allow_attachments = bool(schema.get('allow_attachments', False))
+        files = request.files.getlist("photos")
+        non_empty_files = [f for f in files if f and f.filename]
+        if non_empty_files and not allow_attachments:
+            flash("Este formulário não permite envio de arquivos.", "danger")
+            return redirect(url_for("intake.form", token=token))
+
+        if allow_attachments and non_empty_files:
+            from app.utils.plan_helpers import get_max_uploads
+            max_uploads = get_max_uploads(owner) if owner else 3
+            if len(non_empty_files) > max_uploads:
+                flash(f"Máximo de {max_uploads} arquivos permitidos.", "danger")
+                return redirect(url_for("intake.form", token=token))
+            allowed_mime = {"image/jpeg", "image/png", "image/gif", "application/pdf"}
+            max_photo_size = _DEFAULT_MAX_PHOTO_SIZE_MB * 1024 * 1024
+            use_external_storage = (
+                current_app.config.get("STORAGE_BACKEND", "local") == "s3"
+                and getattr(current_app, "photo_storage", None) is not None
+            )
+            storage = getattr(current_app, "photo_storage", None) if use_external_storage else None
+            for f in non_empty_files[:max_uploads]:
+                if f.mimetype not in allowed_mime:
+                    continue
+                data = f.read(max_photo_size + 1)
+                if len(data) > max_photo_size:
+                    continue
+                if f.mimetype == "application/pdf":
+                    cleaned = data
+                else:
+                    cleaned = _strip_exif(data)
+                if storage is not None:
+                    try:
+                        key = storage.save(cleaned, f.filename or "photo.jpg")
+                        custom_photo_keys.append(key)
+                    except Exception as exc:
+                        logger.warning("S3 photo upload failed, keeping in memory: %s", exc)
+                        custom_photos.append(cleaned)
+                else:
+                    custom_photos.append(cleaned)
+
         sub = Submission(
             submission_id=str(uuid.uuid4()),
             dashboard_id=session.id,
@@ -147,7 +194,8 @@ def submit(token):
             answers=answers,
             narrative=None,
             crime_type="custom",
-            photos=[],
+            photos=custom_photos,
+            photo_keys=custom_photo_keys,
             received_at=datetime.now(timezone.utc),
         )
 
@@ -174,8 +222,14 @@ def submit(token):
     schema.setdefault("schema_version", 1)
 
     limits = schema.get("limits", {})
-    max_photos = limits.get("max_photos", 3)
     max_photo_size = limits.get("max_photo_size_mb", _DEFAULT_MAX_PHOTO_SIZE_MB) * 1024 * 1024
+
+    # Upload limit: use plan-based limit for the session owner, falling back to schema/default
+    from app.utils.plan_helpers import get_max_uploads
+    if owner:
+        max_photos = get_max_uploads(owner)
+    else:
+        max_photos = limits.get("max_photos", 3)
 
     crime_type = request.form.get("crime_type", "outros")
     guest_name = request.form.get("guest_name", "").strip()
@@ -288,6 +342,10 @@ def submit(token):
     photos = []
     photo_keys = []
     files = request.files.getlist("photos")
+    non_empty_files = [f for f in files if f and f.filename]
+    if len(non_empty_files) > max_photos:
+        flash(f"Máximo de {max_photos} arquivos permitidos.", "danger")
+        return redirect(url_for("intake.form", token=token))
     allowed_mime = {"image/jpeg", "image/png", "image/gif", "application/pdf"}
     # Only externalise photos to storage when the backend is S3.
     # For local mode the existing in-memory / Redis path is preserved so that
