@@ -35,14 +35,16 @@ def upgrade():
 
 def downgrade():
     with op.batch_alter_table('dashboard_sessions', schema=None) as batch_op:
-        # Restore expires_at to non-nullable
-        # First fill any NULLs to avoid constraint violation
+        batch_op.drop_column('is_infinite')
+        # Restore expires_at to non-nullable.
+        # NOTE: any rows that were created as infinite (expires_at IS NULL)
+        # will be set to the session's created_at time, which is a safe
+        # fallback to ensure the column constraint is satisfied.
         op.execute(
-            "UPDATE dashboard_sessions SET expires_at = created_at + INTERVAL '12 hours' WHERE expires_at IS NULL"
+            "UPDATE dashboard_sessions SET expires_at = created_at WHERE expires_at IS NULL"
         )
         batch_op.alter_column(
             'expires_at',
             existing_type=sa.DateTime(),
             nullable=False,
         )
-        batch_op.drop_column('is_infinite')

@@ -18,6 +18,12 @@ from app.schemas.crime_types import CRIME_SCHEMAS
 logger = logging.getLogger(__name__)
 
 _DEFAULT_MAX_PHOTO_SIZE_MB = 3
+_ALLOWED_UPLOAD_MIME = frozenset({"image/jpeg", "image/png", "image/gif", "application/pdf"})
+
+
+def _non_empty_files(files):
+    """Return only non-empty file uploads (with a filename) from a file list."""
+    return [f for f in files if f and f.filename]
 
 
 def _strip_exif(image_bytes: bytes) -> bytes:
@@ -144,7 +150,7 @@ def submit(token):
         custom_photo_keys = []
         allow_attachments = bool(schema.get('allow_attachments', False))
         files = request.files.getlist("photos")
-        non_empty_files = [f for f in files if f and f.filename]
+        non_empty_files = _non_empty_files(files)
         if non_empty_files and not allow_attachments:
             flash("Este formulário não permite envio de arquivos.", "danger")
             return redirect(url_for("intake.form", token=token))
@@ -155,7 +161,6 @@ def submit(token):
             if len(non_empty_files) > max_uploads:
                 flash(f"Máximo de {max_uploads} arquivos permitidos.", "danger")
                 return redirect(url_for("intake.form", token=token))
-            allowed_mime = {"image/jpeg", "image/png", "image/gif", "application/pdf"}
             max_photo_size = _DEFAULT_MAX_PHOTO_SIZE_MB * 1024 * 1024
             use_external_storage = (
                 current_app.config.get("STORAGE_BACKEND", "local") == "s3"
@@ -163,7 +168,7 @@ def submit(token):
             )
             storage = getattr(current_app, "photo_storage", None) if use_external_storage else None
             for f in non_empty_files[:max_uploads]:
-                if f.mimetype not in allowed_mime:
+                if f.mimetype not in _ALLOWED_UPLOAD_MIME:
                     continue
                 data = f.read(max_photo_size + 1)
                 if len(data) > max_photo_size:
@@ -342,11 +347,10 @@ def submit(token):
     photos = []
     photo_keys = []
     files = request.files.getlist("photos")
-    non_empty_files = [f for f in files if f and f.filename]
+    non_empty_files = _non_empty_files(files)
     if len(non_empty_files) > max_photos:
         flash(f"Máximo de {max_photos} arquivos permitidos.", "danger")
         return redirect(url_for("intake.form", token=token))
-    allowed_mime = {"image/jpeg", "image/png", "image/gif", "application/pdf"}
     # Only externalise photos to storage when the backend is S3.
     # For local mode the existing in-memory / Redis path is preserved so that
     # the API can serve photos directly without an extra disk read.
@@ -358,7 +362,7 @@ def submit(token):
     for f in files[:max_photos]:
         if not f or not f.filename:
             continue
-        if f.mimetype not in allowed_mime:
+        if f.mimetype not in _ALLOWED_UPLOAD_MIME:
             continue
         data = f.read(max_photo_size + 1)
         if len(data) > max_photo_size:
