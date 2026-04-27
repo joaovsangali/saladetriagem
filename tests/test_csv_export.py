@@ -158,7 +158,7 @@ def test_export_session_csv_non_owner(app, client):
 
 
 def test_export_individual_submission_csv_removed(app, client):
-    """Individual submission CSV route no longer exists (404/405)."""
+    """Individual submission CSV route was removed — returns 404."""
     with app.app_context():
         user = _make_user("owner7@csv.com", "Owner7")
         sess = DashboardSession(

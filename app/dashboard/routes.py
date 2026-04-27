@@ -698,17 +698,16 @@ def export_session_csv(session_id):
     # Collect active submissions (in-memory) — only available when session is active
     active_subs = submission_store.list_for_dashboard(session.id) if session.is_active else []
 
-    # Gather all answer keys across active submissions to build dynamic columns
-    seen_keys: list = []
-    seen_keys_set: set = set()
+    # Gather all answer keys across active submissions to build dynamic columns.
+    # Use a dict to maintain insertion order while allowing O(1) duplicate check.
+    seen_keys: dict = {}
     for sub in active_subs:
         for key in (sub.answers or {}):
-            if key not in seen_keys_set:
-                seen_keys.append(key)
-                seen_keys_set.add(key)
+            if key not in seen_keys:
+                seen_keys[key] = None
 
     # Header: base columns + dynamic answer columns
-    header = ['ID', 'Nome', 'Tipo', 'Status', 'Recebido em'] + seen_keys
+    header = ['ID', 'Nome', 'Tipo', 'Status', 'Recebido em'] + list(seen_keys)
     rows = [header]
 
     # Active submissions — full data including answers

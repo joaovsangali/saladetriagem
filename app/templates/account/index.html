@@ -72,7 +72,7 @@
               {{ current_user.phone or '—' }}
               <span class="badge bg-warning text-dark ms-1">Não verificado</span>
               <button type="button" class="btn btn-sm btn-outline-secondary ms-2"
-                      onclick="document.getElementById('phone-display').classList.add('d-none'); document.getElementById('phone-edit').classList.remove('d-none');">
+                      onclick="togglePhoneEdit(true)">
                 Atualizar telefone
               </button>
             </span>
@@ -85,7 +85,7 @@
                          placeholder="Ex: 11999999999" required>
                   <button type="submit" class="btn btn-primary">Salvar</button>
                   <button type="button" class="btn btn-outline-secondary"
-                          onclick="document.getElementById('phone-edit').classList.add('d-none'); document.getElementById('phone-display').classList.remove('d-none');">
+                          onclick="togglePhoneEdit(false)">
                     Cancelar
                   </button>
                 </div>
@@ -165,4 +165,13 @@
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function togglePhoneEdit(show) {
+  document.getElementById('phone-display').classList.toggle('d-none', show);
+  document.getElementById('phone-edit').classList.toggle('d-none', !show);
+}
+</script>
 {% endblock %}
