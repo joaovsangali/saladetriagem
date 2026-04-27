@@ -643,7 +643,15 @@ function checkAndFixConditionsAfterSort() {
     }
   });
   if (fixed) {
-    alert('Uma ou mais dependências condicionais foram removidas porque a pergunta de referência foi movida para depois desta.');
+    var container = document.getElementById('fields-container');
+    if (container) {
+      var notice = document.createElement('div');
+      notice.className = 'alert alert-warning alert-dismissible py-2 small mb-2';
+      notice.innerHTML = '<i class="bi bi-exclamation-triangle me-1"></i>Uma ou mais dependências condicionais foram removidas porque a pergunta de referência foi movida para depois desta.' +
+        '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>';
+      container.insertBefore(notice, container.firstChild);
+      setTimeout(function() { if (notice.parentNode) notice.parentNode.removeChild(notice); }, 7000);
+    }
   }
 }
 

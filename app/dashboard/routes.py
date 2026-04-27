@@ -778,7 +778,7 @@ def upload_image():
     safe_name = f"form_{uuid.uuid4().hex}{ext}"
 
     key = storage.save(data, safe_name)
-    if not key:
+    if not key or not key.strip():
         return jsonify({"error": "Erro ao salvar imagem."}), 500
     serve_url = url_for("dashboard.serve_form_image", key=key, _external=False)
     return jsonify({"url": serve_url})
@@ -796,8 +796,11 @@ def serve_form_image(key):
     # For S3 (or any storage that provides a direct URL): redirect to it.
     if storage is not None:
         signed_url = storage.get_url(key)
-        if signed_url and signed_url.startswith(("https://", "http://")):
-            return redirect(signed_url)
+        if signed_url:
+            from urllib.parse import urlparse
+            parsed = urlparse(signed_url)
+            if parsed.scheme in ("http", "https") and parsed.netloc:
+                return redirect(signed_url)
 
     # For local storage: serve the file from UPLOAD_FOLDER.
     upload_folder = current_app.config.get("UPLOAD_FOLDER", "uploads")
