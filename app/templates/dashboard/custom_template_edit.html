@@ -16,7 +16,7 @@
            value="{{ template.name }}" required>
   </div>
 
-  <div class="mb-3">
+  <div class="mb-4">
     <div class="form-check">
       <input class="form-check-input" type="checkbox" name="allow_attachments" value="true"
              id="allow_attachments"
@@ -25,136 +25,26 @@
         Permitir envio de imagens/PDF neste formulário
       </label>
     </div>
-    <div class="form-text text-muted">Se habilitado, o formulário permitirá upload de arquivos (imagens e PDFs) conforme os limites do seu plano.</div>
-  </div>
-
-  <h5 class="mt-4">Campos do Formulário</h5>
-  <p class="text-muted small">Mínimo de 2 campos submetíveis.</p>
-
-  <!-- Existing fields are rendered from server data then enhanced by JS -->
-  <div id="fields-container">
-    {% for field in template.schema.get('fields', []) %}
-    {% set ftype = field.type %}
-    {% set cond = field.get('condition', {}) %}
-    <div class="card mb-2 field-card" data-index="{{ loop.index0 }}">
-      <div class="card-header py-1 px-3 bg-light d-flex justify-content-between align-items-center">
-        <span class="fw-semibold small">Campo {{ loop.index }}</span>
-        {% if loop.index0 < 2 %}
-        <button type="button" class="btn btn-outline-danger btn-sm remove-field" disabled title="Campo obrigatório">
-          <i class="bi bi-x"></i>
-        </button>
-        {% else %}
-        <button type="button" class="btn btn-outline-danger btn-sm remove-field">
-          <i class="bi bi-x"></i>
-        </button>
-        {% endif %}
-      </div>
-      <div class="card-body py-2 px-3">
-        <div class="row g-2">
-          <div class="col-md-4">
-            <label class="form-label small mb-1">Rótulo</label>
-            <input type="text" class="form-control form-control-sm field-label"
-                   value="{{ field.label }}" placeholder="Rótulo do campo" required>
-          </div>
-          <div class="col-md-3">
-            <label class="form-label small mb-1">Tipo</label>
-            <select class="form-select form-select-sm field-type" onchange="onTypeChange(this)">
-              <option value="text"           {% if ftype == 'text' %}selected{% endif %}>Texto</option>
-              <option value="email"          {% if ftype == 'email' %}selected{% endif %}>E-mail</option>
-              <option value="textarea"       {% if ftype == 'textarea' %}selected{% endif %}>Área de texto</option>
-              <option value="number"         {% if ftype == 'number' %}selected{% endif %}>Número</option>
-              <option value="date"           {% if ftype == 'date' %}selected{% endif %}>Data</option>
-              <option value="select"         {% if ftype == 'select' %}selected{% endif %}>Seleção (dropdown)</option>
-              <option value="radio"          {% if ftype == 'radio' %}selected{% endif %}>Múltipla escolha (radio)</option>
-              <option value="checkbox"       {% if ftype == 'checkbox' %}selected{% endif %}>Caixas de seleção</option>
-              <option value="scale"          {% if ftype == 'scale' %}selected{% endif %}>Escala (slider)</option>
-              <option value="section_header" {% if ftype == 'section_header' %}selected{% endif %}>Cabeçalho de seção</option>
-              <option value="image_display"  {% if ftype == 'image_display' %}selected{% endif %}>Imagem de exibição</option>
-            </select>
-          </div>
-          <div class="col-md-2 d-flex align-items-end">
-            <div class="form-check mb-1">
-              <input class="form-check-input field-required" type="checkbox"
-                     {% if field.required %}checked{% endif %}
-                     {% if ftype in ('section_header', 'image_display') %}disabled{% endif %}>
-              <label class="form-check-label small">Obrigatório</label>
-            </div>
-          </div>
-          <div class="col-md-3 d-flex align-items-end">
-            <input type="text" class="form-control form-control-sm field-placeholder"
-                   value="{{ field.get('placeholder', '') }}" placeholder="Placeholder (opcional)">
-          </div>
-        </div>
-        <!-- Options panel -->
-        {% set show_opts = ftype in ('select', 'radio', 'checkbox') %}
-        <div class="row g-2 mt-1 field-options-row" {% if not show_opts %}style="display:none;"{% endif %}>
-          <div class="col-12">
-            <label class="form-label small mb-1">Opções <span class="text-muted">(uma por linha; ou <code>rótulo|valor|url_imagem</code>)</span></label>
-            <textarea class="form-control form-control-sm field-options-textarea" rows="3">{% for opt in field.get('options', []) %}{% if opt is mapping %}{{ opt.label }}{% if opt.get('value') and opt.value != opt.label %}|{{ opt.value }}{% endif %}{% if opt.get('image_url') %}|{{ opt.image_url }}{% endif %}{% else %}{{ opt }}{% endif %}
-{% endfor %}</textarea>
-          </div>
-        </div>
-        <!-- Scale panel -->
-        {% set show_scale = ftype == 'scale' %}
-        <div class="row g-2 mt-1 field-scale-row" {% if not show_scale %}style="display:none;"{% endif %}>
-          <div class="col-md-3">
-            <label class="form-label small mb-1">Mínimo</label>
-            <input type="number" class="form-control form-control-sm field-scale-min" value="{{ field.get('min', 1) }}">
-          </div>
-          <div class="col-md-3">
-            <label class="form-label small mb-1">Máximo</label>
-            <input type="number" class="form-control form-control-sm field-scale-max" value="{{ field.get('max', 5) }}">
-          </div>
-          <div class="col-md-3">
-            <label class="form-label small mb-1">Passo</label>
-            <input type="number" class="form-control form-control-sm field-scale-step" value="{{ field.get('step', 1) }}" min="1">
-          </div>
-          <div class="col-md-3">
-            <label class="form-label small mb-1">Rótulo baixo</label>
-            <input type="text" class="form-control form-control-sm field-scale-low" value="{{ field.get('low_label', '') }}" placeholder="Ex: Ruim">
-          </div>
-          <div class="col-md-3">
-            <label class="form-label small mb-1">Rótulo alto</label>
-            <input type="text" class="form-control form-control-sm field-scale-high" value="{{ field.get('high_label', '') }}" placeholder="Ex: Excelente">
-          </div>
-        </div>
-        <!-- Image display panel -->
-        {% set show_img = ftype == 'image_display' %}
-        <div class="row g-2 mt-1 field-image-row" {% if not show_img %}style="display:none;"{% endif %}>
-          <div class="col-12">
-            <label class="form-label small mb-1">URL da imagem</label>
-            <input type="url" class="form-control form-control-sm field-image-url" value="{{ field.get('image_url', '') }}" placeholder="https://...">
-          </div>
-        </div>
-        <!-- Conditional logic -->
-        <div class="row g-2 mt-1 field-condition-row">
-          <div class="col-12">
-            <details {% if cond.get('field_id') %}open{% endif %}>
-              <summary class="text-muted small" style="cursor:pointer;">Lógica condicional (opcional)</summary>
-              <div class="row g-2 mt-1">
-                <div class="col-md-5">
-                  <input type="text" class="form-control form-control-sm field-cond-id"
-                         value="{{ cond.get('field_id', '') }}" placeholder="ID do campo gatilho">
-                </div>
-                <div class="col-md-5">
-                  <input type="text" class="form-control form-control-sm field-cond-value"
-                         value="{{ cond.get('value', '') }}" placeholder="Valor esperado">
-                </div>
-                <div class="col-md-2">
-                  <span class="form-text text-muted small">→ Exibir se igual</span>
-                </div>
-              </div>
-            </details>
-          </div>
-        </div>
-      </div>
+    <div class="form-text text-muted">
+      Se habilitado, o formulário permitirá upload de arquivos conforme os limites do seu plano.
     </div>
-    {% endfor %}
   </div>
 
-  <button type="button" class="btn btn-outline-secondary btn-sm mb-3" id="add-field-btn">
-    <i class="bi bi-plus"></i> Adicionar Campo
-  </button>
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h5 class="mb-0">Perguntas do Formulário</h5>
+    <span class="text-muted small">Mínimo de 2 perguntas</span>
+  </div>
+
+  <div id="fields-container"></div>
+
+  <div class="d-flex gap-2 mb-4 mt-1">
+    <button type="button" id="add-field-btn" class="btn btn-outline-primary btn-sm">
+      <i class="bi bi-plus-circle"></i> Adicionar pergunta
+    </button>
+    <button type="button" id="add-section-btn" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-layout-text-sidebar"></i> Adicionar seção
+    </button>
+  </div>
 
   <div class="mt-3">
     <button type="submit" class="btn btn-primary" id="save-btn">
@@ -167,249 +57,7 @@
 
 {% block scripts %}
 <script>
-let fieldCount = document.querySelectorAll('.field-card').length;
-
-const OPTIONS_TYPES = new Set(['select', 'radio', 'checkbox']);
-const SCALE_TYPES   = new Set(['scale']);
-const IMAGE_TYPES   = new Set(['image_display']);
-const DISPLAY_ONLY  = new Set(['section_header', 'image_display']);
-
-function slugify(text) {
-  return (text || '').toLowerCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '_')
-    .replace(/^_|_$/g, '')
-    || 'campo';
-}
-
-function escHtml(str) {
-  return String(str || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
-
-function buildFieldCard(idx) {
-  const typeOptions = [
-    ['text',          'Texto'],
-    ['email',         'E-mail'],
-    ['textarea',      'Área de texto'],
-    ['number',        'Número'],
-    ['date',          'Data'],
-    ['select',        'Seleção (dropdown)'],
-    ['radio',         'Múltipla escolha (radio)'],
-    ['checkbox',      'Caixas de seleção'],
-    ['scale',         'Escala (slider)'],
-    ['section_header','Cabeçalho de seção'],
-    ['image_display', 'Imagem de exibição'],
-  ].map(function(pair) {
-    return `<option value="${pair[0]}">${pair[1]}</option>`;
-  }).join('');
-
-  return `
-<div class="card mb-2 field-card" data-index="${idx}">
-  <div class="card-header py-1 px-3 bg-light d-flex justify-content-between align-items-center">
-    <span class="fw-semibold small">Campo ${idx + 1}</span>
-    <button type="button" class="btn btn-outline-danger btn-sm remove-field">
-      <i class="bi bi-x"></i>
-    </button>
-  </div>
-  <div class="card-body py-2 px-3">
-    <div class="row g-2">
-      <div class="col-md-4">
-        <label class="form-label small mb-1">Rótulo</label>
-        <input type="text" class="form-control form-control-sm field-label" placeholder="Rótulo do campo" required>
-      </div>
-      <div class="col-md-3">
-        <label class="form-label small mb-1">Tipo</label>
-        <select class="form-select form-select-sm field-type" onchange="onTypeChange(this)">
-          ${typeOptions}
-        </select>
-      </div>
-      <div class="col-md-2 d-flex align-items-end">
-        <div class="form-check mb-1">
-          <input class="form-check-input field-required" type="checkbox">
-          <label class="form-check-label small">Obrigatório</label>
-        </div>
-      </div>
-      <div class="col-md-3 d-flex align-items-end">
-        <input type="text" class="form-control form-control-sm field-placeholder" placeholder="Placeholder (opcional)">
-      </div>
-    </div>
-    <div class="row g-2 mt-1 field-options-row" style="display:none;">
-      <div class="col-12">
-        <label class="form-label small mb-1">Opções <span class="text-muted">(uma por linha; ou <code>rótulo|valor|url_imagem</code>)</span></label>
-        <textarea class="form-control form-control-sm field-options-textarea" rows="3" placeholder="Opção A&#10;Opção B&#10;Opção C"></textarea>
-      </div>
-    </div>
-    <div class="row g-2 mt-1 field-scale-row" style="display:none;">
-      <div class="col-md-3">
-        <label class="form-label small mb-1">Mínimo</label>
-        <input type="number" class="form-control form-control-sm field-scale-min" value="1">
-      </div>
-      <div class="col-md-3">
-        <label class="form-label small mb-1">Máximo</label>
-        <input type="number" class="form-control form-control-sm field-scale-max" value="5">
-      </div>
-      <div class="col-md-3">
-        <label class="form-label small mb-1">Passo</label>
-        <input type="number" class="form-control form-control-sm field-scale-step" value="1" min="1">
-      </div>
-      <div class="col-md-3">
-        <label class="form-label small mb-1">Rótulo baixo</label>
-        <input type="text" class="form-control form-control-sm field-scale-low" placeholder="Ex: Ruim">
-      </div>
-      <div class="col-md-3">
-        <label class="form-label small mb-1">Rótulo alto</label>
-        <input type="text" class="form-control form-control-sm field-scale-high" placeholder="Ex: Excelente">
-      </div>
-    </div>
-    <div class="row g-2 mt-1 field-image-row" style="display:none;">
-      <div class="col-12">
-        <label class="form-label small mb-1">URL da imagem</label>
-        <input type="url" class="form-control form-control-sm field-image-url" placeholder="https://...">
-      </div>
-    </div>
-    <div class="row g-2 mt-1 field-condition-row">
-      <div class="col-12">
-        <details>
-          <summary class="text-muted small" style="cursor:pointer;">Lógica condicional (opcional)</summary>
-          <div class="row g-2 mt-1">
-            <div class="col-md-5">
-              <input type="text" class="form-control form-control-sm field-cond-id" placeholder="ID do campo gatilho">
-            </div>
-            <div class="col-md-5">
-              <input type="text" class="form-control form-control-sm field-cond-value" placeholder="Valor esperado">
-            </div>
-            <div class="col-md-2">
-              <span class="form-text text-muted small">→ Exibir se igual</span>
-            </div>
-          </div>
-        </details>
-      </div>
-    </div>
-  </div>
-</div>`;
-}
-
-function addField() {
-  const container = document.getElementById('fields-container');
-  const idx = fieldCount++;
-  const wrapper = document.createElement('div');
-  wrapper.innerHTML = buildFieldCard(idx);
-  const card = wrapper.firstElementChild;
-  container.appendChild(card);
-  card.querySelector('.remove-field').addEventListener('click', function() {
-    card.remove();
-    renumberCards();
-  });
-}
-
-function renumberCards() {
-  document.querySelectorAll('.field-card').forEach(function(card, i) {
-    const title = card.querySelector('.card-header .fw-semibold');
-    if (title) title.textContent = 'Campo ' + (i + 1);
-  });
-}
-
-function onTypeChange(selectEl) {
-  const card = selectEl.closest('.field-card');
-  const ftype = selectEl.value;
-  card.querySelector('.field-options-row').style.display  = OPTIONS_TYPES.has(ftype) ? '' : 'none';
-  card.querySelector('.field-scale-row').style.display    = SCALE_TYPES.has(ftype) ? '' : 'none';
-  card.querySelector('.field-image-row').style.display    = IMAGE_TYPES.has(ftype) ? '' : 'none';
-  const reqCheck = card.querySelector('.field-required');
-  if (reqCheck && DISPLAY_ONLY.has(ftype)) {
-    reqCheck.checked  = false;
-    reqCheck.disabled = true;
-  } else if (reqCheck) {
-    reqCheck.disabled = false;
-  }
-}
-
-// Attach remove listeners to server-rendered existing fields
-document.querySelectorAll('.remove-field:not([disabled])').forEach(function(btn) {
-  btn.addEventListener('click', function() {
-    btn.closest('.field-card').remove();
-    renumberCards();
-  });
-});
-
-document.getElementById('add-field-btn').addEventListener('click', addField);
-
-function parseOptions(raw) {
-  return raw.split('\n').map(function(line) {
-    line = line.trim();
-    if (!line) return null;
-    const parts = line.split('|');
-    if (parts.length >= 3) {
-      return { label: parts[0].trim(), value: parts[1].trim() || parts[0].trim(), image_url: parts[2].trim() };
-    }
-    if (parts.length === 2) {
-      return { label: parts[0].trim(), value: parts[1].trim() };
-    }
-    return line;
-  }).filter(Boolean);
-}
-
-document.getElementById('template-form').addEventListener('submit', function(e) {
-  e.preventDefault();
-  const cards = document.querySelectorAll('.field-card');
-  const fields = [];
-  let valid = true;
-
-  cards.forEach(function(card) {
-    const label       = card.querySelector('.field-label').value.trim();
-    const type        = card.querySelector('.field-type').value;
-    const required    = card.querySelector('.field-required').checked;
-    const placeholder = card.querySelector('.field-placeholder').value.trim();
-
-    if (!label) { valid = false; return; }
-
-    const idx = card.dataset.index;
-    const field = {
-      id: slugify(label) + '_' + idx,
-      label: label,
-      type: type,
-      required: DISPLAY_ONLY.has(type) ? false : required,
-    };
-    if (placeholder) field.placeholder = placeholder;
-
-    if (OPTIONS_TYPES.has(type)) {
-      const raw = card.querySelector('.field-options-textarea').value.trim();
-      field.options = parseOptions(raw);
-      if (!field.options.length) { valid = false; return; }
-    }
-
-    if (SCALE_TYPES.has(type)) {
-      field.min  = parseFloat(card.querySelector('.field-scale-min').value) || 1;
-      field.max  = parseFloat(card.querySelector('.field-scale-max').value) || 5;
-      field.step = parseFloat(card.querySelector('.field-scale-step').value) || 1;
-      const low  = card.querySelector('.field-scale-low').value.trim();
-      const high = card.querySelector('.field-scale-high').value.trim();
-      if (low)  field.low_label  = low;
-      if (high) field.high_label = high;
-    }
-
-    if (IMAGE_TYPES.has(type)) {
-      const imgUrl = card.querySelector('.field-image-url').value.trim();
-      if (imgUrl) field.image_url = imgUrl;
-    }
-
-    const condId  = card.querySelector('.field-cond-id').value.trim();
-    const condVal = card.querySelector('.field-cond-value').value.trim();
-    if (condId && condVal) {
-      field.condition = { field_id: condId, value: condVal };
-    }
-
-    fields.push(field);
-  });
-
-  const submittable = fields.filter(function(f) { return !DISPLAY_ONLY.has(f.type); });
-  if (!valid || submittable.length < 2) {
-    alert('Preencha todos os campos e certifique-se de ter pelo menos 2 campos submetíveis.');
-    return;
-  }
-
-  document.getElementById('schema_json').value = JSON.stringify({ fields: fields });
-  this.submit();
-});
+var INITIAL_FIELDS = {{ template.schema.get('fields', []) | tojson }};
 </script>
+{% include 'dashboard/_form_builder_js.html' %}
 {% endblock %}

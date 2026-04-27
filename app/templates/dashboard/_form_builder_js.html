@@ -1,0 +1,642 @@
+<script>
+(function() {
+'use strict';
+
+/* ── Constants ───────────────────────────────────────────────── */
+var OPTIONS_TYPES     = new Set(['select', 'radio', 'checkbox']);
+var SCALE_TYPES       = new Set(['scale']);
+var IMAGE_TYPES       = new Set(['image_display']);
+var DISPLAY_ONLY      = new Set(['section_header', 'image_display']);
+var PLACEHOLDER_TYPES = new Set(['text', 'email', 'textarea', 'number', 'date']);
+
+var fieldCount = 0;
+
+/* ── Helpers ─────────────────────────────────────────────────── */
+function slugify(text) {
+  return (text || '').toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_|_$/g, '')
+    || 'campo';
+}
+
+function escHtml(str) {
+  return String(str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+/* ── Field data ──────────────────────────────────────────────── */
+function collectOptions(card) {
+  return Array.from(card.querySelectorAll('.option-card')).map(function(oc) {
+    var label  = oc.querySelector('.option-label').value.trim();
+    if (!label) return null;
+    var imgUrl = oc.querySelector('.option-image').value.trim();
+    if (imgUrl) return { label: label, value: label, image_url: imgUrl };
+    return label;
+  }).filter(Boolean);
+}
+
+/* Returns all non-display-only fields' data AND updates data-field-id attrs */
+function refreshAndGetAllFields() {
+  var result = [];
+  document.querySelectorAll('.field-card').forEach(function(card) {
+    var label  = card.querySelector('.field-label')
+                   ? card.querySelector('.field-label').value.trim() : '';
+    var typeEl = card.querySelector('.field-type');
+    var type   = typeEl ? typeEl.value : 'text';
+    var idx    = card.dataset.index;
+    var id     = slugify(label) + '_' + idx;
+    card.dataset.fieldId = id;
+    if (DISPLAY_ONLY.has(type)) return;
+    var options = OPTIONS_TYPES.has(type) ? collectOptions(card) : [];
+    result.push({ id: id, label: label, type: type, idx: idx, options: options });
+  });
+  return result;
+}
+
+/* ── Condition UI ────────────────────────────────────────────── */
+function updateConditionValueDropdown(card, allFields, initValue) {
+  var sourceSelect = card.querySelector('.field-cond-source');
+  var wrap         = card.querySelector('.field-cond-value-wrap');
+  if (!sourceSelect || !wrap) return;
+
+  var sourceId  = sourceSelect.value;
+  var prevEl    = wrap.querySelector('.field-cond-value');
+  var prevValue = (initValue !== undefined) ? initValue : (prevEl ? prevEl.value : '');
+  var sf        = allFields.find(function(f) { return f.id === sourceId; });
+
+  if (sf && OPTIONS_TYPES.has(sf.type) && sf.options.length > 0) {
+    var html = '<select class="form-select form-select-sm field-cond-value" style="min-width:140px;">' +
+               '<option value="">— valor —</option>';
+    sf.options.forEach(function(opt) {
+      var val = typeof opt === 'string' ? opt : (opt.value || opt.label);
+      var lbl = typeof opt === 'string' ? opt : opt.label;
+      var sel = (val === prevValue || lbl === prevValue) ? ' selected' : '';
+      html += '<option value="' + escHtml(val) + '"' + sel + '>' + escHtml(lbl) + '</option>';
+    });
+    html += '</select>';
+    wrap.innerHTML = html;
+  } else {
+    wrap.innerHTML = '<input type="text" class="form-control form-control-sm field-cond-value"' +
+                    ' value="' + escHtml(prevValue) + '" placeholder="valor" style="min-width:130px;">';
+  }
+}
+
+function updateAllConditionDropdowns() {
+  var allFields = refreshAndGetAllFields();
+  document.querySelectorAll('.field-card:not(.field-section-card)').forEach(function(card) {
+    var sourceSelect = card.querySelector('.field-cond-source');
+    if (!sourceSelect) return;
+    var currentCondId = card.querySelector('.field-cond-id')
+                          ? card.querySelector('.field-cond-id').value : '';
+    var thisId = card.dataset.fieldId || '';
+
+    sourceSelect.innerHTML = '<option value="">— escolha um campo —</option>';
+    allFields.forEach(function(f) {
+      if (f.id === thisId) return;
+      var opt = document.createElement('option');
+      opt.value       = f.id;
+      opt.textContent = f.label || '(sem nome)';
+      if (f.id === currentCondId) opt.selected = true;
+      sourceSelect.appendChild(opt);
+    });
+
+    if (currentCondId) updateConditionValueDropdown(card, allFields);
+  });
+}
+
+/* ── Option card ─────────────────────────────────────────────── */
+function addOptionCard(container, data) {
+  data = data || {};
+  var label  = (typeof data === 'string') ? data : (data.label || '');
+  var imgUrl = (typeof data === 'string') ? '' : (data.image_url || '');
+
+  var div = document.createElement('div');
+  div.className = 'option-card d-flex align-items-start gap-2 mb-2 p-2 border rounded bg-white';
+  div.innerHTML =
+    '<div class="flex-grow-1">' +
+      '<input type="text" class="form-control form-control-sm option-label"' +
+             ' value="' + escHtml(label) + '" placeholder="Texto da opção">' +
+      '<div class="option-image-wrap mt-1" style="' + (imgUrl ? '' : 'display:none;') + '">' +
+        '<input type="url" class="form-control form-control-sm option-image"' +
+               ' value="' + escHtml(imgUrl) + '" placeholder="URL da imagem (opcional)">' +
+        '<div class="mt-1 option-img-preview" style="' + (imgUrl ? '' : 'display:none;') + '">' +
+          '<img src="' + escHtml(imgUrl) + '" class="rounded border"' +
+               ' style="height:36px;object-fit:cover;" onerror="this.style.display=\'none\'">' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="d-flex flex-column gap-1">' +
+      '<button type="button" class="btn btn-outline-secondary btn-sm toggle-option-image px-2"' +
+              ' title="Adicionar imagem à opção"><i class="bi bi-image"></i></button>' +
+      '<button type="button" class="btn btn-outline-danger btn-sm remove-option px-2"' +
+              ' title="Remover opção"><i class="bi bi-x"></i></button>' +
+    '</div>';
+
+  div.querySelector('.remove-option').addEventListener('click', function() {
+    div.remove();
+    updateAllConditionDropdowns();
+  });
+
+  div.querySelector('.toggle-option-image').addEventListener('click', function() {
+    var wrap    = div.querySelector('.option-image-wrap');
+    var visible = wrap.style.display !== 'none';
+    wrap.style.display = visible ? 'none' : '';
+    if (!visible) div.querySelector('.option-image').focus();
+  });
+
+  div.querySelector('.option-image').addEventListener('input', function() {
+    var preview = div.querySelector('.option-img-preview');
+    var img     = preview.querySelector('img');
+    var url     = this.value.trim();
+    img.src                  = url;
+    preview.style.display    = url ? '' : 'none';
+    img.style.display        = url ? '' : 'none';
+  });
+
+  container.appendChild(div);
+  return div;
+}
+
+/* ── Card HTML builders ──────────────────────────────────────── */
+function getTypeOptionsHTML(selected) {
+  return [
+    ['text',          'Texto curto'],
+    ['email',         'E-mail'],
+    ['textarea',      'Texto longo'],
+    ['number',        'Número'],
+    ['date',          'Data'],
+    ['select',        'Lista de opções'],
+    ['radio',         'Escolha única'],
+    ['checkbox',      'Múltipla escolha'],
+    ['scale',         'Escala numérica'],
+    ['image_display', 'Imagem'],
+  ].map(function(pair) {
+    var sel = pair[0] === selected ? ' selected' : '';
+    return '<option value="' + pair[0] + '"' + sel + '>' + pair[1] + '</option>';
+  }).join('');
+}
+
+function buildQuestionCardHTML(idx, d) {
+  d = d || {};
+  var ftype    = d.type        || 'text';
+  var flabel   = d.label       || '';
+  var frequired = (d.required !== false) && !DISPLAY_ONLY.has(ftype);
+  var fpholder  = d.placeholder || '';
+  var fScaleMin  = (d.min  !== undefined) ? d.min  : 1;
+  var fScaleMax  = (d.max  !== undefined) ? d.max  : 5;
+  var fScaleStep = (d.step !== undefined) ? d.step : 1;
+  var fScaleLow  = d.low_label  || '';
+  var fScaleHigh = d.high_label || '';
+  var fImageUrl  = d.image_url  || '';
+
+  var optDisplay   = OPTIONS_TYPES.has(ftype)     ? '' : 'display:none;';
+  var scaleDisplay = SCALE_TYPES.has(ftype)        ? '' : 'display:none;';
+  var imageDisplay = IMAGE_TYPES.has(ftype)        ? '' : 'display:none;';
+  var phDisplay    = PLACEHOLDER_TYPES.has(ftype)  ? '' : 'display:none;';
+  var reqDisabled  = DISPLAY_ONLY.has(ftype)       ? ' disabled' : '';
+
+  return '<div class="card mb-3 field-card shadow-sm" data-index="' + idx + '" data-field-id="">' +
+
+    /* ── header ── */
+    '<div class="card-header bg-white border-bottom py-2 px-3 d-flex flex-wrap align-items-center gap-2">' +
+      '<span class="fw-semibold text-secondary small question-number" style="white-space:nowrap;min-width:84px;">' +
+        'Pergunta ' + (idx + 1) +
+      '</span>' +
+      '<input type="text" class="form-control form-control-sm field-label flex-grow-1"' +
+             ' value="' + escHtml(flabel) + '" placeholder="Digite a pergunta..." required>' +
+      '<select class="form-select form-select-sm field-type" style="width:auto;min-width:165px;"' +
+              ' onchange="window._fbOnTypeChange(this)">' +
+        getTypeOptionsHTML(ftype) +
+      '</select>' +
+      '<div class="form-check form-switch mb-0 d-flex align-items-center gap-1" style="white-space:nowrap;">' +
+        '<input class="form-check-input field-required" type="checkbox" role="switch"' +
+               (frequired ? ' checked' : '') + reqDisabled + '>' +
+        '<label class="form-check-label small">Obrigatório</label>' +
+      '</div>' +
+      '<div class="d-flex gap-1">' +
+        '<button type="button" class="btn btn-outline-secondary btn-sm duplicate-field"' +
+                ' title="Duplicar pergunta"><i class="bi bi-copy"></i></button>' +
+        '<button type="button" class="btn btn-outline-danger btn-sm remove-field"' +
+                ' title="Remover pergunta"><i class="bi bi-trash"></i></button>' +
+      '</div>' +
+    '</div>' +
+
+    /* ── body ── */
+    '<div class="card-body p-3">' +
+
+      /* placeholder hint */
+      '<div class="field-placeholder-row mb-2" style="' + phDisplay + '">' +
+        '<input type="text" class="form-control form-control-sm field-placeholder"' +
+               ' value="' + escHtml(fpholder) + '"' +
+               ' placeholder="Texto de ajuda que aparece dentro do campo (opcional)">' +
+      '</div>' +
+
+      /* options */
+      '<div class="field-options-row" style="' + optDisplay + '">' +
+        '<p class="small fw-semibold mb-2 text-secondary">Opções de resposta:</p>' +
+        '<div class="options-container mb-2"></div>' +
+        '<button type="button" class="btn btn-outline-secondary btn-sm add-option-btn">' +
+          '<i class="bi bi-plus"></i> Adicionar opção' +
+        '</button>' +
+      '</div>' +
+
+      /* scale */
+      '<div class="field-scale-row" style="' + scaleDisplay + '">' +
+        '<div class="d-flex flex-wrap gap-3 align-items-end">' +
+          '<div>' +
+            '<label class="form-label small mb-1">De</label>' +
+            '<input type="number" class="form-control form-control-sm field-scale-min"' +
+                   ' value="' + fScaleMin + '" style="width:70px;">' +
+          '</div>' +
+          '<div>' +
+            '<label class="form-label small mb-1">Até</label>' +
+            '<input type="number" class="form-control form-control-sm field-scale-max"' +
+                   ' value="' + fScaleMax + '" style="width:70px;">' +
+          '</div>' +
+          '<div>' +
+            '<label class="form-label small mb-1">Passo</label>' +
+            '<input type="number" class="form-control form-control-sm field-scale-step"' +
+                   ' value="' + fScaleStep + '" min="1" style="width:70px;">' +
+          '</div>' +
+          '<div>' +
+            '<label class="form-label small mb-1">Extremo baixo</label>' +
+            '<input type="text" class="form-control form-control-sm field-scale-low"' +
+                   ' value="' + escHtml(fScaleLow) + '" placeholder="Ex: Ruim" style="width:110px;">' +
+          '</div>' +
+          '<div>' +
+            '<label class="form-label small mb-1">Extremo alto</label>' +
+            '<input type="text" class="form-control form-control-sm field-scale-high"' +
+                   ' value="' + escHtml(fScaleHigh) + '" placeholder="Ex: Excelente" style="width:110px;">' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+
+      /* image display */
+      '<div class="field-image-row" style="' + imageDisplay + '">' +
+        '<label class="form-label small mb-1">URL da imagem</label>' +
+        '<input type="url" class="form-control form-control-sm field-image-url"' +
+               ' value="' + escHtml(fImageUrl) + '" placeholder="https://...">' +
+        '<div class="field-image-preview mt-2" style="' + (fImageUrl ? '' : 'display:none;') + '">' +
+          '<img src="' + escHtml(fImageUrl) + '" class="rounded border img-fluid"' +
+               ' style="max-height:120px;object-fit:contain;"' +
+               ' onerror="this.parentElement.style.display=\'none\'">' +
+        '</div>' +
+      '</div>' +
+
+      /* condition UI */
+      '<div class="field-condition-ui mt-2" style="display:none;">' +
+        '<div class="d-flex flex-wrap align-items-center gap-2 p-2 rounded border bg-light">' +
+          '<span class="small text-muted">Mostrar esta pergunta se</span>' +
+          '<select class="form-select form-select-sm field-cond-source" style="width:auto;min-width:150px;">' +
+            '<option value="">— escolha um campo —</option>' +
+          '</select>' +
+          '<span class="small text-muted">for</span>' +
+          '<div class="field-cond-value-wrap d-inline-flex">' +
+            '<input type="text" class="form-control form-control-sm field-cond-value"' +
+                   ' placeholder="valor" style="min-width:130px;">' +
+          '</div>' +
+          '<button type="button" class="btn btn-link btn-sm text-danger p-0 remove-condition-btn">Remover</button>' +
+        '</div>' +
+      '</div>' +
+      '<input type="hidden" class="field-cond-id" value="">' +
+      '<button type="button" class="btn btn-link btn-sm text-secondary p-0 mt-2 add-condition-btn"' +
+              ' style="font-size:0.8rem;">' +
+        '<i class="bi bi-funnel"></i> Adicionar lógica condicional' +
+      '</button>' +
+
+    '</div>' + /* card-body */
+  '</div>';   /* card */
+}
+
+function buildSectionCardHTML(idx, d) {
+  d = d || {};
+  var flabel = d.label || '';
+  return '<div class="card mb-2 field-card field-section-card border-secondary" data-index="' + idx + '" data-field-id="">' +
+    '<div class="card-body py-2 px-3 d-flex align-items-center gap-2 bg-light">' +
+      '<i class="bi bi-layout-text-sidebar text-secondary flex-shrink-0"></i>' +
+      '<span class="small fw-bold text-uppercase text-secondary me-1"' +
+            ' style="white-space:nowrap;font-size:0.7rem;letter-spacing:.04em;">SEÇÃO</span>' +
+      '<input type="text" class="form-control form-control-sm field-label"' +
+             ' value="' + escHtml(flabel) + '" placeholder="Título da seção...">' +
+      /* structural hidden inputs so the submit handler can read uniformly */
+      '<input type="hidden" class="field-type" value="section_header">' +
+      '<input type="hidden" class="field-required" value="">' +
+      '<input type="hidden" class="field-placeholder" value="">' +
+      '<input type="hidden" class="field-cond-id" value="">' +
+      '<input type="hidden" class="field-cond-value" value="">' +
+      '<button type="button" class="btn btn-outline-danger btn-sm remove-field ms-auto flex-shrink-0"' +
+              ' title="Remover seção"><i class="bi bi-trash"></i></button>' +
+    '</div>' +
+  '</div>';
+}
+
+/* ── Attach card event listeners ─────────────────────────────── */
+function attachCardListeners(card) {
+  /* remove */
+  var removeBtn = card.querySelector('.remove-field');
+  if (removeBtn && !removeBtn.disabled) {
+    removeBtn.addEventListener('click', function() {
+      card.remove();
+      renumberCards();
+      updateAllConditionDropdowns();
+    });
+  }
+
+  /* duplicate */
+  var dupBtn = card.querySelector('.duplicate-field');
+  if (dupBtn) {
+    dupBtn.addEventListener('click', function() { duplicateField(card); });
+  }
+
+  /* add option */
+  var addOptBtn = card.querySelector('.add-option-btn');
+  if (addOptBtn) {
+    addOptBtn.addEventListener('click', function() {
+      var container = card.querySelector('.options-container');
+      if (container) {
+        addOptionCard(container, null);
+        updateAllConditionDropdowns();
+      }
+    });
+  }
+
+  /* label change → refresh field ID & condition dropdowns */
+  var labelInput = card.querySelector('.field-label');
+  if (labelInput) {
+    labelInput.addEventListener('input', function() {
+      card.dataset.fieldId = slugify(this.value.trim()) + '_' + card.dataset.index;
+      updateAllConditionDropdowns();
+    });
+  }
+
+  /* image URL preview */
+  var imgUrlInput = card.querySelector('.field-image-url');
+  if (imgUrlInput) {
+    imgUrlInput.addEventListener('input', function() {
+      var preview = card.querySelector('.field-image-preview');
+      var img     = preview ? preview.querySelector('img') : null;
+      var url     = this.value.trim();
+      if (preview) preview.style.display = url ? '' : 'none';
+      if (img)     { img.src = url; img.style.display = url ? '' : 'none'; }
+    });
+  }
+
+  /* condition source select */
+  var condSource = card.querySelector('.field-cond-source');
+  if (condSource) {
+    condSource.addEventListener('change', function() {
+      var hiddenId = card.querySelector('.field-cond-id');
+      if (hiddenId) hiddenId.value = this.value;
+      updateConditionValueDropdown(card, refreshAndGetAllFields());
+    });
+  }
+
+  /* add condition button */
+  var addCondBtn = card.querySelector('.add-condition-btn');
+  if (addCondBtn) {
+    addCondBtn.addEventListener('click', function() {
+      updateAllConditionDropdowns();
+      card.querySelector('.field-condition-ui').style.display = '';
+      this.style.display = 'none';
+    });
+  }
+
+  /* remove condition button */
+  var removeCondBtn = card.querySelector('.remove-condition-btn');
+  if (removeCondBtn) {
+    removeCondBtn.addEventListener('click', function() {
+      card.querySelector('.field-condition-ui').style.display = 'none';
+      card.querySelector('.add-condition-btn').style.display  = '';
+      var hiddenId = card.querySelector('.field-cond-id');
+      if (hiddenId) hiddenId.value = '';
+      var sourceSelect = card.querySelector('.field-cond-source');
+      if (sourceSelect) sourceSelect.value = '';
+      var wrap = card.querySelector('.field-cond-value-wrap');
+      if (wrap) wrap.innerHTML =
+        '<input type="text" class="form-control form-control-sm field-cond-value"' +
+        ' placeholder="valor" style="min-width:130px;">';
+    });
+  }
+}
+
+/* ── Add field ───────────────────────────────────────────────── */
+function addField(fieldData, afterCard) {
+  fieldData = fieldData || {};
+  var idx  = fieldCount++;
+  var type = fieldData.type || 'text';
+
+  var html = (type === 'section_header')
+    ? buildSectionCardHTML(idx, fieldData)
+    : buildQuestionCardHTML(idx, fieldData);
+
+  var wrapper = document.createElement('div');
+  wrapper.innerHTML = html.trim();
+  var card = wrapper.firstElementChild;
+
+  /* update data-field-id immediately */
+  card.dataset.fieldId = slugify((fieldData.label || '').trim()) + '_' + idx;
+
+  var container = document.getElementById('fields-container');
+  if (afterCard && afterCard.parentNode === container) {
+    afterCard.after(card);
+  } else {
+    container.appendChild(card);
+  }
+
+  /* populate option cards */
+  if (OPTIONS_TYPES.has(type) && fieldData.options && fieldData.options.length) {
+    var optContainer = card.querySelector('.options-container');
+    if (optContainer) {
+      fieldData.options.forEach(function(opt) { addOptionCard(optContainer, opt); });
+    }
+  }
+
+  attachCardListeners(card);
+  renumberCards();
+  return card;
+}
+
+function addSection(afterCard) {
+  return addField({ type: 'section_header', label: '' }, afterCard);
+}
+
+/* ── Renumber ────────────────────────────────────────────────── */
+function renumberCards() {
+  var qNum = 0;
+  document.querySelectorAll('.field-card').forEach(function(card) {
+    if (card.classList.contains('field-section-card')) return;
+    qNum++;
+    var title = card.querySelector('.question-number');
+    if (title) title.textContent = 'Pergunta ' + qNum;
+  });
+}
+
+/* ── Type change (exposed globally for onchange attr) ─────────── */
+window._fbOnTypeChange = function(selectEl) {
+  var card  = selectEl.closest('.field-card');
+  var ftype = selectEl.value;
+  card.querySelector('.field-options-row').style.display     = OPTIONS_TYPES.has(ftype)     ? '' : 'none';
+  card.querySelector('.field-scale-row').style.display       = SCALE_TYPES.has(ftype)        ? '' : 'none';
+  card.querySelector('.field-image-row').style.display       = IMAGE_TYPES.has(ftype)        ? '' : 'none';
+  card.querySelector('.field-placeholder-row').style.display = PLACEHOLDER_TYPES.has(ftype)  ? '' : 'none';
+  var reqEl = card.querySelector('.field-required');
+  if (reqEl) {
+    if (DISPLAY_ONLY.has(ftype)) { reqEl.checked = false; reqEl.disabled = true; }
+    else                         { reqEl.disabled = false; }
+  }
+  updateAllConditionDropdowns();
+};
+
+/* ── Duplicate ───────────────────────────────────────────────── */
+function duplicateField(sourceCard) {
+  var typeEl  = sourceCard.querySelector('.field-type');
+  var type    = typeEl ? typeEl.value : 'text';
+  var reqEl   = sourceCard.querySelector('.field-required');
+  var phEl    = sourceCard.querySelector('.field-placeholder');
+
+  var fd = {
+    label:       sourceCard.querySelector('.field-label').value,
+    type:        type,
+    required:    reqEl ? !!reqEl.checked : false,
+    placeholder: phEl  ? phEl.value      : '',
+  };
+
+  if (OPTIONS_TYPES.has(type))  fd.options   = collectOptions(sourceCard);
+  if (SCALE_TYPES.has(type)) {
+    fd.min       = parseFloat(sourceCard.querySelector('.field-scale-min').value)  || 1;
+    fd.max       = parseFloat(sourceCard.querySelector('.field-scale-max').value)  || 5;
+    fd.step      = parseFloat(sourceCard.querySelector('.field-scale-step').value) || 1;
+    var low  = sourceCard.querySelector('.field-scale-low');
+    var high = sourceCard.querySelector('.field-scale-high');
+    if (low)  fd.low_label  = low.value;
+    if (high) fd.high_label = high.value;
+  }
+  if (IMAGE_TYPES.has(type)) {
+    var imgEl = sourceCard.querySelector('.field-image-url');
+    if (imgEl) fd.image_url = imgEl.value;
+  }
+  /* do NOT copy condition — would reference the original card's computed ID */
+
+  var newCard = addField(fd, sourceCard);
+  updateAllConditionDropdowns();
+  return newCard;
+}
+
+/* ── Submit handler ──────────────────────────────────────────── */
+document.getElementById('template-form').addEventListener('submit', function(e) {
+  e.preventDefault();
+  var cards  = document.querySelectorAll('.field-card');
+  var fields = [];
+  var valid  = true;
+
+  cards.forEach(function(card) {
+    var label  = card.querySelector('.field-label').value.trim();
+    var typeEl = card.querySelector('.field-type');
+    var type   = typeEl ? typeEl.value : 'text';
+    var reqEl  = card.querySelector('.field-required');
+    var required    = (reqEl && reqEl.type === 'checkbox') ? reqEl.checked : false;
+    var phEl   = card.querySelector('.field-placeholder');
+    var placeholder = phEl ? phEl.value.trim() : '';
+
+    if (!label) { valid = false; return; }
+
+    var idx = card.dataset.index;
+    var field = {
+      id:       slugify(label) + '_' + idx,
+      label:    label,
+      type:     type,
+      required: DISPLAY_ONLY.has(type) ? false : required,
+    };
+    if (placeholder) field.placeholder = placeholder;
+
+    if (OPTIONS_TYPES.has(type)) {
+      field.options = collectOptions(card);
+      if (!field.options.length) { valid = false; return; }
+    }
+
+    if (SCALE_TYPES.has(type)) {
+      field.min  = parseFloat(card.querySelector('.field-scale-min').value)  || 1;
+      field.max  = parseFloat(card.querySelector('.field-scale-max').value)  || 5;
+      field.step = parseFloat(card.querySelector('.field-scale-step').value) || 1;
+      var low  = card.querySelector('.field-scale-low');
+      var high = card.querySelector('.field-scale-high');
+      if (low  && low.value.trim())  field.low_label  = low.value.trim();
+      if (high && high.value.trim()) field.high_label = high.value.trim();
+    }
+
+    if (IMAGE_TYPES.has(type)) {
+      var imgUrl = card.querySelector('.field-image-url');
+      if (imgUrl && imgUrl.value.trim()) field.image_url = imgUrl.value.trim();
+    }
+
+    var condIdEl  = card.querySelector('.field-cond-id');
+    var condValEl = card.querySelector('.field-cond-value');
+    var condId    = condIdEl  ? condIdEl.value.trim()  : '';
+    var condVal   = condValEl ? condValEl.value.trim() : '';
+    if (condId && condVal) field.condition = { field_id: condId, value: condVal };
+
+    fields.push(field);
+  });
+
+  var submittable = fields.filter(function(f) { return !DISPLAY_ONLY.has(f.type); });
+  if (!valid || submittable.length < 2) {
+    alert('Preencha todas as perguntas e certifique-se de ter pelo menos 2 perguntas.');
+    return;
+  }
+
+  document.getElementById('schema_json').value = JSON.stringify({ fields: fields });
+  this.submit();
+});
+
+/* ── Page initialisation ─────────────────────────────────────── */
+function initPage(initialFields) {
+  initialFields.forEach(function(fd) { addField(fd); });
+
+  /* populate condition source selects */
+  updateAllConditionDropdowns();
+
+  /* restore existing conditions */
+  var allCards = Array.from(document.querySelectorAll('.field-card'));
+  initialFields.forEach(function(fd, i) {
+    if (!fd.condition || !fd.condition.field_id) return;
+    var card = allCards[i];
+    if (!card) return;
+
+    var condId  = fd.condition.field_id;
+    var condVal = fd.condition.value;
+
+    var condUI    = card.querySelector('.field-condition-ui');
+    var addBtn    = card.querySelector('.add-condition-btn');
+    var srcSelect = card.querySelector('.field-cond-source');
+    var hiddenId  = card.querySelector('.field-cond-id');
+
+    if (condUI)   condUI.style.display = '';
+    if (addBtn)   addBtn.style.display = 'none';
+    if (srcSelect) {
+      srcSelect.value = condId;
+      if (hiddenId) hiddenId.value = condId;
+      updateConditionValueDropdown(card, refreshAndGetAllFields(), condVal);
+    }
+  });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('add-field-btn').addEventListener('click', function() {
+    addField(null);
+    updateAllConditionDropdowns();
+  });
+  document.getElementById('add-section-btn').addEventListener('click', function() {
+    addSection(null);
+  });
+
+  if (typeof INITIAL_FIELDS !== 'undefined' && Array.isArray(INITIAL_FIELDS)) {
+    initPage(INITIAL_FIELDS);
+  }
+});
+
+})(); /* end IIFE */
+</script>
