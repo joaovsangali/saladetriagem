@@ -122,7 +122,8 @@ def index():
         police_user_id=current_user.id
     ).order_by(MinimalLogEntry.received_at.desc()).limit(20).all()
 
-    return render_template("dashboard/index.html", sessions=sessions, recent_logs=recent_logs)
+    return render_template("dashboard/index.html", sessions=sessions, recent_logs=recent_logs,
+                           max_duration_hours=current_user.get_current_plan_limits().get('max_session_duration_hours', 12))
 
 
 @dashboard_bp.route("/sessions/new", methods=["POST"])

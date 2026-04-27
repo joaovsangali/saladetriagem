@@ -80,15 +80,14 @@
             <label class="form-label">Nome da triagem</label>
             <input type="text" name="label" class="form-control" placeholder="Ex: Triagem Manhã 01/04" required>
           </div>
-          <div class="mb-3">
+          <div class="mb-3" id="duration-field">
             <label class="form-label">Duração (horas)</label>
             <select name="duration_hours" class="form-select" required>
-              <option value="3">3 horas</option>
-              <option value="6">6 horas</option>
-              <option value="12" selected>12 horas</option>
+              {% for h in range(1, max_duration_hours + 1) %}
+              <option value="{{ h }}" {% if h == [max_duration_hours, 12]|min %}selected{% endif %}>{{ h }} hora{{ 's' if h > 1 else '' }}</option>
+              {% endfor %}
             </select>
-            {% set limits = current_user.get_current_plan_limits() %}
-            <div class="form-text">Limite do seu plano: {{ limits['max_session_duration_hours'] }}h</div>
+            <div class="form-text">Limite do seu plano: {{ max_duration_hours }}h</div>
           </div>
           <div class="mb-3">
             <label class="form-label">Tipo de triagem</label>
