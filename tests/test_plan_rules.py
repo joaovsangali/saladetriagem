@@ -589,6 +589,100 @@ def test_create_template_without_allow_attachments(app, client):
 
 
 # ---------------------------------------------------------------------------
+# Number field backend validation
+# ---------------------------------------------------------------------------
+
+def _make_custom_session_with_number_field(user):
+    """Create a custom session with a number field and return the intake token."""
+    schema = {
+        "fields": [
+            {"id": "name", "label": "Nome", "type": "text", "required": True},
+            {"id": "quantidade", "label": "Quantidade", "type": "number", "required": True},
+        ]
+    }
+    tpl = CustomIntakeTemplate(user_id=user.id, name="NumTest", schema=schema)
+    _db.session.add(tpl)
+    _db.session.commit()
+    sess = DashboardSession(
+        user_id=user.id,
+        label="Num Session",
+        expires_at=datetime.now(timezone.utc) + timedelta(hours=12),
+        intake_type="custom",
+        custom_template_id=tpl.id,
+    )
+    _db.session.add(sess)
+    _db.session.commit()
+    link = IntakeLink(dashboard_id=sess.id, form_schema=DEFAULT_FORM_SCHEMA)
+    _db.session.add(link)
+    _db.session.commit()
+    return link.token
+
+
+def test_number_field_negative_value_rejected(app, client):
+    """Custom form: negative number values must be rejected."""
+    with app.app_context():
+        user = _make_user("num1@test.com", "Num1", plan_type="enterprise")
+        token = _make_custom_session_with_number_field(user)
+
+    resp = client.post(
+        f"/t/{token}/submit",
+        data={"field_name": "NegativeTest NumField1", "field_quantidade": "-5"},
+        follow_redirects=False,
+    )
+    # Should redirect back to the form, NOT to /ok
+    assert resp.status_code == 302
+    assert "/ok" not in resp.location
+
+
+def test_number_field_valid_value_accepted(app, client):
+    """Custom form: valid non-negative number values must be accepted."""
+    with app.app_context():
+        user = _make_user("num2@test.com", "Num2", plan_type="enterprise")
+        token = _make_custom_session_with_number_field(user)
+
+    resp = client.post(
+        f"/t/{token}/submit",
+        data={"field_name": "ValidTest NumField2", "field_quantidade": "42"},
+        follow_redirects=False,
+    )
+    # Should redirect to /ok (success)
+    assert resp.status_code == 302
+    assert "/ok" in resp.location
+
+
+def test_number_field_zero_accepted(app, client):
+    """Custom form: zero is a valid number value."""
+    with app.app_context():
+        user = _make_user("num3@test.com", "Num3", plan_type="enterprise")
+        token = _make_custom_session_with_number_field(user)
+
+    resp = client.post(
+        f"/t/{token}/submit",
+        data={"field_name": "ZeroTest NumField3", "field_quantidade": "0"},
+        follow_redirects=False,
+    )
+    # 0 is a valid value (non-negative), should succeed
+    assert resp.status_code == 302
+    assert "/ok" in resp.location
+
+
+def test_number_field_non_numeric_rejected(app, client):
+    """Custom form: non-numeric values in number fields must be rejected."""
+    with app.app_context():
+        user = _make_user("num4@test.com", "Num4", plan_type="enterprise")
+        token = _make_custom_session_with_number_field(user)
+
+    resp = client.post(
+        f"/t/{token}/submit",
+        data={"field_name": "InvalidTest NumField4", "field_quantidade": "abc"},
+        follow_redirects=False,
+    )
+    # Should redirect back to form (invalid)
+    assert resp.status_code == 302
+    assert "/ok" not in resp.location
+
+
+# ---------------------------------------------------------------------------
 # Celery expiry: infinite sessions skipped
 # ---------------------------------------------------------------------------
 

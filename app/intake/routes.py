@@ -143,6 +143,18 @@ def submit(token):
             if required and not value:
                 flash(f"{field.get('label', field_id)} é obrigatório.", "danger")
                 return redirect(url_for("intake.form", token=token))
+            # Validate number fields: must be a valid number and non-negative
+            if ftype == "number" and value:
+                try:
+                    num_val = float(value)
+                    if num_val < 0:
+                        flash(f"{field.get('label', field_id)}: valores negativos não são permitidos.", "danger")
+                        return redirect(url_for("intake.form", token=token))
+                    # Sanitize: preserve fractional part only when meaningful
+                    value = str(num_val) if num_val % 1 != 0 else str(int(num_val))
+                except ValueError:
+                    flash(f"{field.get('label', field_id)}: valor inválido.", "danger")
+                    return redirect(url_for("intake.form", token=token))
             answers[field_id] = value if value else None
 
         guest_name = answers.get("name") or answers.get("nome")

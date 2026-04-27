@@ -265,6 +265,65 @@ def test_schema_option_with_html_in_label_rejected():
     assert "HTML" in err
 
 
+def test_schema_image_display_with_local_url_valid():
+    """image_display field with a /dashboard/form-image/ URL is valid."""
+    schema = {
+        "fields": [
+            {"id": "name", "label": "Nome", "type": "text"},
+            {"id": "img", "label": "Img", "type": "image_display",
+             "image_url": "/dashboard/form-image/abc123_form_xyz.jpg"},
+            {"id": "email", "label": "E-mail", "type": "email"},
+        ]
+    }
+    valid, err = validate_custom_intake_schema(schema)
+    assert valid is True, err
+
+
+def test_schema_image_display_with_javascript_url_rejected():
+    """image_display field with a javascript: URL must be rejected."""
+    schema = {
+        "fields": [
+            {"id": "name", "label": "Nome", "type": "text"},
+            {"id": "img", "label": "Img", "type": "image_display",
+             "image_url": "javascript:alert(1)"},
+            {"id": "email", "label": "E-mail", "type": "email"},
+        ]
+    }
+    valid, err = validate_custom_intake_schema(schema)
+    assert valid is False
+    assert "URL" in err or "inválida" in err.lower()
+
+
+def test_schema_image_display_with_data_url_rejected():
+    """image_display field with a data: URL must be rejected."""
+    schema = {
+        "fields": [
+            {"id": "name", "label": "Nome", "type": "text"},
+            {"id": "img", "label": "Img", "type": "image_display",
+             "image_url": "data:image/png;base64,abc"},
+            {"id": "email", "label": "E-mail", "type": "email"},
+        ]
+    }
+    valid, err = validate_custom_intake_schema(schema)
+    assert valid is False
+
+
+def test_schema_option_image_url_javascript_rejected():
+    """Option image_url with javascript: protocol must be rejected."""
+    schema = {
+        "fields": [
+            {"id": "name", "label": "Nome", "type": "text"},
+            {"id": "item", "label": "Item", "type": "radio",
+             "options": [
+                 {"label": "Opção", "value": "opt", "image_url": "javascript:void(0)"},
+             ]},
+        ]
+    }
+    valid, err = validate_custom_intake_schema(schema)
+    assert valid is False
+    assert "URL" in err or "inválida" in err.lower()
+
+
 def test_schema_condition_valid():
     # condition.field_id is a free-form string (the validator does not cross-check IDs)
     schema = {

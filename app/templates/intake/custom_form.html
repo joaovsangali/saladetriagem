@@ -162,6 +162,7 @@
                   name="field_{{ field.id }}"
                   id="field_{{ field.id }}"
                   class="form-control"
+                  {% if field.type == 'number' %}min="0" onwheel="this.blur()"{% endif %}
                   {% if field.get('placeholder') %}placeholder="{{ field.placeholder }}"{% endif %}
                   {% if field.get('required') and not cond %}required{% endif %}>
               {% endif %}

@@ -27,6 +27,24 @@ def _has_html(text: str) -> bool:
     return bool(re.search(r'<[^>]{0,200}>', text))
 
 
+_DANGEROUS_URL_SCHEMES = re.compile(
+    r'^\s*(javascript|data|blob|vbscript|file)\s*:', re.IGNORECASE
+)
+
+
+def _is_safe_image_url(url: str) -> bool:
+    """Return True if *url* is safe to embed as an image src.
+
+    Accepts relative paths (start with '/') and https:// URLs.
+    Rejects javascript:, data:, blob:, vbscript:, and file: schemes.
+    """
+    if not url:
+        return True
+    if _DANGEROUS_URL_SCHEMES.match(url):
+        return False
+    return True
+
+
 def validate_custom_intake_schema(schema):
     """Validate custom intake schema structure and content.
 
@@ -71,6 +89,12 @@ def validate_custom_intake_schema(schema):
             return False, f"ID de campo duplicado: '{fid}'"
         seen_ids.add(fid)
 
+        # image_display field: validate image_url if present
+        if ftype == "image_display":
+            image_url = field.get("image_url", "")
+            if image_url and not _is_safe_image_url(str(image_url)):
+                return False, f"Campo '{fid}': 'image_url' contém URL inválida"
+
         # Fields that require options
         if ftype in _OPTIONS_REQUIRED_TYPES:
             options = field.get("options", [])
@@ -83,6 +107,9 @@ def validate_custom_intake_schema(schema):
                         return False, f"Opção de '{fid}' deve ter chave 'label'"
                     if _has_html(str(opt["label"])):
                         return False, "Labels de opções não podem conter HTML"
+                    opt_image_url = opt.get("image_url", "")
+                    if opt_image_url and not _is_safe_image_url(str(opt_image_url)):
+                        return False, f"Opção de '{fid}': 'image_url' contém URL inválida"
                 elif isinstance(opt, str):
                     if _has_html(opt):
                         return False, "Labels de opções não podem conter HTML"

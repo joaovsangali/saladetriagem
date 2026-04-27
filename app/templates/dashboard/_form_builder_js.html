@@ -92,7 +92,7 @@ function buildUploadZoneHTML(existingUrl) {
     '</div>' +
     '<div class="fb-upload-preview text-center" style="' + hasStyle + '">' +
       '<img src="' + escHtml(existingUrl || '') + '" class="img-fluid rounded border"' +
-           ' style="max-height:120px;object-fit:contain;">' +
+           ' style="max-height:120px;object-fit:contain;" onerror="this.style.display=\'none\'">' +
       '<div class="mt-1">' +
         '<button type="button" class="btn btn-outline-danger btn-sm fb-upload-clear">' +
           '<i class="bi bi-x"></i> Remover imagem' +
@@ -394,17 +394,17 @@ function buildQuestionCardHTML(idx, d) {
           '<div>' +
             '<label class="form-label small mb-1">De</label>' +
             '<input type="number" class="form-control form-control-sm field-scale-min"' +
-                   ' value="' + fScaleMin + '" style="width:70px;">' +
+                   ' value="' + fScaleMin + '" onwheel="this.blur()" style="width:70px;">' +
           '</div>' +
           '<div>' +
             '<label class="form-label small mb-1">Até</label>' +
             '<input type="number" class="form-control form-control-sm field-scale-max"' +
-                   ' value="' + fScaleMax + '" style="width:70px;">' +
+                   ' value="' + fScaleMax + '" onwheel="this.blur()" style="width:70px;">' +
           '</div>' +
           '<div>' +
             '<label class="form-label small mb-1">Passo</label>' +
             '<input type="number" class="form-control form-control-sm field-scale-step"' +
-                   ' value="' + fScaleStep + '" min="1" style="width:70px;">' +
+                   ' value="' + fScaleStep + '" min="1" onwheel="this.blur()" style="width:70px;">' +
           '</div>' +
           '<div>' +
             '<label class="form-label small mb-1">Extremo baixo</label>' +
@@ -687,9 +687,12 @@ function duplicateField(sourceCard) {
 
   if (OPTIONS_TYPES.has(type))  fd.options   = collectOptions(sourceCard);
   if (SCALE_TYPES.has(type)) {
-    fd.min       = parseFloat(sourceCard.querySelector('.field-scale-min').value)  || 1;
-    fd.max       = parseFloat(sourceCard.querySelector('.field-scale-max').value)  || 5;
-    fd.step      = parseFloat(sourceCard.querySelector('.field-scale-step').value) || 1;
+    var rawMin  = parseFloat(sourceCard.querySelector('.field-scale-min').value);
+    var rawMax  = parseFloat(sourceCard.querySelector('.field-scale-max').value);
+    var rawStep = parseFloat(sourceCard.querySelector('.field-scale-step').value);
+    fd.min  = isNaN(rawMin)  ? 1 : rawMin;
+    fd.max  = isNaN(rawMax)  ? 5 : rawMax;
+    fd.step = isNaN(rawStep) || rawStep < 1 ? 1 : rawStep;
     var low  = sourceCard.querySelector('.field-scale-low');
     var high = sourceCard.querySelector('.field-scale-high');
     if (low)  fd.low_label  = low.value;
@@ -739,9 +742,12 @@ document.getElementById('template-form').addEventListener('submit', function(e) 
     }
 
     if (SCALE_TYPES.has(type)) {
-      field.min  = parseFloat(card.querySelector('.field-scale-min').value)  || 1;
-      field.max  = parseFloat(card.querySelector('.field-scale-max').value)  || 5;
-      field.step = parseFloat(card.querySelector('.field-scale-step').value) || 1;
+      var rawMin  = parseFloat(card.querySelector('.field-scale-min').value);
+      var rawMax  = parseFloat(card.querySelector('.field-scale-max').value);
+      var rawStep = parseFloat(card.querySelector('.field-scale-step').value);
+      field.min  = isNaN(rawMin)  ? 1 : rawMin;
+      field.max  = isNaN(rawMax)  ? 5 : rawMax;
+      field.step = isNaN(rawStep) || rawStep < 1 ? 1 : rawStep;
       var low  = card.querySelector('.field-scale-low');
       var high = card.querySelector('.field-scale-high');
       if (low  && low.value.trim())  field.low_label  = low.value.trim();
