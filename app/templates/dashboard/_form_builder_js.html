@@ -93,7 +93,7 @@ function conditionValueInputHTML(value) {
          ' value="' + escHtml(value || '') + '" placeholder="valor" style="min-width:130px;">';
 }
 
-
+function updateAllConditionDropdowns() {
   var allFields = refreshAndGetAllFields();
   document.querySelectorAll('.field-card:not(.field-section-card)').forEach(function(card) {
     var sourceSelect = card.querySelector('.field-cond-source');
