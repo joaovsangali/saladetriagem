@@ -34,15 +34,27 @@ def _persist_pending_submissions(session: DashboardSession, *, status: str = "re
     if not pending:
         return 0
 
+    def _naive_utc(dt):
+        """Return a naive UTC datetime for comparison (strips tzinfo if present)."""
+        if dt is None:
+            return None
+        if getattr(dt, 'tzinfo', None) is not None:
+            return dt.replace(tzinfo=None)
+        return dt
+
+    # Fetch all existing entries for this session in one query (avoids N+1)
+    existing_entries = MinimalLogEntry.query.filter_by(
+        dashboard_id=session.id,
+    ).with_entities(
+        MinimalLogEntry.guest_display_name,
+        MinimalLogEntry.received_at,
+    ).all()
+    existing_keys = {(e.guest_display_name, _naive_utc(e.received_at)) for e in existing_entries}
+
     now = datetime.now(timezone.utc)
     count = 0
     for sub in pending:
-        existing = MinimalLogEntry.query.filter_by(
-            dashboard_id=session.id,
-            guest_display_name=sub.guest_name,
-            received_at=sub.received_at,
-        ).first()
-        if existing:
+        if (sub.guest_name, _naive_utc(sub.received_at)) in existing_keys:
             continue
         db.session.add(
             MinimalLogEntry(
