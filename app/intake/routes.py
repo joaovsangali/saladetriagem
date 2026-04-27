@@ -150,8 +150,8 @@ def submit(token):
                     if num_val < 0:
                         flash(f"{field.get('label', field_id)}: valores negativos não são permitidos.", "danger")
                         return redirect(url_for("intake.form", token=token))
-                    # Sanitize: store as string representation of the parsed number
-                    value = str(num_val) if '.' in value else str(int(num_val))
+                    # Sanitize: preserve fractional part only when meaningful
+                    value = str(num_val) if num_val % 1 != 0 else str(int(num_val))
                 except ValueError:
                     flash(f"{field.get('label', field_id)}: valor inválido.", "danger")
                     return redirect(url_for("intake.form", token=token))
