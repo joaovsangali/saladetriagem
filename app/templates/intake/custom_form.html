@@ -1,11 +1,11 @@
 {% extends "base.html" %}
-{% block title %}Triagem Personalizada{% endblock %}
+{% block title %}{{ form_name or 'Triagem Personalizada' }}{% endblock %}
 {% block content %}
 <div class="row justify-content-center">
   <div class="col-md-8 col-lg-6">
     <div class="card shadow-sm">
       <div class="card-body">
-        <h4 class="card-title mb-4">Triagem</h4>
+        <h4 class="card-title mb-4">{{ form_name or 'Triagem' }}</h4>
 
         <form method="POST" action="{{ url_for('intake.submit', token=token) }}" enctype="multipart/form-data" id="custom-intake-form">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -33,7 +33,7 @@
               <div class="text-center my-2">
                 {% if field.get('image_url') %}
                   <img src="{{ field.image_url }}" alt="{{ field.label }}"
-                       class="img-fluid rounded" style="max-height:300px;">
+                       class="img-fluid rounded" style="max-height:300px;" onerror="this.style.display='none'">
                 {% endif %}
                 {% if field.label %}
                   <p class="text-muted small mt-1">{{ field.label }}</p>
@@ -87,7 +87,7 @@
                                  value="{{ opt_value }}"
                                  {% if field.get('required') and not cond %}required{% endif %}>
                           <img src="{{ option.image_url }}" alt="{{ opt_label }}"
-                               style="height:48px;width:48px;object-fit:cover;border-radius:4px;">
+                               style="height:48px;width:48px;object-fit:cover;border-radius:4px;" onerror="this.style.display='none'">
                           {{ opt_label }}
                         </label>
                       {% else %}
@@ -113,17 +113,19 @@
                     <div class="form-check {% if field.get('layout') == 'inline' %}form-check-inline{% endif %}">
                       {% if option is mapping and option.get('image_url') %}
                         <label class="form-check-label d-flex align-items-center gap-2">
-                          <input class="form-check-input" type="checkbox"
+                          <input class="form-check-input conditional-trigger" type="checkbox"
                                  name="field_{{ field.id }}"
+                                 data-trigger-id="{{ field.id }}"
                                  value="{{ opt_value }}">
                           <img src="{{ option.image_url }}" alt="{{ opt_label }}"
-                               style="height:48px;width:48px;object-fit:cover;border-radius:4px;">
+                               style="height:48px;width:48px;object-fit:cover;border-radius:4px;" onerror="this.style.display='none'">
                           {{ opt_label }}
                         </label>
                       {% else %}
-                        <input class="form-check-input" type="checkbox"
+                        <input class="form-check-input conditional-trigger" type="checkbox"
                                name="field_{{ field.id }}"
                                id="field_{{ field.id }}_{{ loop.index }}"
+                               data-trigger-id="{{ field.id }}"
                                value="{{ opt_value }}">
                         <label class="form-check-label" for="field_{{ field.id }}_{{ loop.index }}">
                           {{ opt_label }}
@@ -213,8 +215,21 @@ function validateFileCount(input, max) {
     dependents[triggerFieldId].push(wrapper);
   });
 
+  // Returns a string (select/radio) or an Array of strings (checkbox).
   function getFieldValue(fieldId) {
-    // radio — iterate without putting fieldId in selector string
+    // checkbox — collect all checked values as an array
+    const checkboxes = document.querySelectorAll('input[type="checkbox"][data-trigger-id]');
+    let checkboxValues = [];
+    let foundCheckbox = false;
+    for (let i = 0; i < checkboxes.length; i++) {
+      if (checkboxes[i].dataset.triggerId === fieldId) {
+        foundCheckbox = true;
+        if (checkboxes[i].checked) checkboxValues.push(checkboxes[i].value);
+      }
+    }
+    if (foundCheckbox) return checkboxValues;
+
+    // radio
     const radios = document.querySelectorAll('input[type="radio"][data-trigger-id]');
     for (let i = 0; i < radios.length; i++) {
       if (radios[i].dataset.triggerId === fieldId && radios[i].checked) return radios[i].value;
@@ -236,7 +251,9 @@ function validateFileCount(input, max) {
     const condFieldId = wrapper.dataset.conditionField;
     const condValue   = wrapper.dataset.conditionValue;
     const current     = getFieldValue(condFieldId);
-    const show        = (current === condValue);
+    // For checkbox (array): show if the expected value is among the checked ones.
+    // For select/radio (string): show if values match exactly.
+    const show = Array.isArray(current) ? current.includes(condValue) : (current === condValue);
     wrapper.style.display = show ? '' : 'none';
     // Disable/enable required inputs inside hidden/shown wrappers
     wrapper.querySelectorAll('input, textarea, select').forEach(function (el) {
@@ -250,7 +267,14 @@ function validateFileCount(input, max) {
   }
 
   function attachListeners(fieldId) {
-    // radios — iterate without putting fieldId in selector string
+    // checkboxes
+    document.querySelectorAll('input[type="checkbox"][data-trigger-id]').forEach(function (el) {
+      if (el.dataset.triggerId !== fieldId) return;
+      el.addEventListener('change', function () {
+        (dependents[fieldId] || []).forEach(evaluateCondition);
+      });
+    });
+    // radios
     document.querySelectorAll('input[type="radio"][data-trigger-id]').forEach(function (el) {
       if (el.dataset.triggerId !== fieldId) return;
       el.addEventListener('change', function () {
