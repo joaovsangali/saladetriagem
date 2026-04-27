@@ -25,7 +25,12 @@ def expire_sessions_task():
     active_sessions = DashboardSession.query.filter_by(is_active=True).all()
 
     for session in active_sessions:
+        if session.is_infinite:
+            continue  # skip infinite sessions — they never expire automatically
+
         expires = session.expires_at
+        if expires is None:
+            continue  # safeguard: no expiry set
         if expires.tzinfo is None:
             expires = expires.replace(tzinfo=timezone.utc)
 

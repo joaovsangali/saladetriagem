@@ -15,6 +15,16 @@
     <input type="text" name="name" id="template-name" class="form-control" placeholder="Ex: Triagem Clínica, Atendimento Geral" required>
   </div>
 
+  <div class="mb-3">
+    <div class="form-check">
+      <input class="form-check-input" type="checkbox" name="allow_attachments" value="true" id="allow_attachments">
+      <label class="form-check-label" for="allow_attachments">
+        Permitir envio de imagens/PDF neste formulário
+      </label>
+    </div>
+    <div class="form-text text-muted">Se habilitado, o formulário permitirá upload de arquivos (imagens e PDFs) conforme os limites do seu plano.</div>
+  </div>
+
   <h5 class="mt-4">Campos do Formulário</h5>
   <p class="text-muted small">Mínimo de 2 campos. Os primeiros dois campos devem ser Nome e E-mail.</p>
 
