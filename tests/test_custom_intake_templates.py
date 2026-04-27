@@ -266,12 +266,13 @@ def test_schema_option_with_html_in_label_rejected():
 
 
 def test_schema_condition_valid():
+    # condition.field_id is a free-form string (the validator does not cross-check IDs)
     schema = {
         "fields": [
             {"id": "name", "label": "Nome", "type": "text"},
             {"id": "type_q", "label": "Tipo", "type": "radio", "options": ["A", "B"]},
             {"id": "detail", "label": "Detalhe A", "type": "textarea",
-             "condition": {"field_id": "type_q_1", "value": "A"}},
+             "condition": {"field_id": "type_q", "value": "A"}},
         ]
     }
     valid, err = validate_custom_intake_schema(schema)

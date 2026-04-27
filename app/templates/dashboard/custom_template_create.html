@@ -474,8 +474,7 @@ document.getElementById('template-form').addEventListener('submit', function(e) 
     const required = card.querySelector('.field-required').checked;
     const placeholder = card.querySelector('.field-placeholder').value.trim();
 
-    if (!DISPLAY_ONLY.has(type) && !label) { valid = false; return; }
-    if (DISPLAY_ONLY.has(type) && !label)   { valid = false; return; }
+    if (!label) { valid = false; return; }
 
     const idx = card.dataset.index;
     const field = {
