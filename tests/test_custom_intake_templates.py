@@ -134,6 +134,191 @@ def test_schema_select_requires_options():
 
 
 # ---------------------------------------------------------------------------
+# v2 field type unit tests
+# ---------------------------------------------------------------------------
+
+def test_schema_radio_valid():
+    schema = {
+        "fields": [
+            {"id": "name", "label": "Nome", "type": "text"},
+            {"id": "color", "label": "Cor", "type": "radio",
+             "options": ["Vermelho", "Azul", "Verde"]},
+        ]
+    }
+    valid, err = validate_custom_intake_schema(schema)
+    assert valid is True, err
+
+
+def test_schema_radio_requires_options():
+    schema = {
+        "fields": [
+            {"id": "name", "label": "Nome", "type": "text"},
+            {"id": "q", "label": "Q", "type": "radio"},
+        ]
+    }
+    valid, err = validate_custom_intake_schema(schema)
+    assert valid is False
+    assert "opção" in err.lower() or "uma opção" in err.lower()
+
+
+def test_schema_checkbox_valid():
+    schema = {
+        "fields": [
+            {"id": "name", "label": "Nome", "type": "text"},
+            {"id": "items", "label": "Itens", "type": "checkbox",
+             "options": ["A", "B"]},
+        ]
+    }
+    valid, err = validate_custom_intake_schema(schema)
+    assert valid is True, err
+
+
+def test_schema_scale_valid():
+    schema = {
+        "fields": [
+            {"id": "name", "label": "Nome", "type": "text"},
+            {"id": "pain", "label": "Dor", "type": "scale",
+             "min": 0, "max": 10, "step": 1},
+        ]
+    }
+    valid, err = validate_custom_intake_schema(schema)
+    assert valid is True, err
+
+
+def test_schema_scale_invalid_min():
+    schema = {
+        "fields": [
+            {"id": "name", "label": "Nome", "type": "text"},
+            {"id": "pain", "label": "Dor", "type": "scale", "min": "bad"},
+        ]
+    }
+    valid, err = validate_custom_intake_schema(schema)
+    assert valid is False
+    assert "numérico" in err
+
+
+def test_schema_section_header_counts_as_display_only():
+    """A schema with 2 submittable fields + 1 section_header is valid."""
+    schema = {
+        "fields": [
+            {"id": "sec1", "label": "Seção 1", "type": "section_header"},
+            {"id": "name", "label": "Nome", "type": "text"},
+            {"id": "email", "label": "E-mail", "type": "email"},
+        ]
+    }
+    valid, err = validate_custom_intake_schema(schema)
+    assert valid is True, err
+
+
+def test_schema_only_display_only_fields_invalid():
+    """Only section_header fields → fails minimum submittable count."""
+    schema = {
+        "fields": [
+            {"id": "h1", "label": "Header 1", "type": "section_header"},
+            {"id": "h2", "label": "Header 2", "type": "section_header"},
+        ]
+    }
+    valid, err = validate_custom_intake_schema(schema)
+    assert valid is False
+    assert "2 campos" in err
+
+
+def test_schema_image_display_valid():
+    schema = {
+        "fields": [
+            {"id": "name", "label": "Nome", "type": "text"},
+            {"id": "img", "label": "Foto do produto", "type": "image_display",
+             "image_url": "https://example.com/img.jpg"},
+            {"id": "email", "label": "E-mail", "type": "email"},
+        ]
+    }
+    valid, err = validate_custom_intake_schema(schema)
+    assert valid is True, err
+
+
+def test_schema_option_with_image_url_valid():
+    """Options can be dicts with label/value/image_url."""
+    schema = {
+        "fields": [
+            {"id": "name", "label": "Nome", "type": "text"},
+            {"id": "item", "label": "Item", "type": "radio",
+             "options": [
+                 {"label": "Hambúrguer", "value": "burger", "image_url": "https://example.com/b.jpg"},
+                 {"label": "Pizza", "value": "pizza"},
+             ]},
+        ]
+    }
+    valid, err = validate_custom_intake_schema(schema)
+    assert valid is True, err
+
+
+def test_schema_option_with_html_in_label_rejected():
+    schema = {
+        "fields": [
+            {"id": "name", "label": "Nome", "type": "text"},
+            {"id": "item", "label": "Item", "type": "radio",
+             "options": [{"label": "<b>Hambúrguer</b>", "value": "burger"}]},
+        ]
+    }
+    valid, err = validate_custom_intake_schema(schema)
+    assert valid is False
+    assert "HTML" in err
+
+
+def test_schema_condition_valid():
+    # condition.field_id is a free-form string (the validator does not cross-check IDs)
+    schema = {
+        "fields": [
+            {"id": "name", "label": "Nome", "type": "text"},
+            {"id": "type_q", "label": "Tipo", "type": "radio", "options": ["A", "B"]},
+            {"id": "detail", "label": "Detalhe A", "type": "textarea",
+             "condition": {"field_id": "type_q", "value": "A"}},
+        ]
+    }
+    valid, err = validate_custom_intake_schema(schema)
+    assert valid is True, err
+
+
+def test_schema_condition_missing_value():
+    schema = {
+        "fields": [
+            {"id": "name", "label": "Nome", "type": "text"},
+            {"id": "email", "label": "E-mail", "type": "email",
+             "condition": {"field_id": "name_0"}},   # missing 'value'
+        ]
+    }
+    valid, err = validate_custom_intake_schema(schema)
+    assert valid is False
+    assert "field_id" in err or "value" in err
+
+
+def test_schema_duplicate_id_rejected():
+    schema = {
+        "fields": [
+            {"id": "dup", "label": "Nome", "type": "text"},
+            {"id": "dup", "label": "E-mail", "type": "email"},
+        ]
+    }
+    valid, err = validate_custom_intake_schema(schema)
+    assert valid is False
+    assert "duplicado" in err
+
+
+def test_v1_schema_backward_compatible():
+    """Old v1 schemas (text/email/select only) must still validate."""
+    v1_schema = {
+        "fields": [
+            {"id": "name", "label": "Nome", "type": "text", "required": True},
+            {"id": "email", "label": "E-mail", "type": "email", "required": True},
+            {"id": "crime", "label": "Natureza", "type": "select",
+             "options": ["Furto", "Roubo", "Outro"]},
+        ]
+    }
+    valid, err = validate_custom_intake_schema(v1_schema)
+    assert valid is True, err
+
+
+# ---------------------------------------------------------------------------
 # Model tests
 # ---------------------------------------------------------------------------
 

@@ -122,13 +122,23 @@ def submit(token):
             return render_template("intake/expired.html")
 
         schema = template.schema
+        # Field types that hold no submittable user data
+        _DISPLAY_ONLY = {"section_header", "image_display"}
         answers = {}
         for field in schema.get("fields", []):
             field_id = field.get("id")
             if not field_id:
                 continue
+            ftype = field.get("type", "text")
+            if ftype in _DISPLAY_ONLY:
+                continue
             required = field.get("required", False)
-            value = request.form.get(f"field_{field_id}", "").strip()
+            if ftype == "checkbox":
+                # Multi-value: getlist returns [] when nothing is selected
+                values = request.form.getlist(f"field_{field_id}")
+                value = ", ".join(v.strip() for v in values if v.strip())
+            else:
+                value = request.form.get(f"field_{field_id}", "").strip()
             if required and not value:
                 flash(f"{field.get('label', field_id)} é obrigatório.", "danger")
                 return redirect(url_for("intake.form", token=token))

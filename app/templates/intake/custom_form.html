@@ -7,42 +7,166 @@
       <div class="card-body">
         <h4 class="card-title mb-4">Triagem</h4>
 
-        <form method="POST" action="{{ url_for('intake.submit', token=token) }}" enctype="multipart/form-data">
+        <form method="POST" action="{{ url_for('intake.submit', token=token) }}" enctype="multipart/form-data" id="custom-intake-form">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
           {% for field in schema.get('fields', []) %}
-          <div class="mb-3">
-            <label for="field_{{ field.id }}" class="form-label">
-              {{ field.label }}{% if field.get('required') %}<span class="text-danger ms-1">*</span>{% endif %}
-            </label>
+          {% set cond = field.get('condition') %}
+          <div class="mb-3 form-field-wrapper"
+               data-field-id="{{ field.id }}"
+               {% if cond %}
+               data-condition-field="{{ cond.field_id }}"
+               data-condition-value="{{ cond.value }}"
+               style="display:none;"
+               {% endif %}>
 
-            {% if field.type == 'textarea' %}
-              <textarea
-                name="field_{{ field.id }}"
-                id="field_{{ field.id }}"
-                class="form-control"
-                rows="3"
-                {% if field.get('required') %}required{% endif %}></textarea>
+            {# ── section_header ── #}
+            {% if field.type == 'section_header' %}
+              <hr class="mt-4 mb-1">
+              <h5 class="text-primary mb-0">{{ field.label }}</h5>
+              {% if field.get('description') %}
+                <p class="text-muted small mb-2">{{ field.description }}</p>
+              {% endif %}
 
-            {% elif field.type == 'select' %}
-              <select
-                name="field_{{ field.id }}"
-                id="field_{{ field.id }}"
-                class="form-select"
-                {% if field.get('required') %}required{% endif %}>
-                <option value="">Selecione...</option>
-                {% for option in field.get('options', []) %}
-                  <option value="{{ option }}">{{ option }}</option>
-                {% endfor %}
-              </select>
+            {# ── image_display ── #}
+            {% elif field.type == 'image_display' %}
+              <div class="text-center my-2">
+                {% if field.get('image_url') %}
+                  <img src="{{ field.image_url }}" alt="{{ field.label }}"
+                       class="img-fluid rounded" style="max-height:300px;">
+                {% endif %}
+                {% if field.label %}
+                  <p class="text-muted small mt-1">{{ field.label }}</p>
+                {% endif %}
+              </div>
 
+            {# ── all submittable fields ── #}
             {% else %}
-              <input
-                type="{{ field.type }}"
-                name="field_{{ field.id }}"
-                id="field_{{ field.id }}"
-                class="form-control"
-                {% if field.get('required') %}required{% endif %}>
+              <label for="field_{{ field.id }}" class="form-label">
+                {{ field.label }}{% if field.get('required') %}<span class="text-danger ms-1">*</span>{% endif %}
+              </label>
+
+              {% if field.type == 'textarea' %}
+                <textarea
+                  name="field_{{ field.id }}"
+                  id="field_{{ field.id }}"
+                  class="form-control"
+                  rows="3"
+                  {% if field.get('required') and not cond %}required{% endif %}></textarea>
+
+              {% elif field.type == 'select' %}
+                <select
+                  name="field_{{ field.id }}"
+                  id="field_{{ field.id }}"
+                  class="form-select conditional-trigger"
+                  data-trigger-id="{{ field.id }}"
+                  {% if field.get('required') and not cond %}required{% endif %}>
+                  <option value="">Selecione...</option>
+                  {% for option in field.get('options', []) %}
+                    {% if option is mapping %}
+                      <option value="{{ option.value if option.value is defined else option.label }}">
+                        {% if option.get('image_url') %}<span>🖼</span> {% endif %}{{ option.label }}
+                      </option>
+                    {% else %}
+                      <option value="{{ option }}">{{ option }}</option>
+                    {% endif %}
+                  {% endfor %}
+                </select>
+
+              {% elif field.type == 'radio' %}
+                <div id="field_{{ field.id }}">
+                  {% for option in field.get('options', []) %}
+                    {% set opt_label = option.label if option is mapping else option %}
+                    {% set opt_value = (option.value if option.value is defined else option.label) if option is mapping else option %}
+                    <div class="form-check {% if field.get('layout') == 'inline' %}form-check-inline{% endif %}">
+                      {% if option is mapping and option.get('image_url') %}
+                        <label class="form-check-label d-flex align-items-center gap-2">
+                          <input class="form-check-input conditional-trigger" type="radio"
+                                 name="field_{{ field.id }}"
+                                 data-trigger-id="{{ field.id }}"
+                                 value="{{ opt_value }}"
+                                 {% if field.get('required') and not cond %}required{% endif %}>
+                          <img src="{{ option.image_url }}" alt="{{ opt_label }}"
+                               style="height:48px;width:48px;object-fit:cover;border-radius:4px;">
+                          {{ opt_label }}
+                        </label>
+                      {% else %}
+                        <input class="form-check-input conditional-trigger" type="radio"
+                               name="field_{{ field.id }}"
+                               id="field_{{ field.id }}_{{ loop.index }}"
+                               data-trigger-id="{{ field.id }}"
+                               value="{{ opt_value }}"
+                               {% if field.get('required') and not cond %}required{% endif %}>
+                        <label class="form-check-label" for="field_{{ field.id }}_{{ loop.index }}">
+                          {{ opt_label }}
+                        </label>
+                      {% endif %}
+                    </div>
+                  {% endfor %}
+                </div>
+
+              {% elif field.type == 'checkbox' %}
+                <div id="field_{{ field.id }}">
+                  {% for option in field.get('options', []) %}
+                    {% set opt_label = option.label if option is mapping else option %}
+                    {% set opt_value = (option.value if option.value is defined else option.label) if option is mapping else option %}
+                    <div class="form-check {% if field.get('layout') == 'inline' %}form-check-inline{% endif %}">
+                      {% if option is mapping and option.get('image_url') %}
+                        <label class="form-check-label d-flex align-items-center gap-2">
+                          <input class="form-check-input" type="checkbox"
+                                 name="field_{{ field.id }}"
+                                 value="{{ opt_value }}">
+                          <img src="{{ option.image_url }}" alt="{{ opt_label }}"
+                               style="height:48px;width:48px;object-fit:cover;border-radius:4px;">
+                          {{ opt_label }}
+                        </label>
+                      {% else %}
+                        <input class="form-check-input" type="checkbox"
+                               name="field_{{ field.id }}"
+                               id="field_{{ field.id }}_{{ loop.index }}"
+                               value="{{ opt_value }}">
+                        <label class="form-check-label" for="field_{{ field.id }}_{{ loop.index }}">
+                          {{ opt_label }}
+                        </label>
+                      {% endif %}
+                    </div>
+                  {% endfor %}
+                </div>
+
+              {% elif field.type == 'scale' %}
+                {% set scale_min = field.get('min', 1) %}
+                {% set scale_max = field.get('max', 5) %}
+                {% set scale_step = field.get('step', 1) %}
+                {% set low_label = field.get('low_label', '') %}
+                {% set high_label = field.get('high_label', '') %}
+                <div class="d-flex align-items-center gap-2">
+                  {% if low_label %}<span class="text-muted small text-nowrap">{{ low_label }}</span>{% endif %}
+                  <input type="range"
+                         name="field_{{ field.id }}"
+                         id="field_{{ field.id }}"
+                         class="form-range flex-grow-1"
+                         min="{{ scale_min }}" max="{{ scale_max }}" step="{{ scale_step }}"
+                         value="{{ scale_min }}"
+                         oninput="document.getElementById('scale_val_{{ field.id }}').textContent=this.value"
+                         {% if field.get('required') and not cond %}required{% endif %}>
+                  {% if high_label %}<span class="text-muted small text-nowrap">{{ high_label }}</span>{% endif %}
+                  <span class="badge bg-primary ms-1" id="scale_val_{{ field.id }}">{{ scale_min }}</span>
+                </div>
+
+              {% else %}
+                {# text, email, number, date — and any unknown v1 types #}
+                <input
+                  type="{{ field.type }}"
+                  name="field_{{ field.id }}"
+                  id="field_{{ field.id }}"
+                  class="form-control"
+                  {% if field.get('placeholder') %}placeholder="{{ field.placeholder }}"{% endif %}
+                  {% if field.get('required') and not cond %}required{% endif %}>
+              {% endif %}
+
+              {% if field.get('hint') %}
+                <div class="form-text text-muted">{{ field.hint }}</div>
+              {% endif %}
             {% endif %}
           </div>
           {% endfor %}
@@ -76,5 +200,77 @@ function validateFileCount(input, max) {
     input.value = '';
   }
 }
+
+// ── Conditional logic ──────────────────────────────────────────────────────
+(function () {
+  'use strict';
+
+  // Build a map: triggering field_id → list of dependent wrappers
+  const dependents = {};
+  document.querySelectorAll('.form-field-wrapper[data-condition-field]').forEach(function (wrapper) {
+    const triggerFieldId = wrapper.dataset.conditionField;
+    if (!dependents[triggerFieldId]) dependents[triggerFieldId] = [];
+    dependents[triggerFieldId].push(wrapper);
+  });
+
+  function getFieldValue(fieldId) {
+    // radio — iterate without putting fieldId in selector string
+    const radios = document.querySelectorAll('input[type="radio"][data-trigger-id]');
+    for (let i = 0; i < radios.length; i++) {
+      if (radios[i].dataset.triggerId === fieldId && radios[i].checked) return radios[i].value;
+    }
+    // select
+    const selects = document.querySelectorAll('select[data-trigger-id]');
+    for (let i = 0; i < selects.length; i++) {
+      if (selects[i].dataset.triggerId === fieldId) return selects[i].value;
+    }
+    // fallback: named input
+    const all = document.querySelectorAll('[name]');
+    for (let i = 0; i < all.length; i++) {
+      if (all[i].name === 'field_' + fieldId) return all[i].value;
+    }
+    return '';
+  }
+
+  function evaluateCondition(wrapper) {
+    const condFieldId = wrapper.dataset.conditionField;
+    const condValue   = wrapper.dataset.conditionValue;
+    const current     = getFieldValue(condFieldId);
+    const show        = (current === condValue);
+    wrapper.style.display = show ? '' : 'none';
+    // Disable/enable required inputs inside hidden/shown wrappers
+    wrapper.querySelectorAll('input, textarea, select').forEach(function (el) {
+      if (!show) {
+        el.dataset.savedRequired = el.required;
+        el.required = false;
+      } else if (el.dataset.savedRequired === 'true') {
+        el.required = true;
+      }
+    });
+  }
+
+  function attachListeners(fieldId) {
+    // radios — iterate without putting fieldId in selector string
+    document.querySelectorAll('input[type="radio"][data-trigger-id]').forEach(function (el) {
+      if (el.dataset.triggerId !== fieldId) return;
+      el.addEventListener('change', function () {
+        (dependents[fieldId] || []).forEach(evaluateCondition);
+      });
+    });
+    // select
+    document.querySelectorAll('select[data-trigger-id]').forEach(function (sel) {
+      if (sel.dataset.triggerId !== fieldId) return;
+      sel.addEventListener('change', function () {
+        (dependents[fieldId] || []).forEach(evaluateCondition);
+      });
+    });
+  }
+
+  Object.keys(dependents).forEach(attachListeners);
+  // Evaluate on page load (all hidden by default via inline style)
+  Object.keys(dependents).forEach(function (fieldId) {
+    dependents[fieldId].forEach(evaluateCondition);
+  });
+}());
 </script>
 {% endblock %}
