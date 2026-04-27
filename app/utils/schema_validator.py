@@ -141,7 +141,7 @@ def validate_custom_intake_schema(schema):
                 return False, f"Campo '{fid}' depende de campo inexistente: '{ref_id}'"
 
     # Detect circular dependencies (field A depends on B, B depends on A)
-    deps: dict = {}
+    deps: dict[str, str] = {}
     for field in schema["fields"]:
         condition = field.get("condition")
         if condition and isinstance(condition, dict):
@@ -149,8 +149,8 @@ def validate_custom_intake_schema(schema):
             if ref_id:
                 deps[field["id"]] = ref_id
 
-    visited: set = set()
-    rec_stack: set = set()
+    visited: set[str] = set()
+    rec_stack: set[str] = set()
 
     def _is_cyclic(fid: str) -> bool:
         visited.add(fid)

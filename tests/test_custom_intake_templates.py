@@ -406,6 +406,7 @@ def test_schema_condition_no_self_reference():
     }
     valid, err = validate_custom_intake_schema(schema)
     assert valid is False
+    assert "circular" in err.lower()
 
 
 def test_v1_schema_backward_compatible():
