@@ -39,15 +39,20 @@
             <tr><td>Compartilhamento</td><td>{% if limits.can_share_session %}✅{% elif limits.can_join_shared_session %}Entrar apenas{% else %}❌{% endif %}</td></tr>
             <tr><td>Modelos personalizados</td><td>{% if limits.can_create_custom_schema %}✅{% else %}❌{% endif %}</td></tr>
           </tbody>
-
-                  <div class="mt-3 p-2 bg-light rounded">
+        </table>
+<div class="mt-3 p-2 bg-light rounded">
   <span class="small fw-semibold">Triagens restantes este mês:</span>
   <span class="small ms-1">
-    {{ sessions_remaining }} / {{ limits.max_sessions_per_month }}
+    {{ sessions_remaining or 0 }} / {{ limits.max_sessions_per_month or 0 }}
   </span>
 
-  <div class="progress mt-1" style="height: 6px;">
+  {% if limits.max_sessions_per_month and limits.max_sessions_per_month > 0 %}
     {% set pct = [(sessions_used / limits.max_sessions_per_month * 100)|int, 100]|min %}
+  {% else %}
+    {% set pct = 0 %}
+  {% endif %}
+
+  <div class="progress mt-1" style="height: 6px;">
     <div class="progress-bar 
       {% if pct >= 90 %}bg-danger
       {% elif pct >= 70 %}bg-warning
@@ -57,8 +62,6 @@
     </div>
   </div>
 </div>
-        </table>
-
 
       </div>
     </div>
