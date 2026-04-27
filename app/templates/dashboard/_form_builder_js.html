@@ -1,3 +1,11 @@
+<style>
+.fb-upload-zone { min-height:60px; transition:background .15s; }
+.fb-upload-zone-active .fb-upload-placeholder { background:#e8f4ff!important; border-color:#0d6efd!important; }
+.drag-handle { cursor:grab; touch-action:none; opacity:.45; }
+.drag-handle:hover { opacity:1; }
+.sortable-ghost { opacity:.35; }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 <script>
 (function() {
 'use strict';
@@ -8,6 +16,10 @@ var SCALE_TYPES       = new Set(['scale']);
 var IMAGE_TYPES       = new Set(['image_display']);
 var DISPLAY_ONLY      = new Set(['section_header', 'image_display']);
 var PLACEHOLDER_TYPES = new Set(['text', 'email', 'textarea', 'number', 'date']);
+var CONDITION_VALID_TYPES = new Set(['select', 'radio', 'checkbox']);
+
+var IMAGE_UPLOAD_MAX_SIZE = 2 * 1024 * 1024; // 2 MB
+var IMAGE_UPLOAD_ALLOWED  = ['image/jpeg', 'image/png', 'image/gif'];
 
 var fieldCount = 0;
 
@@ -30,6 +42,117 @@ function escHtml(str) {
     .replace(/"/g, '&quot;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
+}
+
+/* ── CSRF ────────────────────────────────────────────────────── */
+function getCsrfToken() {
+  var el = document.querySelector('[name="csrf_token"]');
+  return el ? el.value : '';
+}
+
+/* ── Image upload to backend ─────────────────────────────────── */
+function uploadImage(file, onSuccess, onError) {
+  if (IMAGE_UPLOAD_ALLOWED.indexOf(file.type) === -1) {
+    if (onError) onError('Tipo de arquivo não suportado. Use JPEG, PNG ou GIF.');
+    return;
+  }
+  if (file.size > IMAGE_UPLOAD_MAX_SIZE) {
+    if (onError) onError('A imagem deve ter no máximo 2MB.');
+    return;
+  }
+  var fd = new FormData();
+  fd.append('image', file);
+  fetch('/dashboard/upload-image', {
+    method: 'POST',
+    body: fd,
+    headers: { 'X-CSRFToken': getCsrfToken() }
+  })
+  .then(function(resp) {
+    return resp.json().then(function(data) {
+      if (!resp.ok) throw new Error(data.error || 'Erro no upload.');
+      return data;
+    });
+  })
+  .then(function(data) { if (onSuccess) onSuccess(data.url); })
+  .catch(function(err) { if (onError) onError(err.message); });
+}
+
+/* ── Upload zone HTML builder ────────────────────────────────── */
+function buildUploadZoneHTML(existingUrl) {
+  var hasImg   = !!existingUrl;
+  var noStyle  = hasImg ? 'display:none;' : '';
+  var hasStyle = hasImg ? '' : 'display:none;';
+  return '<div class="fb-upload-zone border rounded p-2" style="cursor:pointer;">' +
+    '<div class="fb-upload-placeholder text-center text-muted bg-light" style="' + noStyle + 'border-style:dashed;">' +
+      '<i class="bi bi-cloud-upload fs-5"></i>' +
+      '<div class="small mt-1">Arraste uma imagem ou <u>clique para enviar</u></div>' +
+      '<div class="small" style="color:#aaa;font-size:.75rem;">JPEG, PNG, GIF — máx. 2MB</div>' +
+    '</div>' +
+    '<div class="fb-upload-preview text-center" style="' + hasStyle + '">' +
+      '<img src="' + escHtml(existingUrl || '') + '" class="img-fluid rounded border"' +
+           ' style="max-height:120px;object-fit:contain;">' +
+      '<div class="mt-1">' +
+        '<button type="button" class="btn btn-outline-danger btn-sm fb-upload-clear">' +
+          '<i class="bi bi-x"></i> Remover imagem' +
+        '</button>' +
+      '</div>' +
+    '</div>' +
+    '<input type="file" class="fb-upload-input" accept="image/jpeg,image/png,image/gif" style="display:none;">' +
+  '</div>';
+}
+
+/* ── Attach upload zone event listeners ──────────────────────── */
+function attachUploadZone(zone, hiddenInput) {
+  var fileInput   = zone.querySelector('.fb-upload-input');
+  var placeholder = zone.querySelector('.fb-upload-placeholder');
+  var preview     = zone.querySelector('.fb-upload-preview');
+  var previewImg  = preview ? preview.querySelector('img') : null;
+  var clearBtn    = zone.querySelector('.fb-upload-clear');
+
+  function showPreview(url) {
+    if (hiddenInput) hiddenInput.value = url;
+    if (previewImg)  previewImg.src    = url;
+    if (preview)     preview.style.display     = '';
+    if (placeholder) placeholder.style.display = 'none';
+  }
+  function clearPreview() {
+    if (hiddenInput) hiddenInput.value = '';
+    if (previewImg)  previewImg.src    = '';
+    if (preview)     preview.style.display     = 'none';
+    if (placeholder) placeholder.style.display = '';
+  }
+  function handleFile(file) {
+    if (file) uploadImage(file, showPreview, function(err) { alert(err); });
+  }
+
+  zone.addEventListener('click', function(e) {
+    if (clearBtn && (e.target === clearBtn || clearBtn.contains(e.target))) return;
+    if (fileInput) fileInput.click();
+  });
+  if (fileInput) {
+    fileInput.addEventListener('change', function() {
+      if (this.files && this.files[0]) handleFile(this.files[0]);
+    });
+  }
+  zone.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    zone.classList.add('fb-upload-zone-active');
+  });
+  zone.addEventListener('dragleave', function(e) {
+    if (!zone.contains(e.relatedTarget)) zone.classList.remove('fb-upload-zone-active');
+  });
+  zone.addEventListener('drop', function(e) {
+    e.preventDefault();
+    zone.classList.remove('fb-upload-zone-active');
+    var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    if (f) handleFile(f);
+  });
+  if (clearBtn) {
+    clearBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      clearPreview();
+    });
+  }
 }
 
 /* ── Field data ──────────────────────────────────────────────── */
@@ -94,17 +217,23 @@ function conditionValueInputHTML(value) {
 }
 
 function updateAllConditionDropdowns() {
+  var allCards  = Array.from(document.querySelectorAll('.field-card'));
   var allFields = refreshAndGetAllFields();
-  document.querySelectorAll('.field-card:not(.field-section-card)').forEach(function(card) {
+  allCards.forEach(function(card, cardIndex) {
+    if (card.classList.contains('field-section-card')) return;
     var sourceSelect = card.querySelector('.field-cond-source');
     if (!sourceSelect) return;
     var currentCondId = card.querySelector('.field-cond-id')
                           ? card.querySelector('.field-cond-id').value : '';
     var thisId = card.dataset.fieldId || '';
 
-    sourceSelect.innerHTML = '<option value="">— escolha um campo —</option>';
+    sourceSelect.innerHTML = '<option value="">— escolha uma pergunta —</option>';
     allFields.forEach(function(f) {
       if (f.id === thisId) return;
+      if (!CONDITION_VALID_TYPES.has(f.type)) return;
+      var fCard = allCards.find(function(c) { return c.dataset.fieldId === f.id; });
+      if (!fCard) return;
+      if (allCards.indexOf(fCard) >= cardIndex) return; // only previous questions
       var opt = document.createElement('option');
       opt.value       = f.id;
       opt.textContent = f.label || '(sem nome)';
@@ -128,21 +257,23 @@ function addOptionCard(container, data) {
     '<div class="flex-grow-1">' +
       '<input type="text" class="form-control form-control-sm option-label"' +
              ' value="' + escHtml(label) + '" placeholder="Texto da opção">' +
-      '<div class="option-image-wrap mt-1" style="' + (imgUrl ? '' : 'display:none;') + '">' +
-        '<input type="url" class="form-control form-control-sm option-image"' +
-               ' value="' + escHtml(imgUrl) + '" placeholder="URL da imagem (opcional)">' +
-        '<div class="mt-1 option-img-preview" style="' + (imgUrl ? '' : 'display:none;') + '">' +
-          '<img src="' + escHtml(imgUrl) + '" class="rounded border"' +
-               ' style="height:36px;object-fit:cover;" onerror="this.style.display=\'none\'">' +
-        '</div>' +
+      '<input type="hidden" class="option-image" value="' + escHtml(imgUrl) + '">' +
+      '<div class="option-image-wrap mt-2" style="' + (imgUrl ? '' : 'display:none;') + '">' +
+        buildUploadZoneHTML(imgUrl) +
       '</div>' +
     '</div>' +
     '<div class="d-flex flex-column gap-1">' +
       '<button type="button" class="btn btn-outline-secondary btn-sm toggle-option-image px-2"' +
-              ' title="Adicionar imagem à opção"><i class="bi bi-image"></i></button>' +
+              ' title="Imagem da opção"><i class="bi bi-image"></i></button>' +
       '<button type="button" class="btn btn-outline-danger btn-sm remove-option px-2"' +
               ' title="Remover opção"><i class="bi bi-x"></i></button>' +
     '</div>';
+
+  var hiddenImg = div.querySelector('.option-image');
+  var zone = div.querySelector('.fb-upload-zone');
+  if (zone && hiddenImg) {
+    attachUploadZone(zone, hiddenImg);
+  }
 
   div.querySelector('.remove-option').addEventListener('click', function() {
     div.remove();
@@ -153,16 +284,6 @@ function addOptionCard(container, data) {
     var wrap    = div.querySelector('.option-image-wrap');
     var visible = wrap.style.display !== 'none';
     wrap.style.display = visible ? 'none' : '';
-    if (!visible) div.querySelector('.option-image').focus();
-  });
-
-  div.querySelector('.option-image').addEventListener('input', function() {
-    var preview = div.querySelector('.option-img-preview');
-    var img     = preview.querySelector('img');
-    var url     = this.value.trim();
-    img.src                  = url;
-    preview.style.display    = url ? '' : 'none';
-    img.style.display        = url ? '' : 'none';
   });
 
   container.appendChild(div);
@@ -211,6 +332,9 @@ function buildQuestionCardHTML(idx, d) {
 
     /* ── header ── */
     '<div class="card-header bg-white border-bottom py-2 px-3 d-flex flex-wrap align-items-center gap-2">' +
+      '<span class="drag-handle text-muted flex-shrink-0" title="Arrastar para reorganizar">' +
+        '<i class="bi bi-grip-vertical"></i>' +
+      '</span>' +
       '<span class="fw-semibold text-secondary small question-number" style="white-space:nowrap;min-width:84px;">' +
         'Pergunta ' + (idx + 1) +
       '</span>' +
@@ -283,36 +407,42 @@ function buildQuestionCardHTML(idx, d) {
         '</div>' +
       '</div>' +
 
-      /* image display */
+      /* image display — upload zone replaces URL input */
       '<div class="field-image-row" style="' + imageDisplay + '">' +
-        '<label class="form-label small mb-1">URL da imagem</label>' +
-        '<input type="url" class="form-control form-control-sm field-image-url"' +
-               ' value="' + escHtml(fImageUrl) + '" placeholder="https://...">' +
-        '<div class="field-image-preview mt-2" style="' + (fImageUrl ? '' : 'display:none;') + '">' +
-          '<img src="' + escHtml(fImageUrl) + '" class="rounded border img-fluid"' +
-               ' style="max-height:120px;object-fit:contain;"' +
-               ' onerror="this.parentElement.style.display=\'none\'">' +
-        '</div>' +
+        '<label class="form-label small mb-1">Imagem de exibição</label>' +
+        '<input type="hidden" class="field-image-url" value="' + escHtml(fImageUrl) + '">' +
+        buildUploadZoneHTML(fImageUrl) +
       '</div>' +
 
       /* condition UI */
-      '<div class="field-condition-ui mt-2" style="display:none;">' +
-        '<div class="d-flex flex-wrap align-items-center gap-2 p-2 rounded border bg-light">' +
-          '<span class="small text-muted">Mostrar esta pergunta se</span>' +
-          '<select class="form-select form-select-sm field-cond-source" style="width:auto;min-width:150px;">' +
-            '<option value="">— escolha um campo —</option>' +
-          '</select>' +
-          '<span class="small text-muted">for</span>' +
-          '<div class="field-cond-value-wrap d-inline-flex">' +
-            conditionValueInputHTML('') +
+      '<div class="field-condition-ui mt-3" style="display:none;">' +
+        '<div class="p-2 rounded border bg-light">' +
+          '<div class="small fw-semibold text-secondary mb-2">' +
+            '<i class="bi bi-funnel me-1"></i>Exibir esta pergunta com base em outra resposta' +
           '</div>' +
-          '<button type="button" class="btn btn-link btn-sm text-danger p-0 remove-condition-btn">Remover</button>' +
+          '<div class="d-flex flex-wrap align-items-center gap-2 mb-2">' +
+            '<label class="small text-muted mb-0" style="white-space:nowrap;">Depende da pergunta:</label>' +
+            '<select class="form-select form-select-sm field-cond-source" style="width:auto;min-width:160px;">' +
+              '<option value="">— escolha uma pergunta —</option>' +
+            '</select>' +
+          '</div>' +
+          '<div class="d-flex flex-wrap align-items-center gap-2">' +
+            '<label class="small text-muted mb-0" style="white-space:nowrap;">Mostrar quando a resposta for:</label>' +
+            '<div class="field-cond-value-wrap d-inline-flex">' +
+              conditionValueInputHTML('') +
+            '</div>' +
+          '</div>' +
+          '<div class="mt-2">' +
+            '<button type="button" class="btn btn-link btn-sm text-danger p-0 remove-condition-btn">' +
+              '<i class="bi bi-x-circle me-1"></i>Remover condição' +
+            '</button>' +
+          '</div>' +
         '</div>' +
       '</div>' +
       '<input type="hidden" class="field-cond-id" value="">' +
       '<button type="button" class="btn btn-link btn-sm text-secondary p-0 mt-2 add-condition-btn"' +
               ' style="font-size:0.8rem;">' +
-        '<i class="bi bi-funnel"></i> Adicionar lógica condicional' +
+        '<i class="bi bi-funnel me-1"></i>Exibir esta pergunta com base em outra resposta?' +
       '</button>' +
 
     '</div>' + /* card-body */
@@ -324,6 +454,7 @@ function buildSectionCardHTML(idx, d) {
   var flabel = d.label || '';
   return '<div class="card mb-2 field-card field-section-card border-secondary" data-index="' + idx + '" data-field-id="">' +
     '<div class="card-body py-2 px-3 d-flex align-items-center gap-2 bg-light">' +
+      '<span class="drag-handle text-muted flex-shrink-0" title="Arrastar para reorganizar"><i class="bi bi-grip-vertical"></i></span>' +
       '<i class="bi bi-layout-text-sidebar text-secondary flex-shrink-0"></i>' +
       '<span class="small fw-bold text-uppercase text-secondary me-1"' +
             ' style="white-space:nowrap;font-size:0.7rem;letter-spacing:.04em;">SEÇÃO</span>' +
@@ -380,16 +511,12 @@ function attachCardListeners(card) {
     });
   }
 
-  /* image URL preview */
-  var imgUrlInput = card.querySelector('.field-image-url');
-  if (imgUrlInput) {
-    imgUrlInput.addEventListener('input', function() {
-      var preview = card.querySelector('.field-image-preview');
-      var img     = preview ? preview.querySelector('img') : null;
-      var url     = this.value.trim();
-      if (preview) preview.style.display = url ? '' : 'none';
-      if (img)     { img.src = url; img.style.display = url ? '' : 'none'; }
-    });
+  /* image upload zone */
+  var imgRow = card.querySelector('.field-image-row');
+  if (imgRow) {
+    var zone      = imgRow.querySelector('.fb-upload-zone');
+    var hiddenUrl = card.querySelector('.field-image-url');
+    if (zone && hiddenUrl) attachUploadZone(zone, hiddenUrl);
   }
 
   /* condition source select */
@@ -478,6 +605,34 @@ function renumberCards() {
     var title = card.querySelector('.question-number');
     if (title) title.textContent = 'Pergunta ' + qNum;
   });
+}
+
+/* ── Fix conditions after drag-drop sort ─────────────────────── */
+function checkAndFixConditionsAfterSort() {
+  var allCards = Array.from(document.querySelectorAll('.field-card'));
+  var fixed = false;
+  allCards.forEach(function(card, cardIndex) {
+    var condIdEl = card.querySelector('.field-cond-id');
+    if (!condIdEl || !condIdEl.value) return;
+    var condSourceId = condIdEl.value;
+    var srcCard = allCards.find(function(c) { return c.dataset.fieldId === condSourceId; });
+    if (!srcCard) return;
+    if (allCards.indexOf(srcCard) >= cardIndex) {
+      condIdEl.value = '';
+      var condUI  = card.querySelector('.field-condition-ui');
+      var addBtn  = card.querySelector('.add-condition-btn');
+      var srcSel  = card.querySelector('.field-cond-source');
+      var valWrap = card.querySelector('.field-cond-value-wrap');
+      if (condUI)  condUI.style.display  = 'none';
+      if (addBtn)  addBtn.style.display  = '';
+      if (srcSel)  srcSel.value          = '';
+      if (valWrap) valWrap.innerHTML     = conditionValueInputHTML('');
+      fixed = true;
+    }
+  });
+  if (fixed) {
+    alert('Uma ou mais dependências condicionais foram removidas porque a pergunta de referência foi movida para depois desta.');
+  }
 }
 
 /* ── Type change (exposed globally for onchange attr) ─────────── */
@@ -640,6 +795,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
   if (typeof INITIAL_FIELDS !== 'undefined' && Array.isArray(INITIAL_FIELDS)) {
     initPage(INITIAL_FIELDS);
+  }
+
+  /* Sortable drag & drop for question ordering */
+  if (typeof Sortable !== 'undefined') {
+    Sortable.create(document.getElementById('fields-container'), {
+      handle: '.drag-handle',
+      animation: 150,
+      ghostClass: 'sortable-ghost',
+      onEnd: function() {
+        renumberCards();
+        checkAndFixConditionsAfterSort();
+        updateAllConditionDropdowns();
+      }
+    });
   }
 });
 
