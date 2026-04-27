@@ -66,15 +66,18 @@
           {% if current_user.phone_verified_at %}
             {{ current_user.phone or '—' }}
             <span class="badge bg-success ms-1">✅ Verificado</span>
-            <small class="text-muted d-block mt-1">Telefone confirmado e bloqueado para edição.</small>
           {% else %}
             <span id="phone-display">
               {{ current_user.phone or '—' }}
               <span class="badge bg-warning text-dark ms-1">Não verificado</span>
               <button type="button" class="btn btn-sm btn-outline-secondary ms-2"
                       onclick="togglePhoneEdit(true)">
-                Atualizar telefone
+                Editar
               </button>
+              <a href="{{ url_for('auth.verify_phone') }}"
+                 class="btn btn-sm btn-outline-primary ms-1">
+                Verificar
+              </a>
             </span>
             <span id="phone-edit" class="d-none">
               <form method="POST" action="{{ url_for('account.update_phone') }}" class="mt-2">
@@ -89,9 +92,6 @@
                     Cancelar
                   </button>
                 </div>
-                <small class="text-warning">⚠️ Confirme seu telefone para bloquear edição.
-                  <a href="{{ url_for('auth.verify_phone') }}" class="ms-1">Verificar agora</a>
-                </small>
               </form>
             </span>
           {% endif %}
