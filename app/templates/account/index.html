@@ -97,15 +97,9 @@
           {% endif %}
         </p>
         <p><strong>Conta criada em:</strong> {{ current_user.created_at|datefmt }}</p>
-      </div>
-    </div>
-  </div>
 
-  {# Change password #}
-  <div class="col-md-6 mb-4">
-    <div class="card">
-      <div class="card-header"><strong>Alterar senha</strong></div>
-      <div class="card-body">
+        <hr>
+        <p class="mb-2"><strong>Alterar senha</strong></p>
         <form method="post" action="{{ url_for('account.change_password') }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <div class="mb-3">
@@ -125,45 +119,6 @@
       </div>
     </div>
   </div>
-
-  {# Active sessions #}
-  <div class="col-md-6 mb-4">
-    <div class="card">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <strong>Sessões ativas</strong>
-        <form method="post" action="{{ url_for('account.end_all_other_sessions') }}" class="d-inline">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <button type="submit" class="btn btn-sm btn-outline-danger"
-                  onclick="return confirm('Encerrar todas as outras sessões?')">
-            Encerrar outras
-          </button>
-        </form>
-      </div>
-      <div class="card-body p-0">
-        <table class="table table-sm mb-0">
-          <thead><tr><th>IP</th><th>Última atividade</th><th></th></tr></thead>
-          <tbody>
-            {% for s in active_sessions %}
-            <tr {% if s.session_token == current_token %}class="table-success"{% endif %}>
-              <td>{{ s.ip_address or '—' }}{% if s.session_token == current_token %} <span class="badge bg-success">atual</span>{% endif %}</td>
-              <td>{{ s.last_activity_at|datefmt }}</td>
-              <td>
-                {% if s.session_token != current_token %}
-                <form method="post" action="{{ url_for('account.end_session', token=s.session_token) }}" class="d-inline">
-                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                  <button type="submit" class="btn btn-sm btn-outline-danger">Encerrar</button>
-                </form>
-                {% endif %}
-              </td>
-            </tr>
-            {% else %}
-            <tr><td colspan="3" class="text-muted text-center py-2">Nenhuma sessão ativa.</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
 </div>
 {% endblock %}
 
@@ -173,5 +128,9 @@ function togglePhoneEdit(show) {
   document.getElementById('phone-display').style.display = show ? 'none' : '';
   document.getElementById('phone-edit').style.display = show ? '' : 'none';
 }
+document.addEventListener('DOMContentLoaded', function () {
+  var el = document.getElementById('phone-edit');
+  if (el) el.style.display = 'none';
+});
 </script>
 {% endblock %}
