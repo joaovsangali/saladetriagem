@@ -59,6 +59,7 @@ def form(token):
             "intake/custom_form.html",
             token=token,
             schema=template.schema,
+            form_name=template.name,
             session=session,
             max_uploads=max_uploads,
         )

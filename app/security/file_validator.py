@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 _JPEG_MAGIC = b"\xff\xd8\xff"
 _PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
 _PDF_MAGIC = b"%PDF"
+_GIF_MAGIC = b"GIF"
 
 # Maximum allowed image dimensions (width × height)
 _MAX_DIMENSION = 8000  # pixels
@@ -60,7 +61,12 @@ def validate_image(
         from PIL import Image
 
         img = Image.open(io.BytesIO(data))
-        img.verify()  # raises if data is corrupt
+        try:
+            img.verify()  # raises if data is corrupt; some formats (e.g. GIF) raise NotImplementedError
+        except NotImplementedError:
+            pass  # format does not support verify(); proceed to dimension check
+    except FileValidationError:
+        raise
     except Exception as exc:
         raise FileValidationError(f"Invalid or corrupt image: {exc}") from exc
 
@@ -90,4 +96,6 @@ def _detect_mime(data: bytes) -> str:
         return "image/png"
     if data[:4] == _PDF_MAGIC:
         return "application/pdf"
+    if data[:3] == _GIF_MAGIC:
+        return "image/gif"
     return "application/octet-stream"

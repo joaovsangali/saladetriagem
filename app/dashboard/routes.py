@@ -7,7 +7,7 @@ import secrets
 from datetime import datetime, timezone
 import qrcode
 import qrcode.image.svg
-from flask import render_template, redirect, url_for, flash, request, abort, Response, jsonify
+from flask import render_template, redirect, url_for, flash, request, abort, Response, jsonify, send_from_directory, current_app
 from flask_login import login_required, current_user
 from app.dashboard import dashboard_bp
 from app.extensions import db
@@ -742,6 +742,70 @@ def export_session_csv(session_id):
     safe_label = re.sub(r'[^\w\-]', '_', session.label)
     filename = f"sessao_{session.id}_{safe_label}.csv"
     return generate_csv_response(rows, filename)
+
+
+@dashboard_bp.route("/upload-image", methods=["POST"])
+@login_required
+def upload_image():
+    """Upload an image for use in the form builder (image_display fields and option images)."""
+    import os
+    import uuid
+    from app.security.file_validator import validate_image, FileValidationError
+
+    file = request.files.get("image")
+    if not file or not file.filename:
+        return jsonify({"error": "Nenhum arquivo enviado."}), 400
+
+    data = file.read()
+
+    try:
+        validate_image(
+            data,
+            max_size_bytes=2 * 1024 * 1024,
+            allowed_mimetypes=("image/jpeg", "image/png", "image/gif"),
+        )
+    except FileValidationError as exc:
+        logger.debug("Form image validation failed: %s", exc)
+        return jsonify({"error": "Arquivo inválido. Verifique o tipo (JPEG, PNG ou GIF) e o tamanho (máx. 2MB)."}), 400
+
+    storage = getattr(current_app, "photo_storage", None)
+    if storage is None:
+        return jsonify({"error": "Storage não configurado."}), 500
+
+    ext = os.path.splitext(file.filename)[1].lower()
+    if ext not in (".jpg", ".jpeg", ".png", ".gif"):
+        ext = ".jpg"
+    safe_name = f"form_{uuid.uuid4().hex}{ext}"
+
+    key = storage.save(data, safe_name)
+    if not key or not key.strip():
+        return jsonify({"error": "Erro ao salvar imagem."}), 500
+    serve_url = url_for("dashboard.serve_form_image", key=key, _external=False)
+    return jsonify({"url": serve_url})
+
+
+@dashboard_bp.route("/form-image/<path:key>")
+def serve_form_image(key):
+    """Serve an uploaded form image.
+
+    No authentication required — these images are embedded in public intake forms.
+    Keys are UUID-based, so they are effectively unguessable.
+    """
+    storage = getattr(current_app, "photo_storage", None)
+
+    # For S3 (or any storage that provides a direct URL): redirect to it.
+    if storage is not None:
+        signed_url = storage.get_url(key)
+        if signed_url:
+            from urllib.parse import urlparse
+            parsed = urlparse(signed_url)
+            if parsed.scheme in ("http", "https") and parsed.netloc:
+                return redirect(signed_url)
+
+    # For local storage: serve the file from UPLOAD_FOLDER.
+    upload_folder = current_app.config.get("UPLOAD_FOLDER", "uploads")
+    # send_from_directory raises NotFound if the path escapes the directory.
+    return send_from_directory(upload_folder, key)
 
 
 def _generate_qr_svg(url: str) -> str:
