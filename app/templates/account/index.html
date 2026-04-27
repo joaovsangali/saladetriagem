@@ -62,12 +62,25 @@
       <div class="card-body">
         <p><strong>Nome:</strong> {{ current_user.display_name }}</p>
         <p><strong>E-mail:</strong> {{ current_user.email }}</p>
-        <p><strong>Telefone:</strong> {{ current_user.phone or '—' }}
+        <p><strong>Telefone:</strong>
           {% if current_user.phone_verified_at %}
-            <span class="badge bg-success ms-1">Verificado</span>
+            {{ current_user.phone or '—' }}
+            <span class="badge bg-success ms-1">✅ Verificado</span>
+            <small class="text-muted d-block mt-1">Telefone confirmado e bloqueado para edição.</small>
           {% else %}
             <span class="badge bg-warning text-dark ms-1">Não verificado</span>
-            <a href="{{ url_for('auth.verify_phone') }}" class="btn btn-sm btn-outline-warning ms-1">Verificar</a>
+            <form method="POST" action="{{ url_for('account.update_phone') }}" class="mt-2">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <div class="input-group input-group-sm">
+                <input type="tel" name="phone" class="form-control"
+                       value="{{ current_user.phone or '' }}"
+                       placeholder="Ex: 11999999999" required>
+                <button type="submit" class="btn btn-primary">Atualizar</button>
+              </div>
+              <small class="text-warning">⚠️ Confirme seu telefone para bloquear edição.
+                <a href="{{ url_for('auth.verify_phone') }}" class="ms-1">Verificar agora</a>
+              </small>
+            </form>
           {% endif %}
         </p>
         <p><strong>Conta criada em:</strong> {{ current_user.created_at|datefmt }}</p>

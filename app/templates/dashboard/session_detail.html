@@ -35,6 +35,10 @@
       </button>
     </form>
     {% endif %}
+    <a href="{{ url_for('dashboard.export_session_csv', session_id=session.id) }}"
+       class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-download"></i> Exportar CSV
+    </a>
   </div>
 </div>
 
@@ -233,7 +237,7 @@
 {% if logs %}
 <h5 class="mt-4">Registros Finalizados</h5>
 <table class="table table-sm table-striped">
-  <thead><tr><th>Nome</th><th>Tipo</th><th>Recebido</th><th>Encerrado</th><th>Status</th></tr></thead>
+  <thead><tr><th>Nome</th><th>Tipo</th><th>Recebido</th><th>Encerrado</th><th>Status</th><th></th></tr></thead>
   <tbody>
     {% for log in logs %}
     <tr>
@@ -245,6 +249,12 @@
         {% if log.status == 'closed' %}<span class="badge bg-success">Fechado</span>
         {% elif log.status == 'discarded' %}<span class="badge bg-warning text-dark">Descartado</span>
         {% else %}<span class="badge bg-info">Recebido</span>{% endif %}
+      </td>
+      <td>
+        <a href="{{ url_for('dashboard.export_submission_csv', session_id=session.id, submission_id=log.id) }}"
+           class="btn btn-outline-secondary btn-sm" title="Baixar CSV">
+          <i class="bi bi-download"></i>
+        </a>
       </td>
     </tr>
     {% endfor %}

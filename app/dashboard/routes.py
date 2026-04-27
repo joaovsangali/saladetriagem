@@ -26,6 +26,8 @@ logger = logging.getLogger(__name__)
 def _persist_pending_submissions(session: DashboardSession, *, status: str = "received") -> int:
     """
     Grava em MinimalLogEntry tudo que ainda estiver pendente em RAM para esta triagem.
+    Garante idempotência: não duplica se já existir entrada com mesmos dashboard_id,
+    guest_display_name e received_at.
     Não purge aqui — isso continua sendo responsabilidade do caller.
     """
     pending = submission_store.list_for_dashboard(session.id)
@@ -35,6 +37,13 @@ def _persist_pending_submissions(session: DashboardSession, *, status: str = "re
     now = datetime.now(timezone.utc)
     count = 0
     for sub in pending:
+        existing = MinimalLogEntry.query.filter_by(
+            dashboard_id=session.id,
+            guest_display_name=sub.guest_name,
+            received_at=sub.received_at,
+        ).first()
+        if existing:
+            continue
         db.session.add(
             MinimalLogEntry(
                 dashboard_id=session.id,
@@ -614,6 +623,153 @@ def delete_custom_template(template_id):
     db.session.commit()
     flash("Template removido.", "info")
     return redirect(url_for("dashboard.list_custom_templates"))
+
+
+@dashboard_bp.route("/custom-templates/<int:template_id>/edit", methods=["GET", "POST"])
+@login_required
+def edit_custom_template(template_id):
+    """Editar modelo personalizado existente."""
+    from app.utils.schema_validator import validate_custom_intake_schema
+    import json
+
+    if not can_create_custom_schema(current_user):
+        flash("Modelos personalizados são exclusivos para usuários Enterprise.", "warning")
+        return redirect(url_for("dashboard.index"))
+
+    template = CustomIntakeTemplate.query.filter_by(
+        id=template_id, user_id=current_user.id, is_active=True
+    ).first_or_404()
+
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        if not name:
+            flash("Informe um nome para o template.", "warning")
+            return render_template("dashboard/custom_template_edit.html", template=template)
+
+        schema_json = request.form.get("schema_json", "").strip()
+        try:
+            schema = json.loads(schema_json)
+        except (ValueError, TypeError):
+            flash("Schema inválido (JSON malformado).", "danger")
+            return render_template("dashboard/custom_template_edit.html", template=template)
+
+        valid, err = validate_custom_intake_schema(schema)
+        if not valid:
+            flash(f"Schema inválido: {err}", "danger")
+            return render_template("dashboard/custom_template_edit.html", template=template)
+
+        allow_attachments = request.form.get("allow_attachments") == "true"
+        schema['allow_attachments'] = allow_attachments
+
+        template.name = name
+        template.schema = schema
+        db.session.commit()
+
+        flash(f"Template '{name}' atualizado com sucesso.", "success")
+        return redirect(url_for("dashboard.list_custom_templates"))
+
+    return render_template("dashboard/custom_template_edit.html", template=template)
+
+
+@dashboard_bp.route("/sessions/<int:session_id>/submissions/<submission_id>/csv")
+@login_required
+def export_submission_csv(session_id, submission_id):
+    """Exportar submission individual como CSV."""
+    from app.utils.csv_helpers import generate_csv_response
+
+    session = DashboardSession.query.get_or_404(session_id)
+
+    can_access, _role = can_access_session(current_user, session)
+    if not can_access:
+        abort(403)
+
+    sub = None
+    if session.is_active:
+        sub = submission_store.get(submission_id)
+
+    if sub and sub.dashboard_id == session_id:
+        rows = [
+            ['Campo', 'Valor'],
+            ['Nome', sub.guest_name],
+            ['Data Nascimento', sub.dob or ''],
+            ['RG', sub.rg or ''],
+            ['CPF', sub.cpf or ''],
+            ['Telefone', sub.phone or ''],
+            ['Endereço', sub.address or ''],
+            ['Tipo', sub.crime_type],
+            ['Narrativa', sub.narrative or ''],
+            ['Recebido em', sub.received_at.isoformat() if sub.received_at else ''],
+        ]
+        for key, value in (sub.answers or {}).items():
+            rows.append([f'Resposta: {key}', str(value)])
+        return generate_csv_response(rows, f"submission_{submission_id}.csv")
+
+    try:
+        log_id = int(submission_id)
+    except (ValueError, TypeError):
+        abort(404)
+
+    log = MinimalLogEntry.query.filter_by(
+        dashboard_id=session_id,
+        id=log_id,
+    ).first_or_404()
+
+    rows = [
+        ['Campo', 'Valor'],
+        ['Nome', log.guest_display_name or ''],
+        ['Tipo', log.crime_type or ''],
+        ['Recebido em', log.received_at.isoformat() if log.received_at else ''],
+        ['Encerrado em', log.closed_at.isoformat() if log.closed_at else ''],
+        ['Status', log.status or ''],
+    ]
+    return generate_csv_response(rows, f"submission_{submission_id}.csv")
+
+
+@dashboard_bp.route("/sessions/<int:session_id>/export-all-csv")
+@login_required
+def export_session_csv(session_id):
+    """Exportar todas as submissions da sessão como CSV."""
+    from app.utils.csv_helpers import generate_csv_response
+
+    session = DashboardSession.query.get_or_404(session_id)
+
+    can_access, _role = can_access_session(current_user, session)
+    if not can_access:
+        abort(403)
+
+    rows = [
+        ['ID', 'Nome', 'Tipo', 'Data Nascimento', 'RG', 'CPF',
+         'Telefone', 'Narrativa', 'Recebido em', 'Status'],
+    ]
+
+    if session.is_active:
+        for sub in submission_store.list_for_dashboard(session.id):
+            rows.append([
+                sub.submission_id,
+                sub.guest_name,
+                sub.crime_type,
+                sub.dob or '',
+                sub.rg or '',
+                sub.cpf or '',
+                sub.phone or '',
+                sub.narrative or '',
+                sub.received_at.isoformat() if sub.received_at else '',
+                'ativo',
+            ])
+
+    for log in session.logs.order_by(MinimalLogEntry.received_at.desc()).all():
+        rows.append([
+            log.id,
+            log.guest_display_name or '',
+            log.crime_type or '',
+            '', '', '', '', '',
+            log.received_at.isoformat() if log.received_at else '',
+            log.status or '',
+        ])
+
+    safe_label = re.sub(r'[^\w\-]', '_', session.label)
+    filename = f"sessao_{session.id}_{safe_label}.csv"
+    return generate_csv_response(rows, filename)
 
 
 def _generate_qr_svg(url: str) -> str:

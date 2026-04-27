@@ -87,3 +87,24 @@ def end_all_other_sessions():
     db.session.commit()
     flash(f"{count} sessão(ões) encerrada(s).", "info")
     return redirect(url_for("account.index"))
+
+
+@account_bp.route("/update-phone", methods=["POST"])
+@login_required
+def update_phone():
+    """Atualizar número de telefone (apenas se não confirmado)."""
+    if current_user.phone_verified_at:
+        flash("Telefone já foi confirmado e não pode ser alterado.", "warning")
+        return redirect(url_for("account.index"))
+
+    new_phone = request.form.get("phone", "").strip()
+
+    if not new_phone or len(new_phone) < 10:
+        flash("Telefone inválido.", "danger")
+        return redirect(url_for("account.index"))
+
+    current_user.phone = new_phone
+    db.session.commit()
+
+    flash("Telefone atualizado. Confirme via SMS.", "success")
+    return redirect(url_for("auth.verify_phone"))

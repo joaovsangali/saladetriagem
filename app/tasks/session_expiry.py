@@ -39,6 +39,13 @@ def expire_sessions_task():
             if pending:
                 now2 = datetime.now(timezone.utc)
                 for sub in pending:
+                    existing = db.session.query(MinimalLogEntry).filter_by(
+                        dashboard_id=session.id,
+                        guest_display_name=sub.guest_name,
+                        received_at=sub.received_at,
+                    ).first()
+                    if existing:
+                        continue
                     db.session.add(
                         MinimalLogEntry(
                             dashboard_id=session.id,
