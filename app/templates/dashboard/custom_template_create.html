@@ -12,7 +12,7 @@
 
   <div class="mb-3">
     <label class="form-label fw-bold">Nome do Modelo</label>
-    <input type="text" name="name" id="template-name" class="form-control" placeholder="Ex: Triagem Clínica, Atendimento Geral" required>
+    <input type="text" name="name" id="template-name" class="form-control" placeholder="Ex: Triagem Clínica, Cardápio, Formulário Jurídico" required>
   </div>
 
   <div class="mb-3">
@@ -26,74 +26,206 @@
   </div>
 
   <h5 class="mt-4">Campos do Formulário</h5>
-  <p class="text-muted small">Mínimo de 2 campos. Os primeiros dois campos devem ser Nome e E-mail.</p>
+  <p class="text-muted small">
+    Mínimo de 2 campos submetíveis. Tipos disponíveis:
+    <span class="badge bg-secondary">Texto</span>
+    <span class="badge bg-secondary">Área de texto</span>
+    <span class="badge bg-secondary">E-mail</span>
+    <span class="badge bg-secondary">Número</span>
+    <span class="badge bg-secondary">Data</span>
+    <span class="badge bg-info text-dark">Seleção</span>
+    <span class="badge bg-info text-dark">Múltipla escolha (radio)</span>
+    <span class="badge bg-info text-dark">Caixas de seleção</span>
+    <span class="badge bg-warning text-dark">Escala</span>
+    <span class="badge bg-light text-dark border">Cabeçalho de seção</span>
+    <span class="badge bg-light text-dark border">Imagem de exibição</span>
+  </p>
 
   <div id="fields-container">
     <!-- Initial required fields -->
-    <div class="card mb-2 field-card" data-index="0">
+    <div class="card mb-2 field-card border-primary" data-index="0">
+      <div class="card-header py-1 px-3 bg-light d-flex justify-content-between align-items-center">
+        <span class="fw-semibold small">Campo 1</span>
+        <button type="button" class="btn btn-outline-danger btn-sm remove-field" disabled title="Campo obrigatório">
+          <i class="bi bi-x"></i>
+        </button>
+      </div>
       <div class="card-body py-2 px-3">
-        <div class="row g-2 align-items-center">
+        <div class="row g-2">
           <div class="col-md-4">
-            <input type="text" class="form-control form-control-sm field-label" value="Nome" placeholder="Nome do campo" required>
+            <label class="form-label small mb-1">Rótulo</label>
+            <input type="text" class="form-control form-control-sm field-label" value="Nome" placeholder="Rótulo do campo" required>
           </div>
-          <div class="col-md-2">
-            <select class="form-select form-select-sm field-type">
+          <div class="col-md-3">
+            <label class="form-label small mb-1">Tipo</label>
+            <select class="form-select form-select-sm field-type" onchange="onTypeChange(this)">
               <option value="text" selected>Texto</option>
               <option value="email">E-mail</option>
               <option value="textarea">Área de texto</option>
-              <option value="select">Seleção</option>
               <option value="number">Número</option>
               <option value="date">Data</option>
+              <option value="select">Seleção (dropdown)</option>
+              <option value="radio">Múltipla escolha (radio)</option>
+              <option value="checkbox">Caixas de seleção</option>
+              <option value="scale">Escala (slider)</option>
+              <option value="section_header">Cabeçalho de seção</option>
+              <option value="image_display">Imagem de exibição</option>
             </select>
           </div>
-          <div class="col-md-2">
-            <div class="form-check">
+          <div class="col-md-2 d-flex align-items-end">
+            <div class="form-check mb-1">
               <input class="form-check-input field-required" type="checkbox" checked>
               <label class="form-check-label small">Obrigatório</label>
             </div>
           </div>
-          <div class="col-md-3 field-options-col" style="display:none;">
-            <input type="text" class="form-control form-control-sm field-options"
-                   placeholder="Opções separadas por vírgula">
+          <div class="col-md-3 d-flex align-items-end">
+            <input type="text" class="form-control form-control-sm field-placeholder" placeholder="Placeholder (opcional)">
           </div>
-          <div class="col-md-1 text-end">
-            <button type="button" class="btn btn-outline-danger btn-sm remove-field" disabled title="Campo obrigatório">
-              <i class="bi bi-x"></i>
-            </button>
+        </div>
+        <!-- Extra config panels (shown depending on type) -->
+        <div class="row g-2 mt-1 field-options-row" style="display:none;">
+          <div class="col-12">
+            <label class="form-label small mb-1">Opções <span class="text-muted">(uma por linha; ou <code>rótulo|valor|url_imagem</code>)</span></label>
+            <textarea class="form-control form-control-sm field-options-textarea" rows="3" placeholder="Opção A&#10;Opção B&#10;Opção C"></textarea>
+          </div>
+        </div>
+        <div class="row g-2 mt-1 field-scale-row" style="display:none;">
+          <div class="col-md-3">
+            <label class="form-label small mb-1">Mínimo</label>
+            <input type="number" class="form-control form-control-sm field-scale-min" value="1">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small mb-1">Máximo</label>
+            <input type="number" class="form-control form-control-sm field-scale-max" value="5">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small mb-1">Passo</label>
+            <input type="number" class="form-control form-control-sm field-scale-step" value="1" min="1">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small mb-1">Rótulo baixo</label>
+            <input type="text" class="form-control form-control-sm field-scale-low" placeholder="Ex: Ruim">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small mb-1">Rótulo alto</label>
+            <input type="text" class="form-control form-control-sm field-scale-high" placeholder="Ex: Excelente">
+          </div>
+        </div>
+        <div class="row g-2 mt-1 field-image-row" style="display:none;">
+          <div class="col-12">
+            <label class="form-label small mb-1">URL da imagem</label>
+            <input type="url" class="form-control form-control-sm field-image-url" placeholder="https://...">
+          </div>
+        </div>
+        <div class="row g-2 mt-1 field-condition-row">
+          <div class="col-12">
+            <details>
+              <summary class="text-muted small" style="cursor:pointer;">Lógica condicional (opcional)</summary>
+              <div class="row g-2 mt-1">
+                <div class="col-md-5">
+                  <input type="text" class="form-control form-control-sm field-cond-id" placeholder="ID do campo gatilho">
+                </div>
+                <div class="col-md-5">
+                  <input type="text" class="form-control form-control-sm field-cond-value" placeholder="Valor esperado">
+                </div>
+                <div class="col-md-2">
+                  <span class="form-text text-muted small">→ Exibir se igual</span>
+                </div>
+              </div>
+            </details>
           </div>
         </div>
       </div>
     </div>
-    <div class="card mb-2 field-card" data-index="1">
+    <div class="card mb-2 field-card border-primary" data-index="1">
+      <div class="card-header py-1 px-3 bg-light d-flex justify-content-between align-items-center">
+        <span class="fw-semibold small">Campo 2</span>
+        <button type="button" class="btn btn-outline-danger btn-sm remove-field" disabled title="Campo obrigatório">
+          <i class="bi bi-x"></i>
+        </button>
+      </div>
       <div class="card-body py-2 px-3">
-        <div class="row g-2 align-items-center">
+        <div class="row g-2">
           <div class="col-md-4">
-            <input type="text" class="form-control form-control-sm field-label" value="E-mail" placeholder="Nome do campo" required>
+            <label class="form-label small mb-1">Rótulo</label>
+            <input type="text" class="form-control form-control-sm field-label" value="E-mail" placeholder="Rótulo do campo" required>
           </div>
-          <div class="col-md-2">
-            <select class="form-select form-select-sm field-type">
+          <div class="col-md-3">
+            <label class="form-label small mb-1">Tipo</label>
+            <select class="form-select form-select-sm field-type" onchange="onTypeChange(this)">
               <option value="text">Texto</option>
               <option value="email" selected>E-mail</option>
               <option value="textarea">Área de texto</option>
-              <option value="select">Seleção</option>
               <option value="number">Número</option>
               <option value="date">Data</option>
+              <option value="select">Seleção (dropdown)</option>
+              <option value="radio">Múltipla escolha (radio)</option>
+              <option value="checkbox">Caixas de seleção</option>
+              <option value="scale">Escala (slider)</option>
+              <option value="section_header">Cabeçalho de seção</option>
+              <option value="image_display">Imagem de exibição</option>
             </select>
           </div>
-          <div class="col-md-2">
-            <div class="form-check">
+          <div class="col-md-2 d-flex align-items-end">
+            <div class="form-check mb-1">
               <input class="form-check-input field-required" type="checkbox" checked>
               <label class="form-check-label small">Obrigatório</label>
             </div>
           </div>
-          <div class="col-md-3 field-options-col" style="display:none;">
-            <input type="text" class="form-control form-control-sm field-options"
-                   placeholder="Opções separadas por vírgula">
+          <div class="col-md-3 d-flex align-items-end">
+            <input type="text" class="form-control form-control-sm field-placeholder" placeholder="Placeholder (opcional)">
           </div>
-          <div class="col-md-1 text-end">
-            <button type="button" class="btn btn-outline-danger btn-sm remove-field" disabled title="Campo obrigatório">
-              <i class="bi bi-x"></i>
-            </button>
+        </div>
+        <div class="row g-2 mt-1 field-options-row" style="display:none;">
+          <div class="col-12">
+            <label class="form-label small mb-1">Opções <span class="text-muted">(uma por linha; ou <code>rótulo|valor|url_imagem</code>)</span></label>
+            <textarea class="form-control form-control-sm field-options-textarea" rows="3" placeholder="Opção A&#10;Opção B&#10;Opção C"></textarea>
+          </div>
+        </div>
+        <div class="row g-2 mt-1 field-scale-row" style="display:none;">
+          <div class="col-md-3">
+            <label class="form-label small mb-1">Mínimo</label>
+            <input type="number" class="form-control form-control-sm field-scale-min" value="1">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small mb-1">Máximo</label>
+            <input type="number" class="form-control form-control-sm field-scale-max" value="5">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small mb-1">Passo</label>
+            <input type="number" class="form-control form-control-sm field-scale-step" value="1" min="1">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small mb-1">Rótulo baixo</label>
+            <input type="text" class="form-control form-control-sm field-scale-low" placeholder="Ex: Ruim">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small mb-1">Rótulo alto</label>
+            <input type="text" class="form-control form-control-sm field-scale-high" placeholder="Ex: Excelente">
+          </div>
+        </div>
+        <div class="row g-2 mt-1 field-image-row" style="display:none;">
+          <div class="col-12">
+            <label class="form-label small mb-1">URL da imagem</label>
+            <input type="url" class="form-control form-control-sm field-image-url" placeholder="https://...">
+          </div>
+        </div>
+        <div class="row g-2 mt-1 field-condition-row">
+          <div class="col-12">
+            <details>
+              <summary class="text-muted small" style="cursor:pointer;">Lógica condicional (opcional)</summary>
+              <div class="row g-2 mt-1">
+                <div class="col-md-5">
+                  <input type="text" class="form-control form-control-sm field-cond-id" placeholder="ID do campo gatilho">
+                </div>
+                <div class="col-md-5">
+                  <input type="text" class="form-control form-control-sm field-cond-value" placeholder="Valor esperado">
+                </div>
+                <div class="col-md-2">
+                  <span class="form-text text-muted small">→ Exibir se igual</span>
+                </div>
+              </div>
+            </details>
           </div>
         </div>
       </div>
@@ -116,76 +248,218 @@
 <script>
 let fieldCount = 2;
 
+// Types that need options textarea
+const OPTIONS_TYPES = new Set(['select', 'radio', 'checkbox']);
+const SCALE_TYPES   = new Set(['scale']);
+const IMAGE_TYPES   = new Set(['image_display']);
+const DISPLAY_ONLY  = new Set(['section_header', 'image_display']);
+
 function slugify(text) {
-  return text.toLowerCase()
+  return (text || '').toLowerCase()
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9]+/g, '_')
     .replace(/^_|_$/g, '')
-    || 'campo_' + fieldCount;
+    || 'campo';
 }
 
-function addField() {
-  const container = document.getElementById('fields-container');
-  const idx = fieldCount++;
-  const div = document.createElement('div');
-  div.className = 'card mb-2 field-card';
-  div.dataset.index = idx;
-  div.innerHTML = `
-    <div class="card-body py-2 px-3">
-      <div class="row g-2 align-items-center">
-        <div class="col-md-4">
-          <input type="text" class="form-control form-control-sm field-label" placeholder="Nome do campo" required>
-        </div>
-        <div class="col-md-2">
-          <select class="form-select form-select-sm field-type" onchange="toggleOptions(this)">
-            <option value="text" selected>Texto</option>
-            <option value="email">E-mail</option>
-            <option value="textarea">Área de texto</option>
-            <option value="select">Seleção</option>
-            <option value="number">Número</option>
-            <option value="date">Data</option>
-          </select>
-        </div>
-        <div class="col-md-2">
-          <div class="form-check">
-            <input class="form-check-input field-required" type="checkbox">
-            <label class="form-check-label small">Obrigatório</label>
-          </div>
-        </div>
-        <div class="col-md-3 field-options-col" style="display:none;">
-          <input type="text" class="form-control form-control-sm field-options"
-                 placeholder="Opções separadas por vírgula">
-        </div>
-        <div class="col-md-1 text-end">
-          <button type="button" class="btn btn-outline-danger btn-sm remove-field">
-            <i class="bi bi-x"></i>
-          </button>
+function buildFieldCard(idx, fieldData) {
+  fieldData = fieldData || {};
+  const ftype      = fieldData.type || 'text';
+  const flabel     = fieldData.label || '';
+  const frequired  = fieldData.required !== false;
+  const fpholder   = fieldData.placeholder || '';
+  const foptions   = fieldData.options
+    ? fieldData.options.map(function(o) {
+        if (typeof o === 'object') {
+          return o.image_url
+            ? (o.label + '|' + (o.value || o.label) + '|' + o.image_url)
+            : (o.label + (o.value && o.value !== o.label ? '|' + o.value : ''));
+        }
+        return o;
+      }).join('\n')
+    : '';
+  const fScaleMin  = fieldData.min !== undefined ? fieldData.min : 1;
+  const fScaleMax  = fieldData.max !== undefined ? fieldData.max : 5;
+  const fScaleStep = fieldData.step !== undefined ? fieldData.step : 1;
+  const fScaleLow  = fieldData.low_label || '';
+  const fScaleHigh = fieldData.high_label || '';
+  const fImageUrl  = fieldData.image_url || '';
+  const fCondId    = fieldData.condition ? fieldData.condition.field_id : '';
+  const fCondVal   = fieldData.condition ? fieldData.condition.value : '';
+  const optDisplay   = OPTIONS_TYPES.has(ftype) ? '' : 'display:none;';
+  const scaleDisplay = SCALE_TYPES.has(ftype) ? '' : 'display:none;';
+  const imageDisplay = IMAGE_TYPES.has(ftype) ? '' : 'display:none;';
+  const isDisabled = idx < 2;
+
+  const typeOptions = [
+    ['text',          'Texto'],
+    ['email',         'E-mail'],
+    ['textarea',      'Área de texto'],
+    ['number',        'Número'],
+    ['date',          'Data'],
+    ['select',        'Seleção (dropdown)'],
+    ['radio',         'Múltipla escolha (radio)'],
+    ['checkbox',      'Caixas de seleção'],
+    ['scale',         'Escala (slider)'],
+    ['section_header','Cabeçalho de seção'],
+    ['image_display', 'Imagem de exibição'],
+  ].map(function(pair) {
+    const sel = pair[0] === ftype ? ' selected' : '';
+    return `<option value="${pair[0]}"${sel}>${pair[1]}</option>`;
+  }).join('');
+
+  return `
+<div class="card mb-2 field-card" data-index="${idx}">
+  <div class="card-header py-1 px-3 bg-light d-flex justify-content-between align-items-center">
+    <span class="fw-semibold small">Campo ${idx + 1}</span>
+    <button type="button" class="btn btn-outline-danger btn-sm remove-field" ${isDisabled ? 'disabled title="Campo obrigatório"' : ''}>
+      <i class="bi bi-x"></i>
+    </button>
+  </div>
+  <div class="card-body py-2 px-3">
+    <div class="row g-2">
+      <div class="col-md-4">
+        <label class="form-label small mb-1">Rótulo</label>
+        <input type="text" class="form-control form-control-sm field-label" value="${escHtml(flabel)}" placeholder="Rótulo do campo" required>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small mb-1">Tipo</label>
+        <select class="form-select form-select-sm field-type" onchange="onTypeChange(this)">
+          ${typeOptions}
+        </select>
+      </div>
+      <div class="col-md-2 d-flex align-items-end">
+        <div class="form-check mb-1">
+          <input class="form-check-input field-required" type="checkbox" ${frequired ? 'checked' : ''}>
+          <label class="form-check-label small">Obrigatório</label>
         </div>
       </div>
-    </div>`;
-  container.appendChild(div);
-  div.querySelector('.remove-field').addEventListener('click', function() {
-    div.remove();
+      <div class="col-md-3 d-flex align-items-end">
+        <input type="text" class="form-control form-control-sm field-placeholder" value="${escHtml(fpholder)}" placeholder="Placeholder (opcional)">
+      </div>
+    </div>
+    <div class="row g-2 mt-1 field-options-row" style="${optDisplay}">
+      <div class="col-12">
+        <label class="form-label small mb-1">Opções <span class="text-muted">(uma por linha; ou <code>rótulo|valor|url_imagem</code>)</span></label>
+        <textarea class="form-control form-control-sm field-options-textarea" rows="3" placeholder="Opção A&#10;Opção B&#10;Opção C">${escHtml(foptions)}</textarea>
+      </div>
+    </div>
+    <div class="row g-2 mt-1 field-scale-row" style="${scaleDisplay}">
+      <div class="col-md-3">
+        <label class="form-label small mb-1">Mínimo</label>
+        <input type="number" class="form-control form-control-sm field-scale-min" value="${fScaleMin}">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small mb-1">Máximo</label>
+        <input type="number" class="form-control form-control-sm field-scale-max" value="${fScaleMax}">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small mb-1">Passo</label>
+        <input type="number" class="form-control form-control-sm field-scale-step" value="${fScaleStep}" min="1">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small mb-1">Rótulo baixo</label>
+        <input type="text" class="form-control form-control-sm field-scale-low" value="${escHtml(fScaleLow)}" placeholder="Ex: Ruim">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small mb-1">Rótulo alto</label>
+        <input type="text" class="form-control form-control-sm field-scale-high" value="${escHtml(fScaleHigh)}" placeholder="Ex: Excelente">
+      </div>
+    </div>
+    <div class="row g-2 mt-1 field-image-row" style="${imageDisplay}">
+      <div class="col-12">
+        <label class="form-label small mb-1">URL da imagem</label>
+        <input type="url" class="form-control form-control-sm field-image-url" value="${escHtml(fImageUrl)}" placeholder="https://...">
+      </div>
+    </div>
+    <div class="row g-2 mt-1 field-condition-row">
+      <div class="col-12">
+        <details ${fCondId ? 'open' : ''}>
+          <summary class="text-muted small" style="cursor:pointer;">Lógica condicional (opcional)</summary>
+          <div class="row g-2 mt-1">
+            <div class="col-md-5">
+              <input type="text" class="form-control form-control-sm field-cond-id" value="${escHtml(fCondId)}" placeholder="ID do campo gatilho">
+            </div>
+            <div class="col-md-5">
+              <input type="text" class="form-control form-control-sm field-cond-value" value="${escHtml(fCondVal)}" placeholder="Valor esperado">
+            </div>
+            <div class="col-md-2">
+              <span class="form-text text-muted small">→ Exibir se igual</span>
+            </div>
+          </div>
+        </details>
+      </div>
+    </div>
+  </div>
+</div>`;
+}
+
+function escHtml(str) {
+  return String(str || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function addField(fieldData) {
+  const container = document.getElementById('fields-container');
+  const idx = fieldCount++;
+  const wrapper = document.createElement('div');
+  wrapper.innerHTML = buildFieldCard(idx, fieldData || null);
+  const card = wrapper.firstElementChild;
+  container.appendChild(card);
+  card.querySelector('.remove-field').addEventListener('click', function() {
+    card.remove();
+    renumberCards();
   });
 }
 
-document.getElementById('add-field-btn').addEventListener('click', addField);
+function renumberCards() {
+  document.querySelectorAll('.field-card').forEach(function(card, i) {
+    const title = card.querySelector('.card-header .fw-semibold');
+    if (title) title.textContent = 'Campo ' + (i + 1);
+  });
+}
 
-// Toggle options field for select type
-document.getElementById('fields-container').addEventListener('change', function(e) {
-  if (e.target.classList.contains('field-type')) {
-    toggleOptions(e.target);
+function onTypeChange(selectEl) {
+  const card = selectEl.closest('.field-card');
+  const ftype = selectEl.value;
+  card.querySelector('.field-options-row').style.display  = OPTIONS_TYPES.has(ftype) ? '' : 'none';
+  card.querySelector('.field-scale-row').style.display    = SCALE_TYPES.has(ftype) ? '' : 'none';
+  card.querySelector('.field-image-row').style.display    = IMAGE_TYPES.has(ftype) ? '' : 'none';
+  // section_header and image_display can't be required
+  const reqCheck = card.querySelector('.field-required');
+  if (reqCheck && DISPLAY_ONLY.has(ftype)) {
+    reqCheck.checked = false;
+    reqCheck.disabled = true;
+  } else if (reqCheck) {
+    reqCheck.disabled = false;
+  }
+}
+
+document.getElementById('add-field-btn').addEventListener('click', function() { addField(null); });
+
+// Attach listeners to the two static initial cards
+document.querySelectorAll('.field-card').forEach(function(card) {
+  const removeBtn = card.querySelector('.remove-field:not([disabled])');
+  if (removeBtn) {
+    removeBtn.addEventListener('click', function() {
+      card.remove();
+      renumberCards();
+    });
   }
 });
 
-function toggleOptions(selectEl) {
-  const card = selectEl.closest('.field-card');
-  const optionsCol = card.querySelector('.field-options-col');
-  if (selectEl.value === 'select') {
-    optionsCol.style.display = '';
-  } else {
-    optionsCol.style.display = 'none';
-  }
+function parseOptions(raw) {
+  return raw.split('\n').map(function(line) {
+    line = line.trim();
+    if (!line) return null;
+    const parts = line.split('|');
+    if (parts.length >= 3) {
+      return { label: parts[0].trim(), value: parts[1].trim() || parts[0].trim(), image_url: parts[2].trim() };
+    }
+    if (parts.length === 2) {
+      return { label: parts[0].trim(), value: parts[1].trim() };
+    }
+    return line;
+  }).filter(Boolean);
 }
 
 document.getElementById('template-form').addEventListener('submit', function(e) {
@@ -196,28 +470,56 @@ document.getElementById('template-form').addEventListener('submit', function(e) 
 
   cards.forEach(function(card) {
     const label = card.querySelector('.field-label').value.trim();
-    const type = card.querySelector('.field-type').value;
+    const type  = card.querySelector('.field-type').value;
     const required = card.querySelector('.field-required').checked;
-    const optionsInput = card.querySelector('.field-options');
+    const placeholder = card.querySelector('.field-placeholder').value.trim();
 
-    if (!label) { valid = false; return; }
+    if (!DISPLAY_ONLY.has(type) && !label) { valid = false; return; }
+    if (DISPLAY_ONLY.has(type) && !label)   { valid = false; return; }
 
+    const idx = card.dataset.index;
     const field = {
-      id: slugify(label) + '_' + card.dataset.index,
+      id: slugify(label) + '_' + idx,
       label: label,
       type: type,
-      required: required,
+      required: DISPLAY_ONLY.has(type) ? false : required,
     };
+    if (placeholder) field.placeholder = placeholder;
 
-    if (type === 'select' && optionsInput) {
-      field.options = optionsInput.value.split(',').map(s => s.trim()).filter(Boolean);
+    if (OPTIONS_TYPES.has(type)) {
+      const raw = card.querySelector('.field-options-textarea').value.trim();
+      field.options = parseOptions(raw);
+      if (!field.options.length) { valid = false; return; }
+    }
+
+    if (SCALE_TYPES.has(type)) {
+      field.min  = parseFloat(card.querySelector('.field-scale-min').value) || 1;
+      field.max  = parseFloat(card.querySelector('.field-scale-max').value) || 5;
+      field.step = parseFloat(card.querySelector('.field-scale-step').value) || 1;
+      const low  = card.querySelector('.field-scale-low').value.trim();
+      const high = card.querySelector('.field-scale-high').value.trim();
+      if (low)  field.low_label  = low;
+      if (high) field.high_label = high;
+    }
+
+    if (IMAGE_TYPES.has(type)) {
+      const imgUrl = card.querySelector('.field-image-url').value.trim();
+      if (imgUrl) field.image_url = imgUrl;
+    }
+
+    const condId  = card.querySelector('.field-cond-id').value.trim();
+    const condVal = card.querySelector('.field-cond-value').value.trim();
+    if (condId && condVal) {
+      field.condition = { field_id: condId, value: condVal };
     }
 
     fields.push(field);
   });
 
-  if (!valid || fields.length < 2) {
-    alert('Preencha todos os campos e certifique-se de ter pelo menos 2.');
+  // Count submittable (non-display-only) fields
+  const submittable = fields.filter(function(f) { return !DISPLAY_ONLY.has(f.type); });
+  if (!valid || submittable.length < 2) {
+    alert('Preencha todos os campos e certifique-se de ter pelo menos 2 campos submetíveis.');
     return;
   }
 
