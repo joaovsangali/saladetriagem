@@ -20,6 +20,10 @@ function slugify(text) {
     || 'campo';
 }
 
+function generateFieldId(label, idx) {
+  return slugify(label) + '_' + idx;
+}
+
 function escHtml(str) {
   return String(str || '')
     .replace(/&/g, '&amp;')
@@ -48,7 +52,7 @@ function refreshAndGetAllFields() {
     var typeEl = card.querySelector('.field-type');
     var type   = typeEl ? typeEl.value : 'text';
     var idx    = card.dataset.index;
-    var id     = slugify(label) + '_' + idx;
+    var id     = generateFieldId(label, idx);
     card.dataset.fieldId = id;
     if (DISPLAY_ONLY.has(type)) return;
     var options = OPTIONS_TYPES.has(type) ? collectOptions(card) : [];
@@ -80,12 +84,16 @@ function updateConditionValueDropdown(card, allFields, initValue) {
     html += '</select>';
     wrap.innerHTML = html;
   } else {
-    wrap.innerHTML = '<input type="text" class="form-control form-control-sm field-cond-value"' +
-                    ' value="' + escHtml(prevValue) + '" placeholder="valor" style="min-width:130px;">';
+    wrap.innerHTML = conditionValueInputHTML(prevValue);
   }
 }
 
-function updateAllConditionDropdowns() {
+function conditionValueInputHTML(value) {
+  return '<input type="text" class="form-control form-control-sm field-cond-value"' +
+         ' value="' + escHtml(value || '') + '" placeholder="valor" style="min-width:130px;">';
+}
+
+
   var allFields = refreshAndGetAllFields();
   document.querySelectorAll('.field-card:not(.field-section-card)').forEach(function(card) {
     var sourceSelect = card.querySelector('.field-cond-source');
@@ -296,8 +304,7 @@ function buildQuestionCardHTML(idx, d) {
           '</select>' +
           '<span class="small text-muted">for</span>' +
           '<div class="field-cond-value-wrap d-inline-flex">' +
-            '<input type="text" class="form-control form-control-sm field-cond-value"' +
-                   ' placeholder="valor" style="min-width:130px;">' +
+            conditionValueInputHTML('') +
           '</div>' +
           '<button type="button" class="btn btn-link btn-sm text-danger p-0 remove-condition-btn">Remover</button>' +
         '</div>' +
@@ -368,7 +375,7 @@ function attachCardListeners(card) {
   var labelInput = card.querySelector('.field-label');
   if (labelInput) {
     labelInput.addEventListener('input', function() {
-      card.dataset.fieldId = slugify(this.value.trim()) + '_' + card.dataset.index;
+      card.dataset.fieldId = generateFieldId(this.value.trim(), card.dataset.index);
       updateAllConditionDropdowns();
     });
   }
@@ -416,9 +423,7 @@ function attachCardListeners(card) {
       var sourceSelect = card.querySelector('.field-cond-source');
       if (sourceSelect) sourceSelect.value = '';
       var wrap = card.querySelector('.field-cond-value-wrap');
-      if (wrap) wrap.innerHTML =
-        '<input type="text" class="form-control form-control-sm field-cond-value"' +
-        ' placeholder="valor" style="min-width:130px;">';
+      if (wrap) wrap.innerHTML = conditionValueInputHTML('');
     });
   }
 }
@@ -438,7 +443,7 @@ function addField(fieldData, afterCard) {
   var card = wrapper.firstElementChild;
 
   /* update data-field-id immediately */
-  card.dataset.fieldId = slugify((fieldData.label || '').trim()) + '_' + idx;
+  card.dataset.fieldId = generateFieldId((fieldData.label || '').trim(), idx);
 
   var container = document.getElementById('fields-container');
   if (afterCard && afterCard.parentNode === container) {
@@ -546,7 +551,7 @@ document.getElementById('template-form').addEventListener('submit', function(e) 
 
     var idx = card.dataset.index;
     var field = {
-      id:       slugify(label) + '_' + idx,
+      id:       generateFieldId(label, idx),
       label:    label,
       type:     type,
       required: DISPLAY_ONLY.has(type) ? false : required,

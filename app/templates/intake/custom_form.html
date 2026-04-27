@@ -214,15 +214,21 @@ function validateFileCount(input, max) {
   });
 
   function getFieldValue(fieldId) {
-    // radio
-    const radio = document.querySelector('input[type="radio"][data-trigger-id="' + fieldId + '"]:checked');
-    if (radio) return radio.value;
+    // radio — iterate without putting fieldId in selector string
+    const radios = document.querySelectorAll('input[type="radio"][data-trigger-id]');
+    for (let i = 0; i < radios.length; i++) {
+      if (radios[i].dataset.triggerId === fieldId && radios[i].checked) return radios[i].value;
+    }
     // select
-    const sel = document.querySelector('select[data-trigger-id="' + fieldId + '"]');
-    if (sel) return sel.value;
-    // fallback: any input/select with name="field_<id>"
-    const named = document.querySelector('[name="field_' + fieldId + '"]');
-    if (named) return named.value;
+    const selects = document.querySelectorAll('select[data-trigger-id]');
+    for (let i = 0; i < selects.length; i++) {
+      if (selects[i].dataset.triggerId === fieldId) return selects[i].value;
+    }
+    // fallback: named input
+    const all = document.querySelectorAll('[name]');
+    for (let i = 0; i < all.length; i++) {
+      if (all[i].name === 'field_' + fieldId) return all[i].value;
+    }
     return '';
   }
 
@@ -244,19 +250,20 @@ function validateFileCount(input, max) {
   }
 
   function attachListeners(fieldId) {
-    // radios
-    document.querySelectorAll('input[type="radio"][data-trigger-id="' + fieldId + '"]').forEach(function (el) {
+    // radios — iterate without putting fieldId in selector string
+    document.querySelectorAll('input[type="radio"][data-trigger-id]').forEach(function (el) {
+      if (el.dataset.triggerId !== fieldId) return;
       el.addEventListener('change', function () {
         (dependents[fieldId] || []).forEach(evaluateCondition);
       });
     });
     // select
-    const sel = document.querySelector('select[data-trigger-id="' + fieldId + '"]');
-    if (sel) {
+    document.querySelectorAll('select[data-trigger-id]').forEach(function (sel) {
+      if (sel.dataset.triggerId !== fieldId) return;
       sel.addEventListener('change', function () {
         (dependents[fieldId] || []).forEach(evaluateCondition);
       });
-    }
+    });
   }
 
   Object.keys(dependents).forEach(attachListeners);
