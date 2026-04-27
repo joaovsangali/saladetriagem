@@ -683,60 +683,6 @@ def edit_custom_template(template_id):
     return render_template("dashboard/custom_template_edit.html", template=template)
 
 
-@dashboard_bp.route("/sessions/<int:session_id>/submissions/<submission_id>/csv")
-@login_required
-def export_submission_csv(session_id, submission_id):
-    """Exportar submission individual como CSV."""
-    from app.utils.csv_helpers import generate_csv_response
-
-    session = DashboardSession.query.get_or_404(session_id)
-
-    can_access, _role = can_access_session(current_user, session)
-    if not can_access:
-        abort(403)
-
-    sub = None
-    if session.is_active:
-        sub = submission_store.get(submission_id)
-
-    if sub and sub.dashboard_id == session_id:
-        rows = [
-            ['Campo', 'Valor'],
-            ['Nome', sub.guest_name],
-            ['Data Nascimento', sub.dob or ''],
-            ['RG', sub.rg or ''],
-            ['CPF', sub.cpf or ''],
-            ['Telefone', sub.phone or ''],
-            ['Endereço', sub.address or ''],
-            ['Tipo', sub.crime_type],
-            ['Narrativa', sub.narrative or ''],
-            ['Recebido em', sub.received_at.isoformat() if sub.received_at else ''],
-        ]
-        for key, value in (sub.answers or {}).items():
-            rows.append([f'Resposta: {key}', str(value)])
-        return generate_csv_response(rows, f"submission_{submission_id}.csv")
-
-    try:
-        log_id = int(submission_id)
-    except (ValueError, TypeError):
-        abort(404)
-
-    log = MinimalLogEntry.query.filter_by(
-        dashboard_id=session_id,
-        id=log_id,
-    ).first_or_404()
-
-    rows = [
-        ['Campo', 'Valor'],
-        ['Nome', log.guest_display_name or ''],
-        ['Tipo', log.crime_type or ''],
-        ['Recebido em', log.received_at.isoformat() if log.received_at else ''],
-        ['Encerrado em', log.closed_at.isoformat() if log.closed_at else ''],
-        ['Status', log.status or ''],
-    ]
-    return generate_csv_response(rows, f"submission_{submission_id}.csv")
-
-
 @dashboard_bp.route("/sessions/<int:session_id>/export-all-csv")
 @login_required
 def export_session_csv(session_id):
@@ -749,35 +695,50 @@ def export_session_csv(session_id):
     if not can_access:
         abort(403)
 
-    rows = [
-        ['ID', 'Nome', 'Tipo', 'Data Nascimento', 'RG', 'CPF',
-         'Telefone', 'Narrativa', 'Recebido em', 'Status'],
-    ]
+    # Collect active submissions (in-memory) — only available when session is active
+    active_subs = submission_store.list_for_dashboard(session.id) if session.is_active else []
 
-    if session.is_active:
-        for sub in submission_store.list_for_dashboard(session.id):
-            rows.append([
-                sub.submission_id,
-                sub.guest_name,
-                sub.crime_type,
-                sub.dob or '',
-                sub.rg or '',
-                sub.cpf or '',
-                sub.phone or '',
-                sub.narrative or '',
-                sub.received_at.isoformat() if sub.received_at else '',
-                'ativo',
-            ])
+    # Gather all answer keys across active submissions to build dynamic columns
+    seen_keys: list = []
+    seen_keys_set: set = set()
+    for sub in active_subs:
+        for key in (sub.answers or {}):
+            if key not in seen_keys_set:
+                seen_keys.append(key)
+                seen_keys_set.add(key)
 
+    # Header: base columns + dynamic answer columns
+    header = ['ID', 'Nome', 'Tipo', 'Status', 'Recebido em'] + seen_keys
+    rows = [header]
+
+    # Active submissions — full data including answers
+    for sub in active_subs:
+        answers = sub.answers or {}
+        row = [
+            sub.submission_id,
+            sub.guest_name,
+            sub.crime_type,
+            'ativo',
+            sub.received_at.isoformat() if sub.received_at else '',
+        ]
+        for key in seen_keys:
+            val = answers.get(key, '')
+            if isinstance(val, list):
+                val = ';'.join(str(v) for v in val)
+            row.append(val)
+        rows.append(row)
+
+    # Log entries (closed/discarded/received) — only minimal data available
     for log in session.logs.order_by(MinimalLogEntry.received_at.desc()).all():
-        rows.append([
+        row = [
             log.id,
             log.guest_display_name or '',
             log.crime_type or '',
-            '', '', '', '', '',
-            log.received_at.isoformat() if log.received_at else '',
             log.status or '',
-        ])
+            log.received_at.isoformat() if log.received_at else '',
+        ]
+        row.extend(['' for _ in seen_keys])
+        rows.append(row)
 
     safe_label = re.sub(r'[^\w\-]', '_', session.label)
     filename = f"sessao_{session.id}_{safe_label}.csv"

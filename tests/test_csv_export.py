@@ -141,7 +141,7 @@ def test_export_session_csv_non_owner(app, client):
     """Non-owner gets 403."""
     with app.app_context():
         owner = _make_user("owner2@csv.com", "Owner2")
-        other = _make_user("other2@csv.com", "Other2")
+        _make_user("other2@csv.com", "Other2")
         sess = DashboardSession(
             user_id=owner.id,
             label="Not Mine",
@@ -157,52 +157,13 @@ def test_export_session_csv_non_owner(app, client):
     assert resp.status_code == 403
 
 
-# ---------------------------------------------------------------------------
-# Route: export_submission_csv (log entry)
-# ---------------------------------------------------------------------------
-
-def test_export_submission_csv_log_entry(app, client):
-    """Can download CSV for a specific log entry."""
+def test_export_individual_submission_csv_removed(app, client):
+    """Individual submission CSV route no longer exists (404/405)."""
     with app.app_context():
-        user = _make_user("owner3@csv.com", "Owner3")
+        user = _make_user("owner7@csv.com", "Owner7")
         sess = DashboardSession(
             user_id=user.id,
-            label="Sub CSV",
-            expires_at=datetime.now(timezone.utc) - timedelta(hours=1),
-            is_active=False,
-        )
-        _db.session.add(sess)
-        _db.session.commit()
-
-        log = MinimalLogEntry(
-            dashboard_id=sess.id,
-            police_user_id=user.id,
-            guest_display_name="Bob",
-            crime_type="furto",
-            received_at=datetime.now(timezone.utc),
-            closed_at=datetime.now(timezone.utc),
-            status="closed",
-        )
-        _db.session.add(log)
-        _db.session.commit()
-        sess_id = sess.id
-        log_id = log.id
-
-    _login(client, "owner3@csv.com")
-    resp = client.get(f"/dashboard/sessions/{sess_id}/submissions/{log_id}/csv")
-    assert resp.status_code == 200
-    assert b"Bob" in resp.data
-    assert resp.content_type.startswith("text/csv")
-
-
-def test_export_submission_csv_non_owner(app, client):
-    """Non-owner gets 403."""
-    with app.app_context():
-        owner = _make_user("owner4@csv.com", "Owner4")
-        other = _make_user("other4@csv.com", "Other4")
-        sess = DashboardSession(
-            user_id=owner.id,
-            label="Not Mine",
+            label="Removed",
             expires_at=datetime.now(timezone.utc) - timedelta(hours=1),
             is_active=False,
         )
@@ -210,32 +171,13 @@ def test_export_submission_csv_non_owner(app, client):
         _db.session.commit()
         sess_id = sess.id
 
-    _login(client, "other4@csv.com")
+    _login(client, "owner7@csv.com")
     resp = client.get(f"/dashboard/sessions/{sess_id}/submissions/1/csv")
-    assert resp.status_code == 403
-
-
-def test_export_submission_csv_not_found(app, client):
-    """Returns 404 for non-existent log entry."""
-    with app.app_context():
-        user = _make_user("owner5@csv.com", "Owner5")
-        sess = DashboardSession(
-            user_id=user.id,
-            label="Empty",
-            expires_at=datetime.now(timezone.utc) - timedelta(hours=1),
-            is_active=False,
-        )
-        _db.session.add(sess)
-        _db.session.commit()
-        sess_id = sess.id
-
-    _login(client, "owner5@csv.com")
-    resp = client.get(f"/dashboard/sessions/{sess_id}/submissions/9999/csv")
     assert resp.status_code == 404
 
 
 def test_csv_header_present(app, client):
-    """CSV export includes expected column headers."""
+    """CSV export includes expected base column headers."""
     with app.app_context():
         user = _make_user("owner6@csv.com", "Owner6")
         sess = DashboardSession(

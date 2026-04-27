@@ -68,19 +68,32 @@
             <span class="badge bg-success ms-1">✅ Verificado</span>
             <small class="text-muted d-block mt-1">Telefone confirmado e bloqueado para edição.</small>
           {% else %}
-            <span class="badge bg-warning text-dark ms-1">Não verificado</span>
-            <form method="POST" action="{{ url_for('account.update_phone') }}" class="mt-2">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <div class="input-group input-group-sm">
-                <input type="tel" name="phone" class="form-control"
-                       value="{{ current_user.phone or '' }}"
-                       placeholder="Ex: 11999999999" required>
-                <button type="submit" class="btn btn-primary">Atualizar</button>
-              </div>
-              <small class="text-warning">⚠️ Confirme seu telefone para bloquear edição.
-                <a href="{{ url_for('auth.verify_phone') }}" class="ms-1">Verificar agora</a>
-              </small>
-            </form>
+            <span id="phone-display">
+              {{ current_user.phone or '—' }}
+              <span class="badge bg-warning text-dark ms-1">Não verificado</span>
+              <button type="button" class="btn btn-sm btn-outline-secondary ms-2"
+                      onclick="document.getElementById('phone-display').classList.add('d-none'); document.getElementById('phone-edit').classList.remove('d-none');">
+                Atualizar telefone
+              </button>
+            </span>
+            <span id="phone-edit" class="d-none">
+              <form method="POST" action="{{ url_for('account.update_phone') }}" class="mt-2">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="input-group input-group-sm">
+                  <input type="tel" name="phone" class="form-control"
+                         value="{{ current_user.phone or '' }}"
+                         placeholder="Ex: 11999999999" required>
+                  <button type="submit" class="btn btn-primary">Salvar</button>
+                  <button type="button" class="btn btn-outline-secondary"
+                          onclick="document.getElementById('phone-edit').classList.add('d-none'); document.getElementById('phone-display').classList.remove('d-none');">
+                    Cancelar
+                  </button>
+                </div>
+                <small class="text-warning">⚠️ Confirme seu telefone para bloquear edição.
+                  <a href="{{ url_for('auth.verify_phone') }}" class="ms-1">Verificar agora</a>
+                </small>
+              </form>
+            </span>
           {% endif %}
         </p>
         <p><strong>Conta criada em:</strong> {{ current_user.created_at|datefmt }}</p>
