@@ -207,19 +207,31 @@ function updateConditionValueDropdown(card, allFields, initValue) {
   var prevValue = (initValue !== undefined) ? initValue : (prevEl ? prevEl.value : '');
   var sf        = allFields.find(function(f) { return f.id === sourceId; });
 
-  if (sf && OPTIONS_TYPES.has(sf.type) && sf.options.length > 0) {
-    var html = '<select class="form-select form-select-sm field-cond-value" style="min-width:140px;">' +
-               '<option value="">— valor —</option>';
+  var needsSelect = sf && OPTIONS_TYPES.has(sf.type) && sf.options.length > 0;
+
+  if (needsSelect) {
+    var optionsHtml = '<option value="">— valor —</option>';
     sf.options.forEach(function(opt) {
       var val = typeof opt === 'string' ? opt : (opt.value || opt.label);
       var lbl = typeof opt === 'string' ? opt : opt.label;
       var sel = (val === prevValue || lbl === prevValue) ? ' selected' : '';
-      html += '<option value="' + escHtml(val) + '"' + sel + '>' + escHtml(lbl) + '</option>';
+      optionsHtml += '<option value="' + escHtml(val) + '"' + sel + '>' + escHtml(lbl) + '</option>';
     });
-    html += '</select>';
-    wrap.innerHTML = html;
+
+    /* Reuse existing <select> to preserve focus; only recreate if type changed */
+    if (prevEl && prevEl.tagName.toLowerCase() === 'select') {
+      prevEl.innerHTML = optionsHtml;
+    } else {
+      wrap.innerHTML = '<select class="form-select form-select-sm field-cond-value" style="min-width:140px;">' +
+                       optionsHtml + '</select>';
+    }
   } else {
-    wrap.innerHTML = conditionValueInputHTML(prevValue);
+    /* Reuse existing <input> to preserve focus; only recreate if type changed */
+    if (prevEl && prevEl.tagName.toLowerCase() === 'input') {
+      prevEl.value = prevValue;
+    } else {
+      wrap.innerHTML = conditionValueInputHTML(prevValue);
+    }
   }
 }
 
@@ -287,16 +299,16 @@ function addOptionCard(container, data) {
     attachUploadZone(zone, hiddenImg);
   }
 
-  div.querySelector('.remove-option').addEventListener('click', function() {
+  div.querySelector('.remove-option').onclick = function() {
     div.remove();
     updateAllConditionDropdowns();
-  });
+  };
 
-  div.querySelector('.toggle-option-image').addEventListener('click', function() {
+  div.querySelector('.toggle-option-image').onclick = function() {
     var wrap    = div.querySelector('.option-image-wrap');
     var visible = wrap.style.display !== 'none';
     wrap.style.display = visible ? 'none' : '';
-  });
+  };
 
   container.appendChild(div);
   return div;
@@ -394,17 +406,17 @@ function buildQuestionCardHTML(idx, d) {
           '<div>' +
             '<label class="form-label small mb-1">De</label>' +
             '<input type="number" class="form-control form-control-sm field-scale-min"' +
-                   ' value="' + fScaleMin + '" onwheel="this.blur()" style="width:70px;">' +
+                   ' value="' + fScaleMin + '" min="0" step="1" onwheel="this.blur()" style="width:70px;">' +
           '</div>' +
           '<div>' +
             '<label class="form-label small mb-1">Até</label>' +
             '<input type="number" class="form-control form-control-sm field-scale-max"' +
-                   ' value="' + fScaleMax + '" onwheel="this.blur()" style="width:70px;">' +
+                   ' value="' + fScaleMax + '" step="1" onwheel="this.blur()" style="width:70px;">' +
           '</div>' +
           '<div>' +
             '<label class="form-label small mb-1">Passo</label>' +
             '<input type="number" class="form-control form-control-sm field-scale-step"' +
-                   ' value="' + fScaleStep + '" min="1" onwheel="this.blur()" style="width:70px;">' +
+                   ' value="' + fScaleStep + '" min="1" step="1" onwheel="this.blur()" style="width:70px;">' +
           '</div>' +
           '<div>' +
             '<label class="form-label small mb-1">Extremo baixo</label>' +
@@ -489,38 +501,38 @@ function attachCardListeners(card) {
   /* remove */
   var removeBtn = card.querySelector('.remove-field');
   if (removeBtn && !removeBtn.disabled) {
-    removeBtn.addEventListener('click', function() {
+    removeBtn.onclick = function() {
       card.remove();
       renumberCards();
       updateAllConditionDropdowns();
-    });
+    };
   }
 
   /* duplicate */
   var dupBtn = card.querySelector('.duplicate-field');
   if (dupBtn) {
-    dupBtn.addEventListener('click', function() { duplicateField(card); });
+    dupBtn.onclick = function() { duplicateField(card); };
   }
 
   /* add option */
   var addOptBtn = card.querySelector('.add-option-btn');
   if (addOptBtn) {
-    addOptBtn.addEventListener('click', function() {
+    addOptBtn.onclick = function() {
       var container = card.querySelector('.options-container');
       if (container) {
         addOptionCard(container, null);
         updateAllConditionDropdowns();
       }
-    });
+    };
   }
 
   /* label change → refresh field ID & condition dropdowns */
   var labelInput = card.querySelector('.field-label');
   if (labelInput) {
-    labelInput.addEventListener('input', function() {
+    labelInput.oninput = function() {
       card.dataset.fieldId = generateFieldId(this.value.trim(), card.dataset.index);
       updateAllConditionDropdowns();
-    });
+    };
   }
 
   /* image upload zone */
@@ -534,27 +546,27 @@ function attachCardListeners(card) {
   /* condition source select */
   var condSource = card.querySelector('.field-cond-source');
   if (condSource) {
-    condSource.addEventListener('change', function() {
+    condSource.onchange = function() {
       var hiddenId = card.querySelector('.field-cond-id');
       if (hiddenId) hiddenId.value = this.value;
       updateConditionValueDropdown(card, refreshAndGetAllFields());
-    });
+    };
   }
 
   /* add condition button */
   var addCondBtn = card.querySelector('.add-condition-btn');
   if (addCondBtn) {
-    addCondBtn.addEventListener('click', function() {
+    addCondBtn.onclick = function() {
       updateAllConditionDropdowns();
       card.querySelector('.field-condition-ui').style.display = '';
       this.style.display = 'none';
-    });
+    };
   }
 
   /* remove condition button */
   var removeCondBtn = card.querySelector('.remove-condition-btn');
   if (removeCondBtn) {
-    removeCondBtn.addEventListener('click', function() {
+    removeCondBtn.onclick = function() {
       card.querySelector('.field-condition-ui').style.display = 'none';
       card.querySelector('.add-condition-btn').style.display  = '';
       var hiddenId = card.querySelector('.field-cond-id');
@@ -563,7 +575,7 @@ function attachCardListeners(card) {
       if (sourceSelect) sourceSelect.value = '';
       var wrap = card.querySelector('.field-cond-value-wrap');
       if (wrap) wrap.innerHTML = conditionValueInputHTML('');
-    });
+    };
   }
 }
 

@@ -325,7 +325,6 @@ def test_schema_option_image_url_javascript_rejected():
 
 
 def test_schema_condition_valid():
-    # condition.field_id is a free-form string (the validator does not cross-check IDs)
     schema = {
         "fields": [
             {"id": "name", "label": "Nome", "type": "text"},
@@ -361,6 +360,52 @@ def test_schema_duplicate_id_rejected():
     valid, err = validate_custom_intake_schema(schema)
     assert valid is False
     assert "duplicado" in err
+
+
+def test_schema_condition_references_nonexistent_field():
+    """condition.field_id pointing to a non-existent field must be rejected."""
+    schema = {
+        "fields": [
+            {"id": "name", "label": "Nome", "type": "text"},
+            {"id": "detail", "label": "Detalhe", "type": "textarea",
+             "condition": {"field_id": "nonexistent_field", "value": "A"}},
+        ]
+    }
+    valid, err = validate_custom_intake_schema(schema)
+    assert valid is False
+    assert "inexistente" in err or "nonexistent_field" in err
+
+
+def test_schema_condition_circular_dependency_rejected():
+    """Circular dependency (A depends on B, B depends on A) must be rejected."""
+    schema = {
+        "fields": [
+            {"id": "name", "label": "Nome", "type": "text"},
+            {"id": "field_a", "label": "Campo A", "type": "radio",
+             "options": ["X", "Y"],
+             "condition": {"field_id": "field_b", "value": "X"}},
+            {"id": "field_b", "label": "Campo B", "type": "radio",
+             "options": ["X", "Y"],
+             "condition": {"field_id": "field_a", "value": "X"}},
+        ]
+    }
+    valid, err = validate_custom_intake_schema(schema)
+    assert valid is False
+    assert "circular" in err.lower()
+
+
+def test_schema_condition_no_self_reference():
+    """A field referencing itself as a condition must be rejected."""
+    schema = {
+        "fields": [
+            {"id": "name", "label": "Nome", "type": "text"},
+            {"id": "field_a", "label": "Campo A", "type": "radio",
+             "options": ["X", "Y"],
+             "condition": {"field_id": "field_a", "value": "X"}},
+        ]
+    }
+    valid, err = validate_custom_intake_schema(schema)
+    assert valid is False
 
 
 def test_v1_schema_backward_compatible():
