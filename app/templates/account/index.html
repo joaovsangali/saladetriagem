@@ -24,6 +24,7 @@
           <p><span class="badge bg-secondary">Grátis</span></p>
           <p class="small text-muted">Faça upgrade para Premium ou Enterprise para mais triagens e recursos.</p>
         {% endif %}
+
         <p class="small">Plano atual: <strong>{{ current_user.plan_type|upper }}</strong>
           <a href="{{ url_for('plans.index') }}" class="ms-2">Ver planos</a>
         </p>
@@ -41,16 +42,22 @@
         </table>
 
         <div class="mt-3 p-2 bg-light rounded">
-          <span class="small fw-semibold">Triagens restantes este mês:</span>
-          <span class="small ms-1">
-            {{ sessions_remaining }} / {{ limits.max_sessions_per_month }}
-          </span>
-          <div class="progress mt-1" style="height: 6px;">
-            {% set pct = [(sessions_used / limits.max_sessions_per_month * 100)|int, 100]|min %}
-            <div class="progress-bar {% if pct >= 90 %}bg-danger{% elif pct >= 70 %}bg-warning{% else %}bg-success{% endif %}"
-                 style="width: {{ pct }}%"></div>
-          </div>
-        </div>
+  <span class="small fw-semibold">Triagens restantes este mês:</span>
+  <span class="small ms-1">
+    {{ sessions_remaining }} / {{ limits.max_sessions_per_month }}
+  </span>
+
+  <div class="progress mt-1" style="height: 6px;">
+    {% set pct = [(sessions_used / limits.max_sessions_per_month * 100)|int, 100]|min %}
+    <div class="progress-bar 
+      {% if pct >= 90 %}bg-danger
+      {% elif pct >= 70 %}bg-warning
+      {% else %}bg-success
+      {% endif %}"
+      style="width: {{ pct }}%">
+    </div>
+  </div>
+</div>
       </div>
     </div>
   </div>
@@ -60,83 +67,111 @@
     <div class="card">
       <div class="card-header"><strong>Dados da conta</strong></div>
       <div class="card-body">
+
         <p><strong>Nome:</strong> {{ current_user.display_name }}</p>
         <p><strong>E-mail:</strong> {{ current_user.email }}</p>
-        <p><strong>Telefone:</strong> {{ current_user.phone or '—' }}
+
+        <p><strong>Telefone:</strong>
           {% if current_user.phone_verified_at %}
-            <span class="badge bg-success ms-1">Verificado</span>
+            {{ current_user.phone or '—' }}
+            <span class="badge bg-success ms-1">✅ Verificado</span>
           {% else %}
-            <span class="badge bg-warning text-dark ms-1">Não verificado</span>
-            <a href="{{ url_for('auth.verify_phone') }}" class="btn btn-sm btn-outline-warning ms-1">Verificar</a>
+            <span id="phone-display">
+              {{ current_user.phone or '—' }}
+              <span class="badge bg-warning text-dark ms-1">Não verificado</span>
+
+              <button type="button" class="btn btn-sm btn-outline-secondary ms-2"
+                      onclick="togglePhoneEdit(true)">
+                Editar
+              </button>
+
+              <a href="{{ url_for('auth.verify_phone') }}"
+                 class="btn btn-sm btn-outline-primary ms-1">
+                Verificar
+              </a>
+            </span>
+
+            <div id="phone-edit" style="display:none" class="mt-2">
+              <form method="POST" action="{{ url_for('account.update_phone') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="input-group input-group-sm">
+                  <input type="tel" name="phone" class="form-control"
+                         value="{{ current_user.phone or '' }}"
+                         placeholder="Ex: 11999999999" required>
+
+                  <button type="submit" class="btn btn-primary">Salvar</button>
+
+                  <button type="button" class="btn btn-outline-secondary"
+                          onclick="togglePhoneEdit(false)">
+                    Cancelar
+                  </button>
+                </div>
+              </form>
+            </div>
           {% endif %}
         </p>
+
         <p><strong>Conta criada em:</strong> {{ current_user.created_at|datefmt }}</p>
-      </div>
-    </div>
-  </div>
 
-  {# Change password #}
-  <div class="col-md-6 mb-4">
-    <div class="card">
-      <div class="card-header"><strong>Alterar senha</strong></div>
-      <div class="card-body">
-        <form method="post" action="{{ url_for('account.change_password') }}">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <div class="mb-3">
-            <label class="form-label">Senha atual</label>
-            <input type="password" name="current_password" class="form-control" required>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Nova senha</label>
-            <input type="password" name="new_password" class="form-control" required minlength="8">
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Confirmar nova senha</label>
-            <input type="password" name="confirm_password" class="form-control" required minlength="8">
-          </div>
-          <button type="submit" class="btn btn-primary">Alterar senha</button>
-        </form>
-      </div>
-    </div>
-  </div>
+        <hr>
 
-  {# Active sessions #}
-  <div class="col-md-6 mb-4">
-    <div class="card">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <strong>Sessões ativas</strong>
-        <form method="post" action="{{ url_for('account.end_all_other_sessions') }}" class="d-inline">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <button type="submit" class="btn btn-sm btn-outline-danger"
-                  onclick="return confirm('Encerrar todas as outras sessões?')">
-            Encerrar outras
+        {# SENHA - NOVO PADRÃO #}
+        <div id="password-display">
+          <strong>Senha</strong>
+          <button class="btn btn-sm btn-outline-secondary ms-2"
+                  onclick="togglePasswordEdit(true)">
+            Editar senha
           </button>
-        </form>
-      </div>
-      <div class="card-body p-0">
-        <table class="table table-sm mb-0">
-          <thead><tr><th>IP</th><th>Última atividade</th><th></th></tr></thead>
-          <tbody>
-            {% for s in active_sessions %}
-            <tr {% if s.session_token == current_token %}class="table-success"{% endif %}>
-              <td>{{ s.ip_address or '—' }}{% if s.session_token == current_token %} <span class="badge bg-success">atual</span>{% endif %}</td>
-              <td>{{ s.last_activity_at|datefmt }}</td>
-              <td>
-                {% if s.session_token != current_token %}
-                <form method="post" action="{{ url_for('account.end_session', token=s.session_token) }}" class="d-inline">
-                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                  <button type="submit" class="btn btn-sm btn-outline-danger">Encerrar</button>
-                </form>
-                {% endif %}
-              </td>
-            </tr>
-            {% else %}
-            <tr><td colspan="3" class="text-muted text-center py-2">Nenhuma sessão ativa.</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
+        </div>
+
+        <div id="password-edit" style="display:none" class="mt-3">
+          <form method="post" action="{{ url_for('account.change_password') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div class="mb-2">
+              <label class="form-label small">Senha atual</label>
+              <input type="password" name="current_password" class="form-control form-control-sm" required>
+            </div>
+
+            <div class="mb-2">
+              <label class="form-label small">Nova senha</label>
+              <input type="password" name="new_password" class="form-control form-control-sm" required minlength="8">
+            </div>
+
+            <div class="mb-2">
+              <label class="form-label small">Confirmar nova senha</label>
+              <input type="password" name="confirm_password" class="form-control form-control-sm" required minlength="8">
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-sm">Salvar</button>
+            <button type="button" class="btn btn-outline-secondary btn-sm"
+                    onclick="togglePasswordEdit(false)">
+              Cancelar
+            </button>
+          </form>
+        </div>
+
       </div>
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function togglePhoneEdit(show) {
+  document.getElementById('phone-display').style.display = show ? 'none' : '';
+  document.getElementById('phone-edit').style.display = show ? '' : 'none';
+}
+
+function togglePasswordEdit(show) {
+  document.getElementById('password-display').style.display = show ? 'none' : '';
+  document.getElementById('password-edit').style.display = show ? '' : 'none';
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+  togglePhoneEdit(false);
+  togglePasswordEdit(false);
+});
+</script>
 {% endblock %}

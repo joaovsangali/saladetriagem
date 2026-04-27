@@ -38,7 +38,26 @@ def expire_sessions_task():
             pending = submission_store.list_for_dashboard(session.id)
             if pending:
                 now2 = datetime.now(timezone.utc)
+
+                def _naive_utc(dt):
+                    if dt is None:
+                        return None
+                    if getattr(dt, 'tzinfo', None) is not None:
+                        return dt.replace(tzinfo=None)
+                    return dt
+
+                # Fetch existing entries in one query to avoid N+1
+                existing_entries = db.session.query(
+                    MinimalLogEntry.guest_display_name,
+                    MinimalLogEntry.received_at,
+                ).filter_by(dashboard_id=session.id).all()
+                existing_keys = {
+                    (e.guest_display_name, _naive_utc(e.received_at))
+                    for e in existing_entries
+                }
                 for sub in pending:
+                    if (sub.guest_name, _naive_utc(sub.received_at)) in existing_keys:
+                        continue
                     db.session.add(
                         MinimalLogEntry(
                             dashboard_id=session.id,

@@ -26,15 +26,36 @@ logger = logging.getLogger(__name__)
 def _persist_pending_submissions(session: DashboardSession, *, status: str = "received") -> int:
     """
     Grava em MinimalLogEntry tudo que ainda estiver pendente em RAM para esta triagem.
+    Garante idempotência: não duplica se já existir entrada com mesmos dashboard_id,
+    guest_display_name e received_at.
     Não purge aqui — isso continua sendo responsabilidade do caller.
     """
     pending = submission_store.list_for_dashboard(session.id)
     if not pending:
         return 0
 
+    def _naive_utc(dt):
+        """Return a naive UTC datetime for comparison (strips tzinfo if present)."""
+        if dt is None:
+            return None
+        if getattr(dt, 'tzinfo', None) is not None:
+            return dt.replace(tzinfo=None)
+        return dt
+
+    # Fetch all existing entries for this session in one query (avoids N+1)
+    existing_entries = MinimalLogEntry.query.filter_by(
+        dashboard_id=session.id,
+    ).with_entities(
+        MinimalLogEntry.guest_display_name,
+        MinimalLogEntry.received_at,
+    ).all()
+    existing_keys = {(e.guest_display_name, _naive_utc(e.received_at)) for e in existing_entries}
+
     now = datetime.now(timezone.utc)
     count = 0
     for sub in pending:
+        if (sub.guest_name, _naive_utc(sub.received_at)) in existing_keys:
+            continue
         db.session.add(
             MinimalLogEntry(
                 dashboard_id=session.id,
@@ -614,6 +635,113 @@ def delete_custom_template(template_id):
     db.session.commit()
     flash("Template removido.", "info")
     return redirect(url_for("dashboard.list_custom_templates"))
+
+
+@dashboard_bp.route("/custom-templates/<int:template_id>/edit", methods=["GET", "POST"])
+@login_required
+def edit_custom_template(template_id):
+    """Editar modelo personalizado existente."""
+    from app.utils.schema_validator import validate_custom_intake_schema
+    import json
+
+    if not can_create_custom_schema(current_user):
+        flash("Modelos personalizados são exclusivos para usuários Enterprise.", "warning")
+        return redirect(url_for("dashboard.index"))
+
+    template = CustomIntakeTemplate.query.filter_by(
+        id=template_id, user_id=current_user.id, is_active=True
+    ).first_or_404()
+
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        if not name:
+            flash("Informe um nome para o template.", "warning")
+            return render_template("dashboard/custom_template_edit.html", template=template)
+
+        schema_json = request.form.get("schema_json", "").strip()
+        try:
+            schema = json.loads(schema_json)
+        except (ValueError, TypeError):
+            flash("Schema inválido (JSON malformado).", "danger")
+            return render_template("dashboard/custom_template_edit.html", template=template)
+
+        valid, err = validate_custom_intake_schema(schema)
+        if not valid:
+            flash(f"Schema inválido: {err}", "danger")
+            return render_template("dashboard/custom_template_edit.html", template=template)
+
+        allow_attachments = request.form.get("allow_attachments") == "true"
+        schema['allow_attachments'] = allow_attachments
+
+        template.name = name
+        template.schema = schema
+        db.session.commit()
+
+        flash(f"Template '{name}' atualizado com sucesso.", "success")
+        return redirect(url_for("dashboard.list_custom_templates"))
+
+    return render_template("dashboard/custom_template_edit.html", template=template)
+
+
+@dashboard_bp.route("/sessions/<int:session_id>/export-all-csv")
+@login_required
+def export_session_csv(session_id):
+    """Exportar todas as submissions da sessão como CSV."""
+    from app.utils.csv_helpers import generate_csv_response
+
+    session = DashboardSession.query.get_or_404(session_id)
+
+    can_access, _role = can_access_session(current_user, session)
+    if not can_access:
+        abort(403)
+
+    # Collect active submissions (in-memory) — only available when session is active
+    active_subs = submission_store.list_for_dashboard(session.id) if session.is_active else []
+
+    # Gather all answer keys across active submissions to build dynamic columns.
+    # Use a dict to maintain insertion order while allowing O(1) duplicate check.
+    seen_keys: dict = {}
+    for sub in active_subs:
+        for key in (sub.answers or {}):
+            if key not in seen_keys:
+                seen_keys[key] = None
+
+    # Header: base columns + dynamic answer columns
+    header = ['ID', 'Nome', 'Tipo', 'Status', 'Recebido em'] + list(seen_keys)
+    rows = [header]
+
+    # Active submissions — full data including answers
+    for sub in active_subs:
+        answers = sub.answers or {}
+        row = [
+            sub.submission_id,
+            sub.guest_name,
+            sub.crime_type,
+            'ativo',
+            sub.received_at.isoformat() if sub.received_at else '',
+        ]
+        for key in seen_keys:
+            val = answers.get(key, '')
+            if isinstance(val, list):
+                val = ';'.join(str(v) for v in val)
+            row.append(val)
+        rows.append(row)
+
+    # Log entries (closed/discarded/received) — only minimal data available
+    for log in session.logs.order_by(MinimalLogEntry.received_at.desc()).all():
+        row = [
+            log.id,
+            log.guest_display_name or '',
+            log.crime_type or '',
+            log.status or '',
+            log.received_at.isoformat() if log.received_at else '',
+        ]
+        row.extend(['' for _ in seen_keys])
+        rows.append(row)
+
+    safe_label = re.sub(r'[^\w\-]', '_', session.label)
+    filename = f"sessao_{session.id}_{safe_label}.csv"
+    return generate_csv_response(rows, filename)
 
 
 def _generate_qr_svg(url: str) -> str:

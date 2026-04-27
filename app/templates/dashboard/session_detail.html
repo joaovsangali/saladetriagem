@@ -35,6 +35,10 @@
       </button>
     </form>
     {% endif %}
+    <a href="{{ url_for('dashboard.export_session_csv', session_id=session.id) }}"
+       class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-download"></i> Exportar CSV
+    </a>
   </div>
 </div>
 

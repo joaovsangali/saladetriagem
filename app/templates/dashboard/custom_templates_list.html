@@ -30,6 +30,10 @@
         <td>{{ tpl.created_at|datefmt }}</td>
         <td>{{ tpl.schema.get('fields', [])|length }}</td>
         <td>
+          <a href="{{ url_for('dashboard.edit_custom_template', template_id=tpl.id) }}"
+             class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-pencil"></i> Editar
+          </a>
           <form action="{{ url_for('dashboard.delete_custom_template', template_id=tpl.id) }}" method="post" class="d-inline">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button class="btn btn-outline-danger btn-sm"
