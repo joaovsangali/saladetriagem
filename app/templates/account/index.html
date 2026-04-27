@@ -79,7 +79,7 @@
                 Verificar
               </a>
             </span>
-            <span id="phone-edit" class="d-none">
+            <span id="phone-edit" style="display:none">
               <form method="POST" action="{{ url_for('account.update_phone') }}" class="mt-2">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="input-group input-group-sm">
@@ -170,8 +170,8 @@
 {% block scripts %}
 <script>
 function togglePhoneEdit(show) {
-  document.getElementById('phone-display').classList.toggle('d-none', show);
-  document.getElementById('phone-edit').classList.toggle('d-none', !show);
+  document.getElementById('phone-display').style.display = show ? 'none' : '';
+  document.getElementById('phone-edit').style.display = show ? '' : 'none';
 }
 </script>
 {% endblock %}
