@@ -5,7 +5,9 @@
 .drag-handle:hover { opacity:1; }
 .sortable-ghost { opacity:.35; }
 </style>
-<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"
+        integrity="sha384-OLBgp1GsljhM2TJ+sbHjaiH9txEUvgdDTAzHv2P24donTt6/529l+9Ua0vFImLlb"
+        crossorigin="anonymous"></script>
 <script>
 (function() {
 'use strict';
@@ -122,7 +124,17 @@ function attachUploadZone(zone, hiddenInput) {
     if (placeholder) placeholder.style.display = '';
   }
   function handleFile(file) {
-    if (file) uploadImage(file, showPreview, function(err) { alert(err); });
+    if (file) uploadImage(file, showPreview, function(err) {
+      /* Show the error inline near the upload zone instead of blocking alert */
+      var msg = zone.querySelector('.fb-upload-error');
+      if (!msg) {
+        msg = document.createElement('div');
+        msg.className = 'fb-upload-error text-danger small mt-1';
+        zone.appendChild(msg);
+      }
+      msg.textContent = err;
+      setTimeout(function() { if (msg.parentNode) msg.parentNode.removeChild(msg); }, 5000);
+    });
   }
 
   zone.addEventListener('click', function(e) {

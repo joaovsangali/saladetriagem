@@ -765,7 +765,8 @@ def upload_image():
             allowed_mimetypes=("image/jpeg", "image/png", "image/gif"),
         )
     except FileValidationError as exc:
-        return jsonify({"error": str(exc)}), 400
+        logger.debug("Form image validation failed: %s", exc)
+        return jsonify({"error": "Arquivo inválido. Verifique o tipo (JPEG, PNG ou GIF) e o tamanho (máx. 2MB)."}), 400
 
     storage = getattr(current_app, "photo_storage", None)
     if storage is None:
@@ -777,6 +778,8 @@ def upload_image():
     safe_name = f"form_{uuid.uuid4().hex}{ext}"
 
     key = storage.save(data, safe_name)
+    if not key:
+        return jsonify({"error": "Erro ao salvar imagem."}), 500
     serve_url = url_for("dashboard.serve_form_image", key=key, _external=False)
     return jsonify({"url": serve_url})
 
@@ -793,7 +796,7 @@ def serve_form_image(key):
     # For S3 (or any storage that provides a direct URL): redirect to it.
     if storage is not None:
         signed_url = storage.get_url(key)
-        if signed_url:
+        if signed_url and signed_url.startswith(("https://", "http://")):
             return redirect(signed_url)
 
     # For local storage: serve the file from UPLOAD_FOLDER.
