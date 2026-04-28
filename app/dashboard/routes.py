@@ -7,7 +7,7 @@ import secrets
 from datetime import datetime, timezone
 import qrcode
 import qrcode.image.svg
-from flask import render_template, redirect, url_for, flash, request, abort, Response, jsonify, send_from_directory, current_app
+from flask import render_template, redirect, url_for, flash, request, abort, Response, jsonify, current_app
 from flask_login import login_required, current_user
 from app.dashboard import dashboard_bp
 from app.extensions import db
@@ -790,22 +790,24 @@ def serve_form_image(key):
 
     No authentication required — these images are embedded in public intake forms.
     Keys are UUID-based, so they are effectively unguessable.
+
+    Images are always proxied through the server (never redirected to an external
+    URL) so that the strict ``img-src 'self'`` CSP is satisfied in all deployments,
+    including production environments that use S3 for storage.
     """
+    from app.utils.mime import detect_mimetype
+
     storage = getattr(current_app, "photo_storage", None)
-
-    # For S3 (or any storage that provides a direct URL): redirect to it.
     if storage is not None:
-        signed_url = storage.get_url(key)
-        if signed_url:
-            from urllib.parse import urlparse
-            parsed = urlparse(signed_url)
-            if parsed.scheme in ("http", "https") and parsed.netloc:
-                return redirect(signed_url)
-
-    # For local storage: serve the file from UPLOAD_FOLDER.
-    upload_folder = current_app.config.get("UPLOAD_FOLDER", "uploads")
-    # send_from_directory raises NotFound if the path escapes the directory.
-    return send_from_directory(upload_folder, key)
+        data = storage.download(key)
+        if data:
+            mime = detect_mimetype(data)
+            return Response(
+                data,
+                mimetype=mime,
+                headers={"Cache-Control": "public, max-age=3600"},
+            )
+    abort(404)
 
 
 def _generate_qr_svg(url: str) -> str:
