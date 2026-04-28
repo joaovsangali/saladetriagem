@@ -240,8 +240,11 @@ const SESSION_ID = {{ session.id | tojson }};
 // Map of custom-form field IDs → labels (populated from Jinja2 schema when available).
 const CUSTOM_FIELD_LABELS = (function () {
   var m = {};
-  {% if schema %}{% for f in schema.get('fields', []) %}m[{{ f.id | tojson }}] = {{ f.label | tojson }};
-  {% endfor %}{% endif %}
+  {% if schema %}
+  {% for f in schema.get('fields', []) %}
+  m[{{ f.id | tojson }}] = {{ f.label | tojson }};
+  {% endfor %}
+  {% endif %}
   return m;
 }());
 
@@ -341,6 +344,8 @@ function loadDetail(sessionId, subId) {
 
       // Custom form: render answers using the schema field-label map.
       if (data.crime_type === 'custom' && data.answers) {
+        // Exclude internal keys (prefixed with '_') and truly empty values,
+        // but preserve meaningful falsy values like 0 and false.
         const customEntries = Object.entries(data.answers).filter(function ([k, v]) {
           return !k.startsWith('_') && v !== null && v !== '' && v !== undefined;
         });
@@ -348,8 +353,10 @@ function loadDetail(sessionId, subId) {
           html += '<h6>Respostas</h6><table class="table table-sm">';
           customEntries.forEach(function ([fid, val]) {
             const label = CUSTOM_FIELD_LABELS[fid] || fid;
-            const display = Array.isArray(val) ? val.join(', ') : String(val);
-            html += `<tr><td class="text-muted small" style="width:40%">${_escHtml(label)}</td><td class="small" style="white-space:pre-wrap">${_escHtml(display)}</td></tr>`;
+            const display = Array.isArray(val)
+              ? val.map(function (item) { return _escHtml(String(item)); }).join(', ')
+              : _escHtml(String(val));
+            html += `<tr><td class="text-muted small" style="width:40%">${_escHtml(label)}</td><td class="small" style="white-space:pre-wrap">${display}</td></tr>`;
           });
           html += '</table>';
         }
