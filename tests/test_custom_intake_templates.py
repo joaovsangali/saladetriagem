@@ -764,6 +764,112 @@ def test_new_session_with_custom_template(app, client):
         assert sess.custom_template_id == tpl_id
 
 
+# ---------------------------------------------------------------------------
+# Schema immutability after submit (regression: images must not disappear)
+# ---------------------------------------------------------------------------
+
+_SCHEMA_WITH_IMAGES = {
+    "fields": [
+        {"id": "name", "label": "Nome", "type": "text", "required": True},
+        {"id": "email", "label": "E-mail", "type": "email", "required": True},
+        {
+            "id": "banner",
+            "label": "Banner",
+            "type": "image_display",
+            "image_url": "/dashboard/form-image/test_uuid_banner.jpg",
+        },
+        {
+            "id": "choice",
+            "label": "Escolha",
+            "type": "radio",
+            "options": [
+                {
+                    "label": "Opção A",
+                    "value": "a",
+                    "image_url": "/dashboard/form-image/opt_a.jpg",
+                },
+                {"label": "Opção B", "value": "b"},
+            ],
+        },
+    ]
+}
+
+
+def test_schema_image_urls_unchanged_after_submit(app, client):
+    """After a custom-form submission the template.schema must be byte-for-byte
+    identical — in particular, all image_url values must remain intact so that
+    images are rendered correctly on subsequent form loads."""
+    import copy
+    import json
+
+    with app.app_context():
+        user = _make_user("imgtest@test.com", "ImgTest", plan_type="enterprise")
+        tpl = CustomIntakeTemplate(
+            user_id=user.id,
+            name="Image Template",
+            schema=copy.deepcopy(_SCHEMA_WITH_IMAGES),
+        )
+        _db.session.add(tpl)
+        _db.session.commit()
+        tpl_id = tpl.id
+
+        sess = DashboardSession(
+            user_id=user.id,
+            label="Image Session",
+            expires_at=datetime.now(timezone.utc) + timedelta(hours=12),
+            intake_type="custom",
+            custom_template_id=tpl_id,
+        )
+        _db.session.add(sess)
+        _db.session.commit()
+
+        link = IntakeLink(dashboard_id=sess.id, form_schema=DEFAULT_FORM_SCHEMA)
+        _db.session.add(link)
+        _db.session.commit()
+        token = link.token
+
+    # Submit the form
+    resp = client.post(
+        f"/t/{token}/submit",
+        data={
+            "field_name": "Teste Imagem",
+            "field_email": "img@test.com",
+            "field_choice": "a",
+        },
+        follow_redirects=False,
+    )
+    assert resp.status_code == 302, "Submit should redirect on success"
+
+    # Reload the template from DB and verify schema is unchanged
+    with app.app_context():
+        tpl_after = CustomIntakeTemplate.query.get(tpl_id)
+        fields_after = tpl_after.schema.get("fields", [])
+
+        # image_display field must keep its image_url
+        banner = next((f for f in fields_after if f["id"] == "banner"), None)
+        assert banner is not None, "image_display field must still exist"
+        assert banner.get("image_url") == "/dashboard/form-image/test_uuid_banner.jpg", (
+            "image_url of image_display field must not change after submit"
+        )
+
+        # radio option with image_url must be preserved
+        choice = next((f for f in fields_after if f["id"] == "choice"), None)
+        assert choice is not None, "radio field must still exist"
+        opt_a = next(
+            (o for o in choice.get("options", []) if isinstance(o, dict) and o.get("value") == "a"),
+            None,
+        )
+        assert opt_a is not None, "option A must still exist"
+        assert opt_a.get("image_url") == "/dashboard/form-image/opt_a.jpg", (
+            "image_url of option must not change after submit"
+        )
+
+        # The full schema must be identical to what was saved
+        assert tpl_after.schema == _SCHEMA_WITH_IMAGES, (
+            "template.schema must be unchanged after submit"
+        )
+
+
 def test_new_session_free_user_cannot_use_custom(app, client):
     with app.app_context():
         _make_user("free3@test.com", "Free3", plan_type="free")
