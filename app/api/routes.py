@@ -12,6 +12,18 @@ from app.schemas.crime_types import CRIME_SCHEMAS
 from app.audit import log_access
 from app.utils.access_control import can_access_session
 
+
+def _detect_mimetype(data: bytes) -> str:
+    """Return the MIME type for *data* based on its leading magic bytes."""
+    if data[:4] == b'%PDF':
+        return "application/pdf"
+    if data[:8] == b'\x89PNG\r\n\x1a\n':
+        return "image/png"
+    if data[:6] in (b'GIF87a', b'GIF89a'):
+        return "image/gif"
+    # JPEG (FF D8 FF) and unknown formats both fall back to JPEG
+    return "image/jpeg"
+
 def _get_owned_session(session_id):
     return DashboardSession.query.filter_by(
         id=session_id, user_id=current_user.id
@@ -175,10 +187,12 @@ def get_photo(session_id, submission_id, index):
 
     # Photo is in memory (local / Redis path).
     mem_index = index - total_keys
-    return Response(
-        sub.photos[mem_index],
-        mimetype="image/jpeg",
-        headers={"Cache-Control": "no-store"},
-    )
+    data_bytes = sub.photos[mem_index]
+    mime = _detect_mimetype(data_bytes)
+    ext = "pdf" if mime == "application/pdf" else "jpg"
+    headers = {"Cache-Control": "no-store"}
+    if request.args.get("download") == "1":
+        headers["Content-Disposition"] = f"attachment; filename=photo_{index}.{ext}"
+    return Response(data_bytes, mimetype=mime, headers=headers)
 
 

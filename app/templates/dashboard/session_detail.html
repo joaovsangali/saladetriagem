@@ -236,6 +236,7 @@
 <script>
 const CSRF_TOKEN = "{{ csrf_token() }}";
 const SESSION_ID = {{ session.id | tojson }};
+const CAN_VIEW_PHOTOS = {{ current_user.get_current_plan_limits().get('can_view_photos', False) | tojson }};
 
 // Map of custom-form field IDs → labels (populated from Jinja2 schema when available).
 const CUSTOM_FIELD_LABELS = (function () {
@@ -398,21 +399,25 @@ function loadDetail(sessionId, subId) {
       html += `<button class="btn btn-outline-primary btn-sm mt-2" type="button" onclick="copyText('${subId}', this)"><i class="bi bi-clipboard"></i> Copiar Texto</button>`;
       html += `<button class="btn btn-outline-success btn-sm mt-2 ms-2" type="button" onclick="shareWhatsApp('${subId}')"><i class="bi bi-whatsapp"></i> WhatsApp</button>`;
       if (data.photo_count > 0) {
-        html += `<h6 class="mt-3">Fotos (${data.photo_count})</h6><div class="d-flex gap-2 flex-wrap align-items-start">`;
-        for (let i = 0; i < data.photo_count; i++) {
-          const imgUrl = `/api/sessions/${sessionId}/submissions/${subId}/photo/${i}`;
-          const dlUrl  = `/api/sessions/${sessionId}/submissions/${subId}/photo/${i}?download=1`;
+        if (!CAN_VIEW_PHOTOS) {
+          html += `<p class="small text-muted mt-3"><i class="bi bi-lock-fill me-1"></i>Visualização de fotos disponível no plano Premium. <a href="/plans" class="ms-1">Ver planos</a></p>`;
+        } else {
+          html += `<h6 class="mt-3">Fotos (${data.photo_count})</h6><div class="d-flex gap-2 flex-wrap align-items-start">`;
+          for (let i = 0; i < data.photo_count; i++) {
+            const imgUrl = `/api/sessions/${sessionId}/submissions/${subId}/photo/${i}`;
+            const dlUrl  = `/api/sessions/${sessionId}/submissions/${subId}/photo/${i}?download=1`;
 
-          html += `
-            <div class="d-flex flex-column gap-1">
-              <a href="${imgUrl}" target="_blank" class="text-decoration-none">
-                <img src="${imgUrl}" class="img-thumbnail" style="max-height:120px;">
-              </a>
-              <a class="btn btn-outline-secondary btn-sm" href="${dlUrl}">Baixar</a>
-            </div>
-          `;
+            html += `
+              <div class="d-flex flex-column gap-1">
+                <a href="${imgUrl}" target="_blank" class="text-decoration-none">
+                  <img src="${imgUrl}" class="img-thumbnail" style="max-height:120px;">
+                </a>
+                <a class="btn btn-outline-secondary btn-sm" href="${dlUrl}">Baixar</a>
+              </div>
+            `;
+          }
+          html += `</div>`;
         }
-        html += `</div>`;
       }
 
       html += '</div></div></div>';
