@@ -4,6 +4,7 @@
 # - Não depende mais de CRIME_SCHEMAS para coletar perguntas no submit
 # - Garante defaults úteis no schema (domain/schema_version) sem quebrar nada
 
+import copy
 import io
 import logging
 import uuid
@@ -64,7 +65,8 @@ def form(token):
             max_uploads=max_uploads,
         )
 
-    schema = link.form_schema or {}
+    # Work on a shallow copy so we never mutate the ORM-backed dict in place.
+    schema = dict(link.form_schema) if link.form_schema else {}
 
     # Defaults "future-proof" (não quebra nada hoje)
     schema.setdefault("domain", "police")
@@ -122,7 +124,7 @@ def submit(token):
         if not template or not template.is_active:
             return render_template("intake/expired.html")
 
-        schema = template.schema
+        schema = copy.deepcopy(template.schema)
         # Field types that hold no submittable user data
         _DISPLAY_ONLY = {"section_header", "image_display"}
         answers = {}
@@ -243,7 +245,8 @@ def submit(token):
 
         return redirect(url_for("intake.ok", token=token))
 
-    schema = link.form_schema or {}
+    # Work on a shallow copy so we never mutate the ORM-backed dict in place.
+    schema = dict(link.form_schema) if link.form_schema else {}
 
     # Defaults "future-proof"
     schema.setdefault("domain", "police")

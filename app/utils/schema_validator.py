@@ -131,4 +131,43 @@ def validate_custom_intake_schema(schema):
             if "field_id" not in condition or "value" not in condition:
                 return False, f"Campo '{fid}': 'condition' deve ter 'field_id' e 'value'"
 
+    # Validate that condition.field_id references an existing field
+    for field in schema["fields"]:
+        condition = field.get("condition")
+        if condition and isinstance(condition, dict):
+            ref_id = condition.get("field_id")
+            if ref_id and ref_id not in seen_ids:
+                fid = field.get("id", "?")
+                return False, f"Campo '{fid}' depende de campo inexistente: '{ref_id}'"
+
+    # Detect circular dependencies (field A depends on B, B depends on A)
+    deps: dict[str, str] = {}
+    for field in schema["fields"]:
+        condition = field.get("condition")
+        if condition and isinstance(condition, dict):
+            ref_id = condition.get("field_id")
+            if ref_id:
+                deps[field["id"]] = ref_id
+
+    visited: set[str] = set()
+    rec_stack: set[str] = set()
+
+    def _is_cyclic(fid: str) -> bool:
+        visited.add(fid)
+        rec_stack.add(fid)
+        neighbor = deps.get(fid)
+        if neighbor is not None:
+            if neighbor not in visited:
+                if _is_cyclic(neighbor):
+                    return True
+            elif neighbor in rec_stack:
+                return True
+        rec_stack.discard(fid)
+        return False
+
+    for fid in list(deps):
+        if fid not in visited:
+            if _is_cyclic(fid):
+                return False, "Dependência circular detectada nas condições dos campos"
+
     return True, None
