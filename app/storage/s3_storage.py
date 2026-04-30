@@ -59,6 +59,15 @@ class S3PhotoStorage(PhotoStorage):
             logger.warning("Failed to generate S3 signed URL for %s: %s", key, exc)
             return None
 
+    def download(self, key: str) -> Optional[bytes]:
+        """Download and return the raw bytes for the object, or None on failure."""
+        try:
+            response = self._client.get_object(Bucket=self._bucket, Key=key)
+            return response["Body"].read()
+        except Exception as exc:
+            logger.warning("Failed to download S3 object %s: %s", key, exc)
+            return None
+
     def delete(self, key: str) -> bool:
         """Delete a photo from S3 by key."""
         try:

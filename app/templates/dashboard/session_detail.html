@@ -173,7 +173,6 @@
 
         <!-- Ações inline (toggle + concluir + descartar) -->
         <div class="d-flex gap-2">
-          {% if not schema %}
           <button
             class="btn btn-outline-secondary btn-sm"
             type="button"
@@ -181,15 +180,6 @@
             onclick="toggleDetail('{{ session.id }}', '{{ sub.submission_id }}');">
             <i class="bi bi-eye"></i> Ver detalhes
           </button>
-          {% else %}
-          <button
-            class="btn btn-outline-secondary btn-sm"
-            type="button"
-            id="toggle-detail-btn-{{ sub.submission_id }}"
-            onclick="toggleCustomDetail('{{ sub.submission_id }}');">
-            <i class="bi bi-eye"></i> Ver detalhes
-          </button>
-          {% endif %}
 
           {% if role == 'owner' %}
           <button
@@ -208,26 +198,10 @@
           {% endif %}
         </div>
       </div>
-
-      {% if schema %}
-      <!-- Custom schema inline details (hidden by default) -->
-      <div class="mt-2 d-none" id="custom-detail-{{ sub.submission_id }}">
-        <table class="table table-sm mb-0">
-          {% for field in schema.get('fields', []) %}
-          <tr>
-            <td class="text-muted small" style="width:40%">{{ field.label }}</td>
-            <td class="small">{{ sub.answers.get(field.id, '—') if sub.answers else '—' }}</td>
-          </tr>
-          {% endfor %}
-        </table>
-      </div>
-      {% endif %}
     </div>
 
-    {% if not schema %}
-    <!-- área de detalhes (colapsável) - somente para triagem policial -->
+    <!-- Collapsible detail area for ALL intake types -->
     <div class="card-footer bg-white p-0 d-none" id="sub-detail-{{ sub.submission_id }}"></div>
-    {% endif %}
   </div>
   {% else %}
   <p class="text-muted" id="no-submissions">Nenhuma triagem pendente.</p>
@@ -262,12 +236,33 @@
 <script>
 const CSRF_TOKEN = "{{ csrf_token() }}";
 const SESSION_ID = {{ session.id | tojson }};
+const CAN_VIEW_PHOTOS = {{ current_user.get_current_plan_limits().get('can_view_photos', False) | tojson }};
+
+// Map of custom-form field IDs → labels (populated from Jinja2 schema when available).
+const CUSTOM_FIELD_LABELS = (function () {
+  var m = {};
+  {% if schema %}
+  {% for f in schema.get('fields', []) %}
+  m[{{ f.id | tojson }}] = {{ f.label | tojson }};
+  {% endfor %}
+  {% endif %}
+  return m;
+}());
 
 function _setBtnState(btnEl, label, addClass, removeClass) {
   if (!btnEl) return;
   btnEl.textContent = label;
   if (addClass) btnEl.classList.add(addClass);
   if (removeClass) btnEl.classList.remove(removeClass);
+}
+
+function _escHtml(str) {
+  return String(str == null ? '' : str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 async function copyUrl(btnEl) {
@@ -316,20 +311,6 @@ function toggleDetail(sessionId, subId) {
   }
 }
 
-function toggleCustomDetail(subId) {
-  const container = document.getElementById(`custom-detail-${subId}`);
-  const btn = document.getElementById(`toggle-detail-btn-${subId}`);
-  if (!container) return;
-  const isOpen = !container.classList.contains('d-none');
-  if (isOpen) {
-    container.classList.add('d-none');
-    if (btn) btn.innerHTML = '<i class="bi bi-eye"></i> Ver detalhes';
-  } else {
-    container.classList.remove('d-none');
-    if (btn) btn.innerHTML = '<i class="bi bi-eye-slash"></i> Ocultar detalhes';
-  }
-}
-
 function loadDetail(sessionId, subId) {
   const container = document.getElementById(`sub-detail-${subId}`);
   if (!container) return;
@@ -357,9 +338,29 @@ function loadDetail(sessionId, subId) {
       if (data.structured && data.structured.length > 0) {
         html += '<h6>Respostas</h6><table class="table table-sm">';
         data.structured.forEach(([label, val]) => {
-          html += `<tr><td>${label}</td><td style="white-space: pre-wrap;">${val}</td></tr>`;
+          html += `<tr><td>${_escHtml(label)}</td><td style="white-space: pre-wrap;">${_escHtml(val)}</td></tr>`;
         });
         html += '</table>';
+      }
+
+      // Custom form: render answers using the schema field-label map.
+      if (data.crime_type === 'custom' && data.answers) {
+        // Exclude internal keys (prefixed with '_') and truly empty values,
+        // but preserve meaningful falsy values like 0 and false.
+        const customEntries = Object.entries(data.answers).filter(function ([k, v]) {
+          return !k.startsWith('_') && v !== null && v !== '' && v !== undefined;
+        });
+        if (customEntries.length > 0) {
+          html += '<h6>Respostas</h6><table class="table table-sm">';
+          customEntries.forEach(function ([fid, val]) {
+            const label = CUSTOM_FIELD_LABELS[fid] || fid;
+            const display = Array.isArray(val)
+              ? val.map(function (item) { return _escHtml(String(item)); }).join(', ')
+              : _escHtml(String(val));
+            html += `<tr><td class="text-muted small" style="width:40%">${_escHtml(label)}</td><td class="small" style="white-space:pre-wrap">${display}</td></tr>`;
+          });
+          html += '</table>';
+        }
       }
 
       const pm = data.answers && data.answers._pm_info;
@@ -398,21 +399,25 @@ function loadDetail(sessionId, subId) {
       html += `<button class="btn btn-outline-primary btn-sm mt-2" type="button" onclick="copyText('${subId}', this)"><i class="bi bi-clipboard"></i> Copiar Texto</button>`;
       html += `<button class="btn btn-outline-success btn-sm mt-2 ms-2" type="button" onclick="shareWhatsApp('${subId}')"><i class="bi bi-whatsapp"></i> WhatsApp</button>`;
       if (data.photo_count > 0) {
-        html += `<h6 class="mt-3">Fotos (${data.photo_count})</h6><div class="d-flex gap-2 flex-wrap align-items-start">`;
-        for (let i = 0; i < data.photo_count; i++) {
-          const imgUrl = `/api/sessions/${sessionId}/submissions/${subId}/photo/${i}`;
-          const dlUrl  = `/api/sessions/${sessionId}/submissions/${subId}/photo/${i}?download=1`;
+        if (!CAN_VIEW_PHOTOS) {
+          html += `<p class="small text-muted mt-3"><i class="bi bi-lock-fill me-1"></i>Visualização de fotos disponível no plano Premium. <a href="/plans" class="ms-1">Ver planos</a></p>`;
+        } else {
+          html += `<h6 class="mt-3">Fotos (${data.photo_count})</h6><div class="d-flex gap-2 flex-wrap align-items-start">`;
+          for (let i = 0; i < data.photo_count; i++) {
+            const imgUrl = `/api/sessions/${sessionId}/submissions/${subId}/photo/${i}`;
+            const dlUrl  = `/api/sessions/${sessionId}/submissions/${subId}/photo/${i}?download=1`;
 
-          html += `
-            <div class="d-flex flex-column gap-1">
-              <a href="${imgUrl}" target="_blank" class="text-decoration-none">
-                <img src="${imgUrl}" class="img-thumbnail" style="max-height:120px;">
-              </a>
-              <a class="btn btn-outline-secondary btn-sm" href="${dlUrl}">Baixar</a>
-            </div>
-          `;
+            html += `
+              <div class="d-flex flex-column gap-1">
+                <a href="${imgUrl}" target="_blank" class="text-decoration-none">
+                  <img src="${imgUrl}" class="img-thumbnail" style="max-height:120px;">
+                </a>
+                <a class="btn btn-outline-secondary btn-sm" href="${dlUrl}">Baixar</a>
+              </div>
+            `;
+          }
+          html += `</div>`;
         }
-        html += `</div>`;
       }
 
       html += '</div></div></div>';

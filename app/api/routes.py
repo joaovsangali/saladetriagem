@@ -11,6 +11,7 @@ from app.renderer.text import TextRenderer
 from app.schemas.crime_types import CRIME_SCHEMAS
 from app.audit import log_access
 from app.utils.access_control import can_access_session
+from app.utils.mime import detect_mimetype
 
 def _get_owned_session(session_id):
     return DashboardSession.query.filter_by(
@@ -164,21 +165,28 @@ def get_photo(session_id, submission_id, index):
         abort(404)
 
     if index < total_keys:
-        # Photo is in external storage — redirect to a signed URL.
+        # Photo is in external storage — proxy bytes to the client so the
+        # browser always loads images from 'self' (required by the CSP).
         storage = getattr(current_app, "photo_storage", None)
         if storage is not None:
-            url = storage.get_url(photo_keys[index])
-            if url:
-                return redirect(url)
-        # storage unavailable or get_url returned None — cannot serve
+            data_bytes = storage.download(photo_keys[index])
+            if data_bytes:
+                mime = detect_mimetype(data_bytes)
+                ext = "pdf" if mime == "application/pdf" else "jpg"
+                headers = {"Cache-Control": "no-store"}
+                if request.args.get("download") == "1":
+                    headers["Content-Disposition"] = f"attachment; filename=photo_{index}.{ext}"
+                return Response(data_bytes, mimetype=mime, headers=headers)
         abort(404)
 
     # Photo is in memory (local / Redis path).
     mem_index = index - total_keys
-    return Response(
-        sub.photos[mem_index],
-        mimetype="image/jpeg",
-        headers={"Cache-Control": "no-store"},
-    )
+    data_bytes = sub.photos[mem_index]
+    mime = detect_mimetype(data_bytes)
+    ext = "pdf" if mime == "application/pdf" else "jpg"
+    headers = {"Cache-Control": "no-store"}
+    if request.args.get("download") == "1":
+        headers["Content-Disposition"] = f"attachment; filename=photo_{index}.{ext}"
+    return Response(data_bytes, mimetype=mime, headers=headers)
 
 

@@ -25,9 +25,19 @@ class LocalPhotoStorage(PhotoStorage):
         return key
 
     def get_url(self, key: str) -> Optional[str]:
-        # Local files are served via the /uploads/ route if configured.
-        # Return None here — callers handle the "no URL" case.
+        # Local files are served via the proxy route; no external URL needed.
         return None
+
+    def download(self, key: str) -> Optional[bytes]:
+        path = os.path.join(self._folder, key)
+        try:
+            with open(path, "rb") as fh:
+                return fh.read()
+        except FileNotFoundError:
+            return None
+        except OSError as exc:
+            logger.warning("Error reading photo %s: %s", key, exc)
+            return None
 
     def delete(self, key: str) -> None:
         path = os.path.join(self._folder, key)
