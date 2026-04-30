@@ -343,16 +343,23 @@ function loadDetail(sessionId, subId) {
         html += '</table>';
       }
 
-      // Custom form: render answers using the schema field-label map.
+      // Custom form: render answers in schema order using CUSTOM_FIELD_LABELS key order.
       if (data.crime_type === 'custom' && data.answers) {
-        // Exclude internal keys (prefixed with '_') and truly empty values,
-        // but preserve meaningful falsy values like 0 and false.
-        const customEntries = Object.entries(data.answers).filter(function ([k, v]) {
-          return !k.startsWith('_') && v !== null && v !== '' && v !== undefined;
+        // Iterate over CUSTOM_FIELD_LABELS (built from schema.fields in order) so fields
+        // always render in the order the template author defined them, not submission order.
+        const orderedFieldIds = Object.keys(CUSTOM_FIELD_LABELS);
+        const hasAnyData = orderedFieldIds.some(function (fid) {
+          const val = data.answers[fid];
+          return val !== null && val !== '' && val !== undefined;
         });
-        if (customEntries.length > 0) {
+        if (hasAnyData) {
           html += '<h6>Respostas</h6><table class="table table-sm">';
-          customEntries.forEach(function ([fid, val]) {
+          orderedFieldIds.forEach(function (fid) {
+            const val = data.answers[fid];
+            // Skip internal fields (prefixed with '_') and truly empty values.
+            if (fid.startsWith('_') || val === null || val === '' || val === undefined) {
+              return;
+            }
             const label = CUSTOM_FIELD_LABELS[fid] || fid;
             const display = Array.isArray(val)
               ? val.map(function (item) { return _escHtml(String(item)); }).join(', ')
@@ -394,10 +401,13 @@ function loadDetail(sessionId, subId) {
       html += '</div>';
 
       html += '<div class="col-md-6">';
-      html += '<h6>Texto para Cópia</h6>';
-      html += `<textarea class="form-control font-monospace small" rows="12" id="text-${subId}">${data.text}</textarea>`;
-      html += `<button class="btn btn-outline-primary btn-sm mt-2" type="button" onclick="copyText('${subId}', this)"><i class="bi bi-clipboard"></i> Copiar Texto</button>`;
-      html += `<button class="btn btn-outline-success btn-sm mt-2 ms-2" type="button" onclick="shareWhatsApp('${subId}')"><i class="bi bi-whatsapp"></i> WhatsApp</button>`;
+      // Only render "Texto para Cópia" for police intake; custom templates have no narrative.
+      if (data.crime_type !== 'custom') {
+        html += '<h6>Texto para Cópia</h6>';
+        html += `<textarea class="form-control font-monospace small" rows="12" id="text-${subId}">${data.text}</textarea>`;
+        html += `<button class="btn btn-outline-primary btn-sm mt-2" type="button" onclick="copyText('${subId}', this)"><i class="bi bi-clipboard"></i> Copiar Texto</button>`;
+        html += `<button class="btn btn-outline-success btn-sm mt-2 ms-2" type="button" onclick="shareWhatsApp('${subId}')"><i class="bi bi-whatsapp"></i> WhatsApp</button>`;
+      }
       if (data.photo_count > 0) {
         if (!CAN_VIEW_PHOTOS) {
           html += `<p class="small text-muted mt-3"><i class="bi bi-lock-fill me-1"></i>Visualização de fotos disponível no plano Premium. <a href="/plans" class="ms-1">Ver planos</a></p>`;
