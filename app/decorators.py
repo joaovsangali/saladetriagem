@@ -24,9 +24,10 @@ def require_plan_limit(limit_key: str):
                     user_id=current_user.id, month=month
                 ).first()
                 sessions_this_month = usage.sessions_created if usage else 0
-                if sessions_this_month >= limits['max_sessions_per_month']:
+                max_sessions = limits.get('max_sessions_per_month')
+                if max_sessions is not None and sessions_this_month >= max_sessions:
                     flash(
-                        f"Limite de {limits['max_sessions_per_month']} plantões/mês atingido. "
+                        f"Limite de {max_sessions} plantões/mês atingido. "
                         "Faça upgrade para continuar.",
                         'warning',
                     )
@@ -38,9 +39,10 @@ def require_plan_limit(limit_key: str):
                 if session_id:
                     from app.store import submission_store
                     count = submission_store.count_for_dashboard(session_id)
-                    if count >= limits['max_submissions_per_session']:
+                    max_submissions = limits.get('max_submissions_per_session')
+                    if max_submissions is not None and count >= max_submissions:
                         flash(
-                            f"Limite de {limits['max_submissions_per_session']} submissões por triagem atingido.",
+                            f"Limite de {max_submissions} submissões por triagem atingido.",
                             'warning',
                         )
                         return redirect(url_for('dashboard.index'))
