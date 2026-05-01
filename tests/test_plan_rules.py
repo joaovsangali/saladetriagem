@@ -885,9 +885,9 @@ def test_enterprise_allows_3_active_sessions(app, client):
 
     with app.app_context():
         from app.models import PoliceUser
-        u = PoliceUser.query.filter_by(email="ent_act@test.com").first()
+        user = PoliceUser.query.filter_by(email="ent_act@test.com").first()
         active_count = DashboardSession.query.filter_by(
-            user_id=u.id, is_active=True
+            user_id=user.id, is_active=True
         ).count()
         assert active_count == 3
 
