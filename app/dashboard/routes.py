@@ -157,7 +157,6 @@ def new_session():
 
     # Plan limit: max sessions per month
     from app.decorators import increment_sessions_created
-    from datetime import datetime, timezone
     limits = current_user.get_current_plan_limits()
     month = datetime.now(timezone.utc).strftime('%Y-%m')
     usage = PlanUsage.query.filter_by(user_id=current_user.id, month=month).first()

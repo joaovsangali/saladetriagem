@@ -894,7 +894,6 @@ def test_enterprise_allows_3_active_sessions(app, client):
 
 def test_enterprise_blocked_at_4th_active_session(app, client):
     """Enterprise users cannot create a 4th active session."""
-    from datetime import timedelta
     with app.app_context():
         user = _make_user("ent_act2@test.com", "EntAct2", plan_type="enterprise")
         # Pre-create 3 active sessions directly
