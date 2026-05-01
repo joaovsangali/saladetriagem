@@ -89,9 +89,9 @@ def test_enterprise_plan_duration_is_24h():
     assert PLANS['enterprise']['max_session_duration_hours'] == 24
 
 
-def test_free_plan_uploads_is_3():
+def test_free_plan_uploads_is_0():
     from app.plans import PLANS
-    assert PLANS['free']['max_uploads_per_submission'] == 3
+    assert PLANS['free']['max_uploads_per_submission'] == 0
 
 
 def test_premium_plan_uploads_is_3():
@@ -726,3 +726,197 @@ def test_expired_session_expired_by_task(app):
 
         sess = _db.session.get(DashboardSession, sess_id)
         assert sess.is_active is False  # expired by task
+
+
+# ---------------------------------------------------------------------------
+# Plan limits: new values
+# ---------------------------------------------------------------------------
+
+def test_free_plan_sessions_per_month_is_10():
+    from app.plans import PLANS
+    assert PLANS['free']['max_sessions_per_month'] == 10
+
+
+def test_free_plan_submissions_per_session_is_15():
+    from app.plans import PLANS
+    assert PLANS['free']['max_submissions_per_session'] == 15
+
+
+def test_premium_plan_submissions_per_session_is_50():
+    from app.plans import PLANS
+    assert PLANS['premium']['max_submissions_per_session'] == 50
+
+
+def test_enterprise_sessions_per_month_is_unlimited():
+    from app.plans import PLANS
+    assert PLANS['enterprise']['max_sessions_per_month'] is None
+
+
+def test_enterprise_submissions_per_session_is_unlimited():
+    from app.plans import PLANS
+    assert PLANS['enterprise']['max_submissions_per_session'] is None
+
+
+def test_free_max_active_sessions_is_1():
+    from app.plans import PLANS
+    assert PLANS['free']['max_active_sessions'] == 1
+
+
+def test_premium_max_active_sessions_is_1():
+    from app.plans import PLANS
+    assert PLANS['premium']['max_active_sessions'] == 1
+
+
+def test_enterprise_max_active_sessions_is_3():
+    from app.plans import PLANS
+    assert PLANS['enterprise']['max_active_sessions'] == 3
+
+
+# ---------------------------------------------------------------------------
+# Delete last session: no 500 error
+# ---------------------------------------------------------------------------
+
+def test_delete_last_session_succeeds(app, client):
+    """Deleting the only session must succeed and redirect to dashboard."""
+    with app.app_context():
+        user = _make_user("del1@test.com", "Del1", plan_type="free")
+        sess = DashboardSession(
+            user_id=user.id,
+            label="Only Session",
+            is_active=False,
+            expires_at=datetime.now(timezone.utc) - timedelta(hours=1),
+        )
+        _db.session.add(sess)
+        _db.session.commit()
+        sess_id = sess.id
+
+    _login(client, "del1@test.com")
+    resp = client.post(
+        f"/dashboard/sessions/{sess_id}/delete",
+        follow_redirects=False,
+    )
+    # Must redirect (302), not 500
+    assert resp.status_code == 302
+    assert "/dashboard" in resp.location or resp.location == "/"
+
+    with app.app_context():
+        assert DashboardSession.query.filter_by(id=sess_id).first() is None
+
+
+def test_delete_shared_session_with_collaborators_succeeds(app, client):
+    """Deleting a session that has SessionCollaborator records must succeed."""
+    from app.models import SessionCollaborator
+    with app.app_context():
+        owner = _make_user("del2@test.com", "Del2", plan_type="enterprise")
+        collaborator = _make_user("collab@test.com", "Collab", plan_type="premium")
+        sess = DashboardSession(
+            user_id=owner.id,
+            label="Shared Session",
+            is_active=False,
+            expires_at=datetime.now(timezone.utc) - timedelta(hours=1),
+        )
+        _db.session.add(sess)
+        _db.session.commit()
+        sc = SessionCollaborator(session_id=sess.id, user_id=collaborator.id)
+        _db.session.add(sc)
+        _db.session.commit()
+        sess_id = sess.id
+
+    _login(client, "del2@test.com")
+    resp = client.post(
+        f"/dashboard/sessions/{sess_id}/delete",
+        follow_redirects=False,
+    )
+    # Must redirect (302), not 500
+    assert resp.status_code == 302
+
+    with app.app_context():
+        assert DashboardSession.query.filter_by(id=sess_id).first() is None
+        assert SessionCollaborator.query.filter_by(session_id=sess_id).count() == 0
+
+
+def test_delete_all_closed_sessions_succeeds(app, client):
+    """Deleting all closed sessions (including the last one) must succeed."""
+    with app.app_context():
+        user = _make_user("del3@test.com", "Del3", plan_type="premium")
+        user_id = user.id
+        for i in range(2):
+            sess = DashboardSession(
+                user_id=user.id,
+                label=f"Session {i}",
+                is_active=False,
+                expires_at=datetime.now(timezone.utc) - timedelta(hours=1),
+            )
+            _db.session.add(sess)
+        _db.session.commit()
+
+    _login(client, "del3@test.com")
+    resp = client.post(
+        "/dashboard/sessions/delete-closed",
+        follow_redirects=False,
+    )
+    # Must redirect (302), not 500
+    assert resp.status_code == 302
+
+    with app.app_context():
+        assert DashboardSession.query.filter_by(user_id=user_id).count() == 0
+
+
+def test_enterprise_allows_3_active_sessions(app, client):
+    """Enterprise users can create up to 3 active sessions."""
+    from app.models import CustomIntakeTemplate
+    with app.app_context():
+        user = _make_user("ent_act@test.com", "EntAct", plan_type="enterprise")
+
+    _login(client, "ent_act@test.com")
+
+    # Create 3 sessions
+    for i in range(3):
+        resp = client.post(
+            "/dashboard/sessions/new",
+            data={
+                "label": f"Active Session {i+1}",
+                "duration_hours": "6",
+                "intake_type": "police",
+            },
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+
+    with app.app_context():
+        from app.models import PoliceUser
+        user = PoliceUser.query.filter_by(email="ent_act@test.com").first()
+        active_count = DashboardSession.query.filter_by(
+            user_id=user.id, is_active=True
+        ).count()
+        assert active_count == 3
+
+
+def test_enterprise_blocked_at_4th_active_session(app, client):
+    """Enterprise users cannot create a 4th active session."""
+    with app.app_context():
+        user = _make_user("ent_act2@test.com", "EntAct2", plan_type="enterprise")
+        # Pre-create 3 active sessions directly
+        for i in range(3):
+            sess = DashboardSession(
+                user_id=user.id,
+                label=f"Pre Session {i+1}",
+                is_active=True,
+                expires_at=datetime.now(timezone.utc) + timedelta(hours=24),
+            )
+            _db.session.add(sess)
+        _db.session.commit()
+
+    _login(client, "ent_act2@test.com")
+    resp = client.post(
+        "/dashboard/sessions/new",
+        data={
+            "label": "4th Session",
+            "duration_hours": "6",
+            "intake_type": "police",
+        },
+        follow_redirects=True,
+    )
+    assert resp.status_code == 200
+    with app.app_context():
+        assert DashboardSession.query.filter_by(label="4th Session").first() is None

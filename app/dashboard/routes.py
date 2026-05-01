@@ -13,7 +13,7 @@ from app.dashboard import dashboard_bp
 from app.extensions import db
 from app.models import (
     DashboardSession, IntakeLink, MinimalLogEntry, AccessLog,
-    SessionCollaborator, CustomIntakeTemplate,
+    SessionCollaborator, CustomIntakeTemplate, PlanUsage,
 )
 from app.store import submission_store
 from app.schemas.crime_types import DEFAULT_FORM_SCHEMA
@@ -157,15 +157,14 @@ def new_session():
 
     # Plan limit: max sessions per month
     from app.decorators import increment_sessions_created
-    from app.models import PlanUsage
-    from datetime import datetime, timezone
     limits = current_user.get_current_plan_limits()
     month = datetime.now(timezone.utc).strftime('%Y-%m')
     usage = PlanUsage.query.filter_by(user_id=current_user.id, month=month).first()
     sessions_this_month = usage.sessions_created if usage else 0
-    if sessions_this_month >= limits['max_sessions_per_month']:
+    max_sessions_per_month = limits.get('max_sessions_per_month')
+    if max_sessions_per_month is not None and sessions_this_month >= max_sessions_per_month:
         flash(
-            f"Limite de {limits['max_sessions_per_month']} triagens/mês atingido no seu plano. "
+            f"Limite de {max_sessions_per_month} triagens/mês atingido no seu plano. "
             "Faça upgrade para continuar.",
             'warning',
         )
@@ -176,11 +175,15 @@ def new_session():
         flash("Você tem 12 triagens no histórico. Delete uma triagem antiga antes de criar nova.", "warning")
         return redirect(url_for("dashboard.index"))
 
+    max_active = limits.get('max_active_sessions', 1)
     active_count = DashboardSession.query.filter_by(
         user_id=current_user.id, is_active=True
     ).count()
-    if active_count >= 1:
-        flash("Você já tem 1 triagem ativa. Feche a triagem atual antes de criar nova.", "warning")
+    if active_count >= max_active:
+        if max_active == 1:
+            flash("Você já tem 1 triagem ativa. Feche a triagem atual antes de criar nova.", "warning")
+        else:
+            flash(f"Limite de {max_active} salas ativas atingido no seu plano. Feche uma triagem antes de criar nova.", "warning")
         return redirect(url_for("dashboard.index"))
 
     # Use duration from form, capped by plan limit
@@ -384,6 +387,7 @@ def delete_closed_sessions():
     for s in closed:
         MinimalLogEntry.query.filter_by(dashboard_id=s.id).delete()
         IntakeLink.query.filter_by(dashboard_id=s.id).delete()
+        SessionCollaborator.query.filter_by(session_id=s.id).delete()
         db.session.delete(s)
     db.session.commit()
     flash(f"{len(closed)} triagem(ns) encerrada(s) apagada(s).", "info")
@@ -403,6 +407,7 @@ def delete_session(session_id):
 
     MinimalLogEntry.query.filter_by(dashboard_id=session.id).delete()
     IntakeLink.query.filter_by(dashboard_id=session.id).delete()
+    SessionCollaborator.query.filter_by(session_id=session.id).delete()
     db.session.delete(session)
     db.session.commit()
 

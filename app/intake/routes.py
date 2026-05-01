@@ -114,7 +114,8 @@ def submit(token):
     if owner:
         limits = owner.get_current_plan_limits()
         current_count = submission_store.count_for_dashboard(session.id)
-        if current_count >= limits['max_submissions_per_session']:
+        max_submissions = limits.get('max_submissions_per_session')
+        if max_submissions is not None and current_count >= max_submissions:
             return render_template("intake/expired.html")
 
     if session.intake_type == "custom":

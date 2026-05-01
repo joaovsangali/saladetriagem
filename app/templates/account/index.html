@@ -32,9 +32,9 @@
         <table class="table table-sm mt-3">
           <thead><tr><th>Limite</th><th>Valor</th></tr></thead>
           <tbody>
-            <tr><td>Plantões/mês</td><td>{{ limits.max_sessions_per_month }}</td></tr>
+            <tr><td>Plantões/mês</td><td>{% if limits.max_sessions_per_month is none %}Ilimitado{% else %}{{ limits.max_sessions_per_month }}{% endif %}</td></tr>
             <tr><td>Duração máx. triagem</td><td>{{ limits.max_session_duration_hours }}h</td></tr>
-            <tr><td>Submissões/triagem</td><td>{{ limits.max_submissions_per_session }}</td></tr>
+            <tr><td>Submissões/triagem</td><td>{% if limits.max_submissions_per_session is none %}Ilimitado{% else %}{{ limits.max_submissions_per_session }}{% endif %}</td></tr>
             <tr><td>Visualizar fotos</td><td>{% if limits.can_view_photos %}✅{% else %}❌{% endif %}</td></tr>
             <tr><td>Compartilhamento</td><td>{% if limits.can_share_session %}✅{% elif limits.can_join_shared_session %}Entrar apenas{% else %}❌{% endif %}</td></tr>
             <tr><td>Modelos personalizados</td><td>{% if limits.can_create_custom_schema %}✅{% else %}❌{% endif %}</td></tr>
@@ -43,7 +43,11 @@
 <div class="mt-3 p-2 bg-light rounded">
   <span class="small fw-semibold">Triagens restantes este mês:</span>
   <span class="small ms-1">
-    {{ sessions_remaining or 0 }} / {{ limits.max_sessions_per_month or 0 }}
+    {% if sessions_remaining is none %}
+      Ilimitado
+    {% else %}
+      {{ sessions_remaining }} / {{ limits.max_sessions_per_month }}
+    {% endif %}
   </span>
 
   {% if limits.max_sessions_per_month and limits.max_sessions_per_month > 0 %}

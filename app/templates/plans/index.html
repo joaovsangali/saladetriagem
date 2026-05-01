@@ -136,7 +136,7 @@
         <ul class="list-unstyled mb-4">
           <li class="mb-2">
             <i class="bi bi-check-circle-fill text-success me-2"></i>
-            <strong>{{ plans['enterprise']['max_sessions_per_month'] }}</strong> triagens/mês
+            <strong>{% if plans['enterprise']['max_sessions_per_month'] is none %}Ilimitadas{% else %}{{ plans['enterprise']['max_sessions_per_month'] }}{% endif %}</strong> triagens/mês
           </li>
           <li class="mb-2">
             <i class="bi bi-check-circle-fill text-success me-2"></i>
@@ -144,7 +144,7 @@
           </li>
           <li class="mb-2">
             <i class="bi bi-check-circle-fill text-success me-2"></i>
-            <strong>{{ plans['enterprise']['max_submissions_per_session'] }}</strong> submissões por triagem
+            <strong>{% if plans['enterprise']['max_submissions_per_session'] is none %}Ilimitadas{% else %}{{ plans['enterprise']['max_submissions_per_session'] }}{% endif %}</strong> submissões por triagem
           </li>
           <li class="mb-2">
             <i class="bi bi-check-circle-fill text-success me-2"></i>
@@ -199,7 +199,7 @@
               <td>Triagens por mês</td>
               <td class="text-center">{{ plans['free']['max_sessions_per_month'] }}</td>
               <td class="text-center">{{ plans['premium']['max_sessions_per_month'] }}</td>
-              <td class="text-center">{{ plans['enterprise']['max_sessions_per_month'] }}</td>
+              <td class="text-center">{% if plans['enterprise']['max_sessions_per_month'] is none %}Ilimitado{% else %}{{ plans['enterprise']['max_sessions_per_month'] }}{% endif %}</td>
             </tr>
             <tr>
               <td>Duração máxima por triagem</td>
@@ -211,7 +211,7 @@
               <td>Submissões por triagem</td>
               <td class="text-center">{{ plans['free']['max_submissions_per_session'] }}</td>
               <td class="text-center">{{ plans['premium']['max_submissions_per_session'] }}</td>
-              <td class="text-center">{{ plans['enterprise']['max_submissions_per_session'] }}</td>
+              <td class="text-center">{% if plans['enterprise']['max_submissions_per_session'] is none %}Ilimitado{% else %}{{ plans['enterprise']['max_submissions_per_session'] }}{% endif %}</td>
             </tr>
             <tr>
               <td>Visualização de fotos</td>
